@@ -1,0 +1,6 @@
+/**
+ * RMIGateway
+ */
+public class RMIGateway {
+
+}

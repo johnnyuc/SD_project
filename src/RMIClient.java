@@ -1,0 +1,6 @@
+/**
+ * RMIClient
+ */
+public class RMIClient {
+
+}
