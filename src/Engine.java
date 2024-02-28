@@ -1,8 +1,3 @@
-// Java imports
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.MalformedURLException;
-
 /**
  * Engine
  */
@@ -18,20 +13,8 @@ public class Engine {
             return;
 
         // Create the given number of downloaders using threads
-        for (int i = 0; i < downloaderNum; i++) {
-            Thread downloaderThread = new Thread(new Downloader(i));
-            downloaderThread.start();
-
-            if (i == 0) {
-                try {
-                    // Test purposes: Beware which sites to scrape. Some may not like it. This one is fine.
-                    // toscrape.com is a site made for scraping tests
-                    Downloader.visitURL(new URI("https://books.toscrape.com").toURL());
-                } catch (URISyntaxException | MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        for (int i = 0; i < downloaderNum; i++)
+            new Downloader(i);
 
         // Create the two needed Index Storage Barrels
         new IndexStorageBarrel();
