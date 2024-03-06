@@ -1,16 +1,15 @@
-
 // Jsoup imports
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import URLQueue.URLQueueInterface;
+
 // Java imports
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.rmi.registry.LocateRegistry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.StringTokenizer;
@@ -20,30 +19,36 @@ import java.util.StringTokenizer;
  */
 public class Downloader implements Runnable {
     private final int id;
-    private Thread thread;
+    private URLQueueInterface urlQueueInterface;
 
     public Downloader(int id) {
         this.id = id;
-        thread = new Thread(this);
+        Thread thread = new Thread(this);
         thread.start();
     }
 
     public void run() {
         // TODO: Treat the exception better
+
         try {
-            visitURL(new URI("https://books.toscrape.com").toURL());
-        } catch (URISyntaxException | MalformedURLException e) {
-            throw new RuntimeException(e);
+            urlQueueInterface = (URLQueueInterface) LocateRegistry.getRegistry(6000)
+                    .lookup("urlqueue");
+            for (int i = 0; i < 20; i++) {
+                visitURL(urlQueueInterface.dequeueURL(id));
+            }
+
+        } catch (Exception e) {
+            System.out.println("Exception in main: " + e);
+            e.printStackTrace();
         }
     }
 
     /**
      * Receives an URL from a queue and visits it
-     * TODO: take input from the queue
-     * 
+     *
      * @param url URL from queue to visit
      */
-    private static void visitURL(URL url) {
+    private void visitURL(URL url) {
         final Logger logger = Logger.getLogger(Downloader.class.getName());
         try {
             // Connect to the given URL
@@ -56,8 +61,10 @@ public class Downloader implements Runnable {
                 System.out.println(tokens.nextToken().toLowerCase());
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
-            for (Element link : links)
+            for (Element link : links) {
+                urlQueueInterface.enqueueURL(new URL(link.attr("abs:href")), id);
                 System.out.println(link.text() + "\n" + link.attr("abs:href") + "\n");
+            }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error attempting to connect to URL: " + url, e);
         }
