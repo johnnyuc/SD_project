@@ -5,11 +5,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+// URL imports
 import URLQueue.URLQueueInterface;
 
 // Java imports
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.LocateRegistry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,9 +48,12 @@ public class Downloader implements Runnable {
 
     /**
      * Receives an URL from a queue and visits it
+     *
      * 
      * @param url URL from queue to visit
      */
+    private void visitURL(URL url) {
+
     private void visitURL(URL url) {
         final Logger logger = Logger.getLogger(Downloader.class.getName());
         try {
@@ -64,7 +69,10 @@ public class Downloader implements Runnable {
             Elements links = doc.select("a[href]");
             for (Element link : links) {
                 urlQueueInterface.enqueueURL(new URL(link.attr("abs:href")), id);
-                System.out.println(link.text() + "\n" + link.attr("abs:href") + "\n");
+                for (Element link : links) {
+                    urlQueueInterface.enqueueURL(new URL(link.attr("abs:href")), id);
+                    System.out.println(link.text() + "\n" + link.attr("abs:href") + "\n");
+                }
             }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error attempting to connect to URL: " + url, e);

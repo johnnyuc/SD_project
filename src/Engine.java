@@ -17,6 +17,8 @@ public class Engine {
             new Downloader(i);
 
         // Create the two needed Index Storage Barrels
+
+        // Debugging
         // new IndexStorageBarrel();
         // new IndexStorageBarrel();
 
@@ -24,7 +26,7 @@ public class Engine {
 
     /**
      * Processes arguments from the command line
-     * 
+     *
      * @param args Arguments to be processed
      * @return Whether the arguments where given correctly or not
      */

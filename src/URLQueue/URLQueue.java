@@ -1,7 +1,10 @@
 package URLQueue;
 
+// URL imports
 import java.net.MalformedURLException;
 import java.net.URL;
+
+// RMI imports
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -9,7 +12,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * 
+ * URLQueue
  */
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     public static void main(String args[]) {
@@ -40,7 +43,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
 
     /**
      * Enqueues a URL. This function will be used by downloaders in remote accesses
-     * 
+     *
      * @param url          URL to be added
      * @param downloaderID ID of the downloader that sent the url
      * @return True on success, false otherwise
