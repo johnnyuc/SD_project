@@ -72,4 +72,8 @@ public class Downloader implements Runnable {
             logger.log(Level.SEVERE, "Error attempting to connect to URL: " + url, e);
         }
     }
+
+    private void sendMulticast(String[] tokens) {
+    }
+
 }
