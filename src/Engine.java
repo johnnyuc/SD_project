@@ -17,8 +17,8 @@ public class Engine {
             new Downloader(i);
 
         // Create the two needed Index Storage Barrels
-        new IndexStorageBarrel();
-        new IndexStorageBarrel();
+        // new IndexStorageBarrel();
+        // new IndexStorageBarrel();
 
     }
 
