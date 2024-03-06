@@ -1,3 +1,4 @@
 # IDE files
 .vscode
 .idea
+out/

@@ -15,7 +15,7 @@ import java.io.Serializable;
  */
 public class IndexStorageBarrel implements Serializable {
     public static void main(String[] args) {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:src/IndexStorageBarrel/database/DBbarrel.db")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db")) {
             System.out.println("Connected to DBbarrel.db database");
 
             // Check if table exists
