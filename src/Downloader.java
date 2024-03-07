@@ -21,7 +21,7 @@ import java.util.StringTokenizer;
  */
 public class Downloader implements Runnable {
     private final int id;
-    private URLQueueInterface urlQueueInterface;
+    private URLQueueInterface urlQueue;
 
     public Downloader(int id) {
         this.id = id;
@@ -33,10 +33,10 @@ public class Downloader implements Runnable {
         // TODO: Treat the exception better
 
         try {
-            urlQueueInterface = (URLQueueInterface) LocateRegistry.getRegistry(6000)
+            urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(6000)
                     .lookup("urlqueue");
             for (int i = 0; i < 20; i++) {
-                visitURL(urlQueueInterface.dequeueURL(id));
+                visitURL(urlQueue.dequeueURL(id));
             }
 
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public class Downloader implements Runnable {
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
             for (Element link : links) {
-                urlQueueInterface.enqueueURL(new URL(link.attr("abs:href")), id);
+                urlQueue.enqueueURL(new URL(link.attr("abs:href")), id);
                 System.out.println(link.text() + "\n" + link.attr("abs:href") + "\n");
             }
         } catch (IOException e) {

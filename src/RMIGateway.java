@@ -1,6 +1,29 @@
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
 /**
  * RMIGateway
  */
-public class RMIGateway {
+public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
+    public static void main(String[] args) {
+        try {
+            System.out.println("Starting RMI Gateway...");
+            RMIGateway rmiGateway = new RMIGateway();
+            Registry registry = LocateRegistry.createRegistry(6001);
+            registry.rebind("rmigateway", rmiGateway);
+            System.out.println("RMI Gateway ready.");
+        } catch (RemoteException re) {
+            System.out.println("Exception in RMIGateway.main: " + re);
+        }
+    }
 
+    RMIGateway() throws RemoteException {
+        super();
+    }
+
+    public void sendMessage(String message) throws RemoteException {
+        System.out.println("Got message: " + message);
+    }
 }
