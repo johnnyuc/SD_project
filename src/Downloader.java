@@ -10,7 +10,12 @@ import URLQueue.URLQueueInterface;
 
 // Java imports
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.net.URL;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,6 +28,10 @@ public class Downloader implements Runnable {
     private final int id;
     private URLQueueInterface urlQueue;
 
+    private String MULTICAST_ADDRESS = "224.67.68.70";
+    private int PORT = 6002;
+    private MulticastSocket multicastSocket;
+
     public Downloader(int id) {
         this.id = id;
         Thread thread = new Thread(this);
@@ -30,19 +39,24 @@ public class Downloader implements Runnable {
     }
 
     public void run() {
-        // TODO: Treat the exception better
-
         try {
             urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(6000)
                     .lookup("urlqueue");
+            // Create socket without binding it (only for sending)
+            multicastSocket = new MulticastSocket();
+
+            // sendMulticast(id + " - Uma mensagem apropridada.");
+
             for (int i = 0; i < 20; i++) {
                 visitURL(urlQueue.dequeueURL(id));
             }
-
-        } catch (Exception e) {
-            System.out.println("Exception in main: " + e);
+        } catch (NotBoundException | IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
+        } finally {
+            multicastSocket.close();
         }
+
     }
 
     /**
@@ -73,7 +87,12 @@ public class Downloader implements Runnable {
         }
     }
 
-    private void sendMulticast(String[] tokens) {
+    private void sendMulticast(String message) throws IOException {
+        byte[] buffer = message.getBytes();
+
+        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
+        multicastSocket.send(packet);
     }
 
 }

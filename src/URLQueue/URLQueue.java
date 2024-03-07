@@ -23,6 +23,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             registry.rebind("urlqueue", urlQueue);
             System.out.println("URL Queue ready.");
         } catch (RemoteException re) {
+            // TODO: Treat exception better
             System.out.println("Exception in URLQueue.main: " + re);
         }
     }

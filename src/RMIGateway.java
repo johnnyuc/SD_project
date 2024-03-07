@@ -15,6 +15,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             registry.rebind("rmigateway", rmiGateway);
             System.out.println("RMI Gateway ready.");
         } catch (RemoteException re) {
+            // TODO: Treat exception better
             System.out.println("Exception in RMIGateway.main: " + re);
         }
     }

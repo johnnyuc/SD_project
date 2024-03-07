@@ -22,6 +22,7 @@ public class RMIClient {
             menu();
             scanner.close();
         } catch (RemoteException | NotBoundException e) {
+            // TODO: Treat exception better
             System.out.println("Exception in RMIClient: " + e);
             e.printStackTrace();
         }
