@@ -1,8 +1,6 @@
-/**
- * Engine
- */
 public class Engine {
     int downloaderNum;
+    String queueIP;
 
     public static void main(String[] args) {
         new Engine(args);
@@ -12,35 +10,33 @@ public class Engine {
         if (!processArgs(args))
             return;
 
-        // Create the given number of downloaders using threads
-
         for (int i = 0; i < downloaderNum; i++)
-            new Downloader(i);
-
-        // Create the two needed Index Storage Barrels
-
-        // Debugging
-        // new IndexStorageBarrel();
-        // new IndexStorageBarrel();
-
+            new Downloader(i, queueIP);
     }
 
-    /**
-     * Processes arguments from the command line
-     *
-     * @param args Arguments to be processed
-     * @return Whether the arguments where given correctly or not
-     */
     private boolean processArgs(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Wrong number of arguments: got " + args.length + ", expected 1");
-            return false;
+        if (args.length != 4) {
+            System.err.println("Wrong number of arguments: expected -d <downloader number> and -ip <queue IP>");
+            System.exit(1);
         }
 
         try {
-            downloaderNum = Integer.parseInt(args[0]);
+            for (int i = 0; i < args.length; i++) {
+                switch (args[i]) {
+                    case "-d":
+                        downloaderNum = Integer.parseInt(args[++i]);
+                        break;
+                    case "-ip":
+                        queueIP = args[++i];
+                        break;
+                    default:
+                        System.err.println("Unexpected argument: " + args[i]);
+                        return false;
+                }
+            }
         } catch (NumberFormatException e) {
-            System.err.println("Wrong type of argument: expected int");
+            System.err.println("Wrong type of argument: expected int for downloader number");
+            return false;
         }
 
         return true;

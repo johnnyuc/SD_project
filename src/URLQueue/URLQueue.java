@@ -1,62 +1,101 @@
 package URLQueue;
 
-// URL imports
-import java.net.MalformedURLException;
-import java.net.URL;
+/* GOOGLE GUAVA IMPLEMENTATION*/
+import com.google.common.hash.Funnels;
+//import com.google.common.hash.BloomFilter;
+import java.nio.charset.StandardCharsets;
 
-// RMI imports
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * URLQueue
- */
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
-    public static void main(String args[]) {
+
+    // Global counter
+    private static int counter = 0;
+    private final BlockingQueue<URL> urlQueue;
+    //private final BloomFilter<CharSequence> bloomFilter;
+    private final BloomFilter bloomFilter;
+
+    public static void main(String[] args) {
         try {
             System.out.println("Starting URL Queue...");
             URLQueue urlQueue = new URLQueue();
             Registry registry = LocateRegistry.createRegistry(6000);
             registry.rebind("urlqueue", urlQueue);
             System.out.println("URL Queue ready.");
-        } catch (RemoteException re) {
-            // TODO: Treat exception better
-            System.out.println("Exception in URLQueue.main: " + re);
+        } catch (RemoteException e) {
+            System.out.println("Error in URLQueue.main: " + e);
+            System.exit(1);
         }
     }
-
-    private ConcurrentLinkedDeque<URL> urlQueue;
 
     private URLQueue() throws RemoteException {
         super();
-        urlQueue = new ConcurrentLinkedDeque<>();
+        urlQueue = new LinkedBlockingQueue<>();
+
+        /* GOOGLE GUAVA IMPLEMENTATION */
+        // Bloom filter with 1M elements and 0.01 false positive probability
+        // https://www.baeldung.com/guava-bloom-filter
+        //bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 1000000, 0.01);
+
+
+        // Optimal size calculated based on 1M elements and 1% false positive probability
+        bloomFilter = new BloomFilter(9585058);
 
         try {
-            enqueueURL(new URL("https://books.toscrape.com"), -1);
+            enqueueURL(URI.create("https://books.toscrape.com").toURL(), 6969);
         } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            System.out.println("Error in URLQueue.URLQueue: " + e);
         }
     }
 
-    /**
-     * Enqueues a URL. This function will be used by downloaders in remote accesses
-     *
-     * @param url          URL to be added
-     * @param downloaderID ID of the downloader that sent the url
-     * @return True on success, false otherwise
-     */
     public void enqueueURL(URL url, int downloaderID) {
-        System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
-        urlQueue.addLast(url);
+        String urlString = url.toString();
+
+        if (!bloomFilter.contains(urlString)) {
+            System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
+            bloomFilter.add(urlString);
+            urlQueue.add(url);
+            counter++;
+        }
+
+        /* GOOGLE GUAVA IMPLEMENTATION
+        if (!bloomFilter.mightContain(urlString)) {
+            System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
+            bloomFilter.put(urlString);
+            urlQueue.add(url);
+            counter++;
+        }*/
     }
 
     public URL dequeueURL(int downloaderID) {
-        URL url = urlQueue.removeFirst();
-        System.out.println("Dequeueing URL " + url + " to downloader " + downloaderID + ".");
+        URL url = null;
+        try {
+            url = urlQueue.take();
+            System.out.println("Dequeueing URL " + url + " to downloader " + downloaderID + ".");
+        } catch (InterruptedException e) {
+            System.out.println("Error in URLQueue.dequeueURL: " + e);
+        }
+        showQueue();
         return url;
     }
+
+    // Show how many URLs are in the queue which are not null
+    private void showQueue() {
+        int count = 0;
+        for (URL url : urlQueue) {
+            if (url != null) count++;
+        }
+        System.out.println("Queue has " + count + " URLs.");
+        System.out.println("Counter: " + counter);
+    }
+
 }

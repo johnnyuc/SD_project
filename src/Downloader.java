@@ -1,3 +1,12 @@
+// Java imports
+import java.io.IOException;
+import java.net.*;
+import java.rmi.NotBoundException;
+import java.rmi.registry.LocateRegistry;
+import java.util.StringTokenizer;
+
+// URL imports
+import URLQueue.URLQueueInterface;
 
 // Jsoup imports
 import org.jsoup.Jsoup;
@@ -5,68 +14,31 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-// URL imports
-import URLQueue.URLQueueInterface;
-
-// Java imports
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.URL;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.StringTokenizer;
-
-/**
- * Downloader
- */
 public class Downloader implements Runnable {
     private final int id;
+    private final String queueIP;
     private URLQueueInterface urlQueue;
 
-    private String MULTICAST_ADDRESS = "224.67.68.70";
-    private int PORT = 6002;
-    private MulticastSocket multicastSocket;
-
-    public Downloader(int id) {
+    public Downloader(int id, String queueIP) {
         this.id = id;
+        this.queueIP = queueIP;
         Thread thread = new Thread(this);
         thread.start();
     }
 
     public void run() {
         try {
-            urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(6000)
-                    .lookup("urlqueue");
-            // Create socket without binding it (only for sending)
-            multicastSocket = new MulticastSocket();
+            urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(queueIP, 6000).lookup("urlqueue");
 
-            // sendMulticast(id + " - Uma mensagem apropridada.");
+            // Shouldn't be true, but for now it's a way to keep the downloader running
+            while (true) visitURL(urlQueue.dequeueURL(id));
 
-            for (int i = 0; i < 20; i++) {
-                visitURL(urlQueue.dequeueURL(id));
-            }
         } catch (NotBoundException | IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } finally {
-            multicastSocket.close();
+            System.out.println("Error in Downloader.run: " + e);
         }
-
     }
 
-    /**
-     * Receives an URL from a queue and visits it
-     *
-     * 
-     * @param url URL from queue to visit
-     */
     private void visitURL(URL url) {
-        final Logger logger = Logger.getLogger(Downloader.class.getName());
         try {
             // Connect to the given URL
             Document doc = Jsoup.connect(url.toString()).get();
@@ -79,20 +51,12 @@ public class Downloader implements Runnable {
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
             for (Element link : links) {
-                urlQueue.enqueueURL(new URL(link.attr("abs:href")), id);
+                urlQueue.enqueueURL(URI.create(link.attr("abs:href")).toURL(), id);
                 System.out.println(link.text() + "\n" + link.attr("abs:href") + "\n");
             }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error attempting to connect to URL: " + url, e);
+            System.out.println("Error in Downloader.visitURL: " + e);
         }
-    }
-
-    private void sendMulticast(String message) throws IOException {
-        byte[] buffer = message.getBytes();
-
-        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-        multicastSocket.send(packet);
     }
 
 }
