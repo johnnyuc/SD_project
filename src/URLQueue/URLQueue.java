@@ -22,6 +22,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     //private final BloomFilter<CharSequence> bloomFilter;
     private final BloomFilter bloomFilter;
 
+    // Main method
     public static void main(String[] args) {
         try {
             System.out.println("Starting URL Queue...");
@@ -35,6 +36,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         }
     }
 
+    // Constructor
     private URLQueue() throws RemoteException {
         super();
         urlQueue = new LinkedBlockingQueue<>();
@@ -44,19 +46,29 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         // https://www.baeldung.com/guava-bloom-filter
         //bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 1000000, 0.01);
 
-        // Optimal size calculated based on 1M elements and 1% false positive probability
-        bloomFilter = new BloomFilter(9585058);
+        // Number of elements and false positive probability
+        int n = 5000;
+        double p = 0.01;
+
+        // Calculate the optimal size based on the number of elements and false positive probability
+        // https://hur.st/bloomfilter
+        int optimalSize = (int) Math.ceil(-n * Math.log(p) / (Math.log(2) * Math.log(2)));
+        System.out.println("Optimal size for Bloom Filter set at: " + optimalSize);
+
+        bloomFilter = new BloomFilter(optimalSize);
 
         try {
-            enqueueURL(URI.create("https://books.toscrape.com").toURL(), 6969);
+            enqueueURL(URI.create("https://en.wikipedia.org/wiki/Computer_science").toURL(), 1111);
         } catch (MalformedURLException e) {
             System.out.println("Error in URLQueue.URLQueue: " + e);
         }
     }
 
+    // Method to add a URL to the queue
     public void enqueueURL(URL url, int downloaderID) {
         String urlString = url.toString();
 
+        // Check if the URL is already in the queue by checking the Bloom filter
         if (!bloomFilter.contains(urlString)) {
             System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
@@ -73,6 +85,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         }*/
     }
 
+    // Method to remove a URL from the queue
     public URL dequeueURL(int downloaderID) {
         URL url = null;
         try {
@@ -94,5 +107,4 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         System.out.println("Queue has " + count + " URLs.");
         System.out.println("Counter: " + debug);
     }
-
 }

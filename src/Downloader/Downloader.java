@@ -1,25 +1,38 @@
-public class Engine {
+package Downloader;
+
+public class Downloader {
+    // Number of downloader workers
     int downloaderNum;
+    // URLQueue IP
     String queueIP;
 
+    // Default wait times
+    int minWaitTime = 2200;
+    int maxWaitTime = 5000;
+
+    // Main method
     public static void main(String[] args) {
-        new Engine(args);
+        new Downloader(args);
     }
 
-    public Engine(String[] args) {
+    // Constructor
+    public Downloader(String[] args) {
         if (!processArgs(args))
             return;
 
+        // Create the downloader workers (multi-threading)
         for (int i = 0; i < downloaderNum; i++)
-            new Downloader(i, queueIP);
+            new Worker(i, queueIP, minWaitTime, maxWaitTime);
     }
 
+    // Argument processing method
     private boolean processArgs(String[] args) {
         if (args.length != 4) {
             System.err.println("Wrong number of arguments: expected -d <downloader number> and -ip <queue IP>");
             System.exit(1);
         }
 
+        // Parse the arguments
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
@@ -28,6 +41,12 @@ public class Engine {
                         break;
                     case "-ip":
                         queueIP = args[++i];
+                        break;
+                    case "-min":
+                        minWaitTime = Integer.parseInt(args[++i]);
+                        break;
+                    case "-max":
+                        maxWaitTime = Integer.parseInt(args[++i]);
                         break;
                     default:
                         System.err.println("Unexpected argument: " + args[i]);
