@@ -1,10 +1,10 @@
 package URLQueue;
 
-/* GOOGLE GUAVA IMPLEMENTATION*/
+/* GOOGLE GUAVA IMPLEMENTATION
 import com.google.common.hash.Funnels;
-//import com.google.common.hash.BloomFilter;
+import com.google.common.hash.BloomFilter;
 import java.nio.charset.StandardCharsets;
-
+*/
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -17,9 +17,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
-
-    // Global counter
-    private static int counter = 0;
+    private int debug = 0;
     private final BlockingQueue<URL> urlQueue;
     //private final BloomFilter<CharSequence> bloomFilter;
     private final BloomFilter bloomFilter;
@@ -46,7 +44,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         // https://www.baeldung.com/guava-bloom-filter
         //bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 1000000, 0.01);
 
-
         // Optimal size calculated based on 1M elements and 1% false positive probability
         bloomFilter = new BloomFilter(9585058);
 
@@ -64,7 +61,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
             urlQueue.add(url);
-            counter++;
+            debug++;
         }
 
         /* GOOGLE GUAVA IMPLEMENTATION
@@ -72,7 +69,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.put(urlString);
             urlQueue.add(url);
-            counter++;
+            debug++;
         }*/
     }
 
@@ -95,7 +92,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             if (url != null) count++;
         }
         System.out.println("Queue has " + count + " URLs.");
-        System.out.println("Counter: " + counter);
+        System.out.println("Counter: " + debug);
     }
 
 }
