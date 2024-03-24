@@ -1,10 +1,12 @@
+package Server.Controller;
+
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 /**
- * RMIGateway
+ * Server.Controller.RMIGateway
  */
 public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
     public static void main(String[] args) {
@@ -16,7 +18,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             System.out.println("RMI Gateway ready.");
         } catch (RemoteException re) {
             // TODO: Treat exception better
-            System.out.println("Exception in RMIGateway.main: " + re);
+            System.out.println("Exception in Server.Controller.RMIGateway.main: " + re);
         }
     }
 

@@ -1,4 +1,4 @@
-package URLQueue;
+package Server.URLQueue;
 
 public class BloomFilterTester {
     public static void main(String[] args) {

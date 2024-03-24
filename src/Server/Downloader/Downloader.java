@@ -1,9 +1,9 @@
-package Downloader;
+package Server.Downloader;
 
 public class Downloader {
     // Number of downloader workers
     int downloaderNum;
-    // URLQueue IP
+    // Server.URLQueue IP
     String queueIP;
 
     // Default wait times

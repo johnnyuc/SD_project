@@ -1,4 +1,4 @@
-package URLQueue;
+package Server.URLQueue;
 
 import java.net.URL;
 import java.rmi.Remote;

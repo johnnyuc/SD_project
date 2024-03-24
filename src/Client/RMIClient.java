@@ -1,10 +1,14 @@
+package Client;
+
+import Server.Controller.RMIGatewayInterface;
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
 
 /**
- * RMIClient
+ * Client.RMIClient
  */
 public class RMIClient {
     public static void main(String[] args) {
@@ -23,7 +27,7 @@ public class RMIClient {
             scanner.close();
         } catch (RemoteException | NotBoundException e) {
             // TODO: Treat exception better
-            System.out.println("Exception in RMIClient: " + e);
+            System.out.println("Exception in Client.RMIClient: " + e);
             e.printStackTrace();
         }
     }

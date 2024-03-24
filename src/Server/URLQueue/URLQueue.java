@@ -1,4 +1,4 @@
-package URLQueue;
+package Server.URLQueue;
 
 /* GOOGLE GUAVA IMPLEMENTATION
 import com.google.common.hash.Funnels;
@@ -31,7 +31,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             registry.rebind("urlqueue", urlQueue);
             System.out.println("URL Queue ready.");
         } catch (RemoteException e) {
-            System.out.println("Error in URLQueue.main: " + e);
+            System.out.println("Error in Server.URLQueue.main: " + e);
             System.exit(1);
         }
     }
@@ -60,7 +60,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         try {
             enqueueURL(URI.create("https://en.wikipedia.org/wiki/Computer_science").toURL(), 1111);
         } catch (MalformedURLException e) {
-            System.out.println("Error in URLQueue.URLQueue: " + e);
+            System.out.println("Error in Server.URLQueue.Server.URLQueue: " + e);
         }
     }
 
@@ -92,7 +92,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             url = urlQueue.take();
             System.out.println("Dequeueing URL " + url + " to downloader " + downloaderID + ".");
         } catch (InterruptedException e) {
-            System.out.println("Error in URLQueue.dequeueURL: " + e);
+            System.out.println("Error in Server.URLQueue.dequeueURL: " + e);
         }
         showQueue();
         return url;

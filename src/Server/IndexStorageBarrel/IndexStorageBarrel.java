@@ -1,4 +1,4 @@
-package IndexStorageBarrel;
+package Server.IndexStorageBarrel;
 
 // Database imports
 import java.sql.Connection;
@@ -17,7 +17,7 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 
 /**
- * IndexStorageBarrel
+ * Server.IndexStorageBarrel
  */
 public class IndexStorageBarrel implements Serializable {
     private String MULTICAST_ADDRESS = "224.67.68.70";

@@ -1,5 +1,6 @@
-package Downloader;// Java imports
+package Server.Downloader;// Java imports
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
@@ -8,7 +9,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 // URL imports
-import URLQueue.URLQueueInterface;
+import Server.Common.Message;
+import Server.URLQueue.URLQueueInterface;
 
 // Jsoup imports
 import org.jsoup.Jsoup;
@@ -19,7 +21,7 @@ import org.jsoup.select.Elements;
 public class Worker implements Runnable {
     // Flag to control the downloader's execution
     private volatile boolean running = true;
-    // Worker's ID, URLQueue IP, and URLQueue object
+    // Worker's ID, Server.URLQueue IP, and Server.URLQueue object
     private final int id;
     private final String queueIP;
     private URLQueueInterface urlQueue;
@@ -43,7 +45,7 @@ public class Worker implements Runnable {
 
     public void run() {
         try {
-            // Connect to the URLQueue
+            // Connect to the Server.URLQueue
             urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(queueIP, 6000).lookup("urlqueue");
 
             // Shouldn't be true, but for now it's a way to keep the downloader running
@@ -51,7 +53,7 @@ public class Worker implements Runnable {
                 visitURL(urlQueue.dequeueURL(id));
 
         } catch (NotBoundException | IOException e) {
-            System.out.println("Error in Downloader.Downloader.run: " + e);
+            System.out.println("Error in Server.Downloader.Server.Downloader.run: " + e);
         }
     }
 
@@ -71,11 +73,14 @@ public class Worker implements Runnable {
             // Tokenize the resulting document
             StringTokenizer tokens = new StringTokenizer(doc.text());
             List<String> tokenList = new ArrayList<>();
+
             // Store all tokens in the list
             while (tokens.hasMoreElements())
                 tokenList.add(tokens.nextToken().toLowerCase());
+
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
+            List<URL> urlList = new ArrayList<>();
             for (Element link : links) {
                 String href = link.attr("abs:href");
                 if (href.startsWith("http://") || href.startsWith("https://")) {
@@ -83,8 +88,9 @@ public class Worker implements Runnable {
                         URL urlObject = URI.create(href).toURL();
                         URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(), urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
                         urlQueue.enqueueURL(uri.toURL(), id);
+                        urlList.add(uri.toURL());
                     } catch (URISyntaxException | MalformedURLException e) {
-                        System.out.println("Error in Downloader.Downloader.visitURL: " + e);
+                        System.out.println("Error in Server.Downloader.Server.Downloader.visitURL: " + e);
                         System.out.println("URL: " + href);
                     }
                 }
@@ -95,13 +101,23 @@ public class Worker implements Runnable {
                 System.out.println(token);
             */
 
+            // Create a Message object
+            Message message = new Message(url, doc.title(), doc.text(), urlList, tokenList);
+
+            // Send the message via reliable multicast
+            reliableMulticast(message);
+
             // Calculate the wait time based on the response time
             // Auto throttle the downloader
             int waitTime = (int) Math.min(maxWaitTime, Math.max(minWaitTime, responseTime * 1.5));
             Thread.sleep(waitTime);
         } catch (IOException | InterruptedException e) {
-            System.out.println("Error in Downloader.Downloader.visitURL: " + e);
+            System.out.println("Error in Server.Downloader.Server.Downloader.visitURL: " + e);
             System.out.println("URL: " + url);
         }
+    }
+
+    private void reliableMulticast(Message message) {
+        // TODO: To be done
     }
 }
