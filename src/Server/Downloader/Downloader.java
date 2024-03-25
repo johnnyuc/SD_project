@@ -54,6 +54,7 @@ public class Downloader {
                 }
             }
         } catch (NumberFormatException e) {
+            // TODO: WRONG EXCEPTION MESSAGE
             System.err.println("Wrong type of argument: expected int for downloader number");
             return false;
         }

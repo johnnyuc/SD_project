@@ -24,11 +24,16 @@ public class IndexStorageBarrel implements Serializable {
     private int PORT = 6002;
     private MulticastSocket multicastSocket;
 
+    private int id;
+
     public static void main(String[] args) {
-        new IndexStorageBarrel();
+        new IndexStorageBarrel(args);
     }
 
-    IndexStorageBarrel() {
+    IndexStorageBarrel(String[] args) {
+        if (!processArgs(args))
+            return;
+
         try {
             connectDatabase();
             setupDatabase();
@@ -37,6 +42,38 @@ public class IndexStorageBarrel implements Serializable {
         } finally {
             multicastSocket.close();
         }
+    }
+
+    /**
+     * Parses the arguments from the command line
+     * 
+     * @param args array with arguments
+     * @return whether parsing was successfull
+     */
+    private boolean processArgs(String[] args) {
+        if (args.length != 2) {
+            System.err.println("Wrong number of arguments: expected -id <barrel id>");
+            System.exit(1);
+        }
+
+        // Parse the arguments
+        try {
+            for (int i = 0; i < args.length; i++) {
+                switch (args[i]) {
+                    case "-id":
+                        id = Integer.parseInt(args[++i]);
+                        break;
+                    default:
+                        System.err.println("Unexpected argument: " + args[i]);
+                        return false;
+                }
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Wrong type of argument: expected int for barrel id");
+            return false;
+        }
+
+        return true;
     }
 
     private void connectDatabase() throws IOException {
