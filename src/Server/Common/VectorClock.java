@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class VectorClock {
+    private int id;
     private int[] values;
     private int dimensions;
 
-    public VectorClock(int dimensions) {
+    public VectorClock(int id, int dimensions) {
+        this.id = id;
         this.dimensions = dimensions;
 
         this.values = new int[dimensions];
@@ -53,8 +55,19 @@ public class VectorClock {
         return true;
     }
 
+    /**
+     * Update the current clock according to a message sender given clock
+     * 
+     * @param vClock clock from sender of message
+     */
     public void update(VectorClock vClock) {
+        // Increment current clock
+        values[id]++;
+        // And for every value in the given clock that is higher, update current clock
+        // with it
+        for (int i = 0; i < this.dimensions; i++)
+            if (vClock.values[i] > values[i])
+                values[i] = vClock.values[i];
 
     }
-
 }
