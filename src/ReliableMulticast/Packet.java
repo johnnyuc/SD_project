@@ -4,13 +4,13 @@ import java.io.Serializable;
 
 public class Packet implements Serializable {
     private byte[] data;
-    private String dataType;
+    private Class<?> dataType;
     private String dataID;
     private String senderIP;
     private int packetNumber;
     private int totalPackets;
 
-    public Packet(byte[] data, String dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
+    public Packet(byte[] data, Class<?> dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
         this.data = data;
         this.dataType = dataType;
         this.dataID = dataID;
@@ -28,11 +28,11 @@ public class Packet implements Serializable {
         this.data = data;
     }
 
-    public String getDataType() {
+    public Class<?> getDataType() {
         return dataType;
     }
 
-    public void setDataType(String dataType) {
+    public void setDataType(Class<?> dataType) {
         this.dataType = dataType;
     }
 

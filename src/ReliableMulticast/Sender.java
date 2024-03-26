@@ -15,16 +15,14 @@ public class Sender {
     private final MulticastSocket socket;
     private final InetAddress multicastGroup;
     private final int port;
-    private final String downloaderIP;
-    private final int downloaderID;
+    private final String senderIP;
 
     // Constructor
-    public Sender(String multicastGroup, int port, String downloaderIP, int downloaderID) throws IOException {
+    public Sender(String multicastGroup, int port, String senderIP) throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
         this.port = port;
         this.socket = new MulticastSocket(port);
-        this.downloaderIP = downloaderIP;
-        this.downloaderID = downloaderID;
+        this.senderIP = senderIP;
     }
 
     // Method to send a Message object
@@ -82,7 +80,7 @@ public class Sender {
         byte[] messageSlice = Arrays.copyOfRange(messageData, offset, offset + length);
 
         // Convert the serialized Message into a Packet object
-        Packet packet = new Packet(messageSlice, downloaderIP, downloaderID, i, numPackets);
+        Packet packet = new Packet(messageSlice, messageData.getClass(), "TEST", senderIP, i, numPackets);
 
         // Serialize the Packet object
         ByteArrayOutputStream packetByteStream = new ByteArrayOutputStream();
