@@ -1,8 +1,8 @@
 package ReliableMulticast;
 
 // Imports
-import java.util.List;
 import java.net.URL;
+import java.util.List;
 import java.io.Serializable;
 
 // Message class

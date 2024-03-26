@@ -1,18 +1,18 @@
 package ReliableMulticast;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
+// Imports
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
+import java.io.IOException;
+import java.net.MalformedURLException;
 
 public class ProtocolTester {
 
     //! Default macros for the protocol tester
-    private final static int downloaderID = 1;
-    private final static String downloaderIP = "DOWNLOADER_1_IP";
+    private final static String senderIP = "DOWNLOADER_1_IP";
 
     // Main method
     public static void main(String[] args){
@@ -21,7 +21,7 @@ public class ProtocolTester {
             // Create a Sender object and send a large Message object
             Sender sender;
             try {
-                sender = new Sender("224.0.0.1", 12345, downloaderIP, downloaderID);
+                sender = new Sender("224.0.0.1", 12345, senderIP);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -4,15 +4,17 @@ import java.io.Serializable;
 
 public class Packet implements Serializable {
     private byte[] data;
-    private String downloaderIP;
-    private int downloaderID;
+    private String dataType;
+    private String dataID;
+    private String senderIP;
     private int packetNumber;
     private int totalPackets;
 
-    public Packet(byte[] data, String downloaderIP, int downloaderID, int packetNumber, int totalPackets) {
+    public Packet(byte[] data, String dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
         this.data = data;
-        this.downloaderIP = downloaderIP;
-        this.downloaderID = downloaderID;
+        this.dataType = dataType;
+        this.dataID = dataID;
+        this.senderIP = senderIP;
         this.packetNumber = packetNumber;
         this.totalPackets = totalPackets;
     }
@@ -26,20 +28,28 @@ public class Packet implements Serializable {
         this.data = data;
     }
 
-    public String getDownloaderIP() {
-        return downloaderIP;
+    public String getDataType() {
+        return dataType;
     }
 
-    public void setDownloaderIP(String downloaderIP) {
-        this.downloaderIP = downloaderIP;
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 
-    public int getDownloaderID() {
-        return downloaderID;
+    public String getDataID() {
+        return dataID;
     }
 
-    public void setDownloaderID(int downloaderID) {
-        this.downloaderID = downloaderID;
+    public void setDataID(String dataID) {
+        this.dataID = dataID;
+    }
+
+    public String getSenderIP() {
+        return senderIP;
+    }
+
+    public void setSenderIP(String downloaderIP) {
+        this.senderIP = senderIP;
     }
 
     public int getPacketNumber() {
