@@ -20,16 +20,24 @@ import java.net.NetworkInterface;
  * Server.IndexStorageBarrel
  */
 public class IndexStorageBarrel implements Serializable {
-    private String MULTICAST_ADDRESS = "224.67.68.70";
-    private int PORT = 6002;
+    private static String MULTICAST_ADDRESS = "224.67.68.70";
+    private static int PORT = 6002;
     private MulticastSocket multicastSocket;
-
+    private Connection conn;
     private int id;
 
     public static void main(String[] args) {
         new IndexStorageBarrel(args);
     }
 
+    /**
+     * Constructs an instance of IndexStorageBarrel with the provided command-line
+     * arguments.
+     * Initializes the database connection and sets up the necessary database
+     * schema.
+     * 
+     * @param args the command-line arguments passed to the program
+     */
     IndexStorageBarrel(String[] args) {
         if (!processArgs(args))
             return;
@@ -37,6 +45,8 @@ public class IndexStorageBarrel implements Serializable {
         try {
             connectDatabase();
             setupDatabase();
+            joinMulticastGroup();
+            synchronizeDatabase();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -45,15 +55,15 @@ public class IndexStorageBarrel implements Serializable {
     }
 
     /**
-     * Parses the arguments from the command line
+     * Parses the command line arguments.
      * 
-     * @param args array with arguments
-     * @return whether parsing was successfull
+     * @param args array of arguments passed from the command line
+     * @return true if parsing was successful, false otherwise
      */
     private boolean processArgs(String[] args) {
         if (args.length != 2) {
             System.err.println("Wrong number of arguments: expected -id <barrel id>");
-            System.exit(1);
+            return false;
         }
 
         // Parse the arguments
@@ -61,7 +71,7 @@ public class IndexStorageBarrel implements Serializable {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "-id":
-                        id = Integer.parseInt(args[++i]);
+                        this.id = Integer.parseInt(args[++i]);
                         break;
                     default:
                         System.err.println("Unexpected argument: " + args[i]);
@@ -76,32 +86,37 @@ public class IndexStorageBarrel implements Serializable {
         return true;
     }
 
+    /**
+     * Establishes a connection to the database for the storage barrel.
+     * 
+     * @throws IOException if an I/O error occurs while connecting to the database
+     */
     private void connectDatabase() throws IOException {
-        // Confirming SQLite JDBC driver and setting up database
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db")) {
+        try {
+            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
             System.out.println("Connected to database");
-
             // Checking if database is empty
             DatabaseMetaData dbm = conn.getMetaData();
+
             ResultSet tables = dbm.getTables(null, null, "websites", null);
             if (tables.next()) {
                 System.out.println("Database is not empty");
             } else {
                 System.out.println("Database is empty");
             }
-
-            listenMulticast(conn);
         } catch (SQLException e) {
             // TODO: Treat exception better
             throw new Error("Problem connecting to database", e);
         }
     }
 
-    // Function to create setup database if it does not exist
-    public static void setupDatabase() {
+    /**
+     * Sets up the database schema for the barrel application.
+     */
+    private static void setupDatabase() {
         String url = "jdbc:sqlite:data/testBarrel.db";
         try (Connection conn = DriverManager.getConnection(url)) {
-            // Create tables
+            // SQL statements for creating tables
             String websites = """
                     CREATE TABLE IF NOT EXISTS websites (
                         id		 INTEGER,
@@ -130,6 +145,7 @@ public class IndexStorageBarrel implements Serializable {
                     ALTER TABLE websites_keywords ADD CONSTRAINT websites_keywords_fk2 FOREIGN KEY (keywords_text) REFERENCES keywords(text);
                     """;
 
+            // Execute SQL statements to create tables
             conn.createStatement().execute(websites);
             conn.createStatement().execute(keywords);
             conn.createStatement().execute(websites_keywords);
@@ -141,30 +157,21 @@ public class IndexStorageBarrel implements Serializable {
         }
     }
 
-    private void listenMulticast(Connection conn) throws IOException, SQLException {
+    private void joinMulticastGroup() throws IOException {
         multicastSocket = new MulticastSocket(PORT); // create socket and bind it
         InetAddress mcastaddr = InetAddress.getByName(MULTICAST_ADDRESS);
         multicastSocket.joinGroup(new InetSocketAddress(mcastaddr, 0),
                 NetworkInterface.getByIndex(0));
+    }
 
-        while (true) {
-            byte[] buffer = new byte[256];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            multicastSocket.receive(packet);
-            System.out.println("Received packet from " +
-                    packet.getAddress().getHostAddress() + ":"
-                    + packet.getPort() + " with query:");
-            String query = new String(packet.getData(), 0, packet.getLength());
-            System.out.println(query);
-            // TODO: Try inserting values into a table through the admin console
-            /*
-             * ResultSet rs = conn.createStatement().executeQuery(query);
-             * while (rs.next())
-             * // Go to next row by calling next() method
-             * displayData(rs);
-             * rs.close();
-             */
-        }
+    private void synchronizeDatabase() {
+        // TODO: Send multicast to see if there is data to get
+
+        // TODO: If there is data, get it
+
+        // TODO: A thread must be running listening to multicast before trying to
+        // synchronize
+        return;
     }
 
     private static void displayData(ResultSet rs) throws SQLException {

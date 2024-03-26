@@ -1,4 +1,5 @@
 package Server.Downloader;// Java imports
+
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.*;
@@ -43,12 +44,14 @@ public class Worker implements Runnable {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
     }
 
+    @Override
     public void run() {
         try {
             // Connect to the Server.URLQueue
             urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(queueIP, 6000).lookup("urlqueue");
 
-            // Shouldn't be true, but for now it's a way to keep the downloader running
+            // TODO: Shouldn't be true, but for now it's a way to keep the downloader
+            // running
             while (running)
                 visitURL(urlQueue.dequeueURL(id));
 
@@ -59,7 +62,8 @@ public class Worker implements Runnable {
 
     private void visitURL(URL url) {
         try {
-            // TODO: Account for some malformed URLs (e.g., missing protocol, special characters, etc.)
+            // TODO: Account for some malformed URLs (e.g., missing protocol, special
+            // characters, etc.)
 
             // Start the timer
             long startTime = System.currentTimeMillis();
@@ -86,7 +90,8 @@ public class Worker implements Runnable {
                 if (href.startsWith("http://") || href.startsWith("https://")) {
                     try {
                         URL urlObject = URI.create(href).toURL();
-                        URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(), urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
+                        URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(),
+                                urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
                         urlQueue.enqueueURL(uri.toURL(), id);
                         urlList.add(uri.toURL());
                     } catch (URISyntaxException | MalformedURLException e) {
@@ -96,10 +101,11 @@ public class Worker implements Runnable {
                 }
             }
 
-            /* Print all tokens in list
-            for (String token : tokenList)
-                System.out.println(token);
-            */
+            /*
+             * Print all tokens in list
+             * for (String token : tokenList)
+             * System.out.println(token);
+             */
 
             // Create a Message object
             Message message = new Message(url, doc.title(), doc.text(), urlList, tokenList);
