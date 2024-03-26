@@ -1,8 +1,11 @@
-package ReliableMulticast;
+package ReliableMulticast.Objects;
 
+// Imports
 import java.io.Serializable;
 
-public class Packet implements Serializable {
+// Packet class
+public class Container implements Serializable {
+    // Fields
     private byte[] data;
     private Class<?> dataType;
     private String dataID;
@@ -10,7 +13,8 @@ public class Packet implements Serializable {
     private int packetNumber;
     private int totalPackets;
 
-    public Packet(byte[] data, Class<?> dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
+    // Constructor
+    public Container(byte[] data, Class<?> dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
         this.data = data;
         this.dataType = dataType;
         this.dataID = dataID;

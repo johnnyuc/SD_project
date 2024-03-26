@@ -1,4 +1,4 @@
-package ReliableMulticast;
+package ReliableMulticast.Objects;
 
 // Imports
 import java.net.URL;
@@ -6,7 +6,7 @@ import java.util.List;
 import java.io.Serializable;
 
 // Message class
-public class Message implements Serializable {
+public class CrawlData implements Serializable {
     // Fields
     public URL url;
     public String title;
@@ -15,7 +15,7 @@ public class Message implements Serializable {
     public List<URL> urlStrings;
 
     // Constructor
-    public Message(URL url, String title, String description, List<String> tokens, List<URL> urlStrings) {
+    public CrawlData(URL url, String title, String description, List<String> tokens, List<URL> urlStrings) {
         this.url = url;
         this.title = title;
         this.description = description;

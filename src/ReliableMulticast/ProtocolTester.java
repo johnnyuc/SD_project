@@ -1,6 +1,6 @@
 package ReliableMulticast;
 
-// Imports
+// General imports
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.io.IOException;
 import java.net.MalformedURLException;
+
+// Import Multicast classes
+import ReliableMulticast.Objects.*;
+import ReliableMulticast.Sender.*;
+import ReliableMulticast.Receiver.*;
 
 public class ProtocolTester {
 
@@ -26,10 +31,10 @@ public class ProtocolTester {
                 throw new RuntimeException(e);
             }
 
-            Message message;
+            CrawlData crawlData;
             for (int i = 0; i < 10; i++) {
-                message = createLargeMessage("iteration+" + i);
-                sender.sendMessage(message);
+                crawlData = createLargeMessage("iteration+" + i);
+                sender.send(crawlData);
                 // Sleep for Random time between 0 and 10000 milliseconds
                 Random rand = new Random();
                 int Random = rand.nextInt(10000);
@@ -48,10 +53,7 @@ public class ProtocolTester {
             try {
                 Receiver receiver = new Receiver("224.0.0.1", 12345);
                 while (true) {
-                    Message message = receiver.receiveMessages();
-                    if (message != null) {
-                        System.out.println("URL: " + message.url);
-                    }
+                    receiver.receive();
                 }
             } catch (IOException e) {
                 System.out.println("IOException: " + e.getMessage());
@@ -73,7 +75,7 @@ public class ProtocolTester {
     }
 
     // Method to create a large Message object
-    private static Message createLargeMessage(String iteration) {
+    private static CrawlData createLargeMessage(String iteration) {
 
         // Generate random number between 1 and 10000
         Random rand = new Random();
@@ -107,6 +109,6 @@ public class ProtocolTester {
         }
 
         // Create a large MessageType object
-        return new Message(multicastMessage, "Large Object", "Large Description", tokens, urlStrings);
+        return new CrawlData(multicastMessage, "Large Object", "Large Description", tokens, urlStrings);
     }
 }
