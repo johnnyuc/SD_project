@@ -1,10 +1,10 @@
 package ReliableMulticast;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.net.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.net.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
 public class Receiver {
@@ -13,30 +13,24 @@ public class Receiver {
     private static final int MAX_PACKET_SIZE = 1024;
     private static final int MAX_PACKET_OVERHEAD = 256;
 
-    // Socket and multicast group
+    // Socket
     private final MulticastSocket socket;
-    private final InetAddress multicastGroup;
-    private final int port;
-
-    // Buffer for unpacking packets
-    private final ByteArrayOutputStream unpackingBuffer;
 
     // Constructor
     public Receiver(String multicastGroup, int port) throws IOException {
-        this.multicastGroup = InetAddress.getByName(multicastGroup);
-        this.port = port;
         this.socket = new MulticastSocket(port);
-        this.unpackingBuffer = new ByteArrayOutputStream();
+
+        // Join the multicast group
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        InetSocketAddress socketAddress = new InetSocketAddress(InetAddress.getByName(multicastGroup), port);
+        socket.joinGroup(socketAddress, networkInterface);
     }
 
     // Method to receive packets
-    public void receiveMessages() {
+    public Message receiveMessages() {
+        ByteArrayOutputStream unpackingBuffer = new ByteArrayOutputStream();
+        Message message;
         try {
-            // Join the multicast group
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-            InetSocketAddress socketAddress = new InetSocketAddress(multicastGroup, port);
-            socket.joinGroup(socketAddress, networkInterface);
-
             // Receive packets
             while (true) {
                 byte[] buffer = new byte[MAX_PACKET_SIZE+MAX_PACKET_OVERHEAD];
@@ -48,17 +42,20 @@ public class Receiver {
                 ObjectInputStream ois = new ObjectInputStream(bis);
                 Packet receivedPacket = (Packet) ois.readObject();
                 unpackingBuffer.write(receivedPacket.getData());
-                System.out.println("Packet Number: " + (receivedPacket.getPacketNumber() + 1) + " of " + receivedPacket.getTotalPackets() + " with size: " + receivedPacket.getData().length + " bytes");
+                System.out.println("Received packet " + (receivedPacket.getPacketNumber() + 1) + " of "
+                        + receivedPacket.getTotalPackets() + " with size: " + receivedPacket.getData().length + " bytes");
 
                 if (receivedPacket.isLastPacket()) {
                     ByteArrayInputStream compressedMessageBis = new ByteArrayInputStream(unpackingBuffer.toByteArray());
-                    Message message = getMessage(compressedMessageBis);
+                    message = getMessage(compressedMessageBis);
 
+                    /* DEBUGUS PURPUSUS
                     System.out.println("URL: " + message.url);
                     System.out.println("Title: " + message.title);
                     System.out.println("Description: " + message.description);
                     System.out.println("Tokens: " + message.tokens);
-                    System.out.println("URL strings: " + message.urlStrings);
+                    System.out.println("URL Strings: " + message.urlStrings);
+                    */
 
                     break;
                 }
@@ -66,6 +63,12 @@ public class Receiver {
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+        return message;
+    }
+
+    // Method to close the socket
+    public void close() {
+        socket.close();
     }
 
     // Method to get a Message object from a compressed byte stream

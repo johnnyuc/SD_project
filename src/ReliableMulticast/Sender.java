@@ -52,7 +52,9 @@ public class Sender {
                 byte[] packetData = getPacketData(i, messageData, numPackets);
                 DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
                 socket.send(datagram);
-                System.out.println("Sent packet " + (i + 1) + " of " + numPackets + " with size: " + packetData.length + " bytes");
+                System.out.println("Sent packet " + (i + 1) + " of "
+                        + numPackets + " with size: " + packetData.length + " bytes");
+
                 /* DEBUGUS PURPUSUS
                 try {
                     Thread.sleep(100);
@@ -62,12 +64,14 @@ public class Sender {
                 */
             }
 
-            // Close the socket
-            socket.close();
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // Method to close the socket
+    public void close() {
+        socket.close();
     }
 
     // Method to create a Packet object from a slice of the message data
