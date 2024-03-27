@@ -59,13 +59,33 @@ public class Sender {
 
             // Send each packet
             for (int i = 0; i < numPackets; i++) {
-                byte[] packetData = getPacketData(i, objectData, objectHash, numPackets);
+                byte[] packetData = getContainerData(i, objectData, objectHash, numPackets);
                 DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
                 socket.send(datagram);
                 System.out.println("Sent packet " + (i + 1) + " of "
                         + numPackets + " with size: " + packetData.length + " bytes");
             }
 
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendRetransmit(int missingPacket, String dataID) {
+        try {
+            Container container = new Container(dataID, senderIP, missingPacket);
+
+            // Serialize the Container object
+            ByteArrayOutputStream packetByteStream = new ByteArrayOutputStream();
+            ObjectOutputStream packetStream = new ObjectOutputStream(packetByteStream);
+            packetStream.writeObject(container);
+            packetStream.flush();
+            byte[] packetData = packetByteStream.toByteArray();
+
+            // Send the packet
+            DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
+            socket.send(datagram);
+            System.out.println("Sent retransmit request for packet " + (missingPacket + 1));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -87,8 +107,8 @@ public class Sender {
         }
     }
 
-    // Method to create a Packet object from a slice of the object data
-    private byte[] getPacketData(int i, byte[] objectData, String objectHash, int numPackets) throws IOException {
+    // Method to send a retransmission request for a missing packet
+    private byte[] getContainerData(int i, byte[] objectData, String objectHash, int numPackets) throws IOException {
         // Get the slice of the object data
         int offset = i * MAX_PACKET_SIZE;
         int length = Math.min(MAX_PACKET_SIZE, objectData.length - offset);

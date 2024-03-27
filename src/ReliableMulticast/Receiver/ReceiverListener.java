@@ -3,33 +3,25 @@ package ReliableMulticast.Receiver;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ReceiverListener implements Runnable {
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
-    private static final int MAX_PACKET_OVERHEAD = 256;
+    private static final int MAX_PACKET_OVERHEAD = 512;
 
     // Socket
     private final MulticastSocket socket;
 
     // Queue for worker to get data from
-    private final SynchronousQueue<byte[]> listenerQueue;
-
-    // Semaphore to control access to the queue
-    private final Semaphore semaphore;
+    private final BlockingQueue<byte[]> listenerQueue = new LinkedBlockingQueue<>();
 
     // Flag to control the listener's execution
     private volatile boolean running = true;
 
-    public ReceiverListener(MulticastSocket socket, SynchronousQueue<byte[]> listenerQueue) {
+    public ReceiverListener(MulticastSocket socket) {
         this.socket = socket;
-        this.listenerQueue = listenerQueue;
-        this.semaphore = new Semaphore(1); // Only one thread can access the queue at a time
-
-        // Start the listener thread
-        new Thread(this).start();
 
         // In case of CTRL+C, set running to false
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
@@ -39,15 +31,10 @@ public class ReceiverListener implements Runnable {
     public void run() {
         try {
             while (running) {
-                // STATUS OF THE LOCK
-                System.out.println("Unlocked? " + semaphore.tryAcquire());
-                semaphore.acquire(); // Acquire a permit before accessing the queue
-                System.out.println("Got in AA");
+                // Print queue size
                 listenerQueue.add(receivePacket());
-                semaphore.release(); // Release the permit after accessing the queue
-                System.out.println("Released");
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
         } finally {
             running = false;
@@ -59,24 +46,15 @@ public class ReceiverListener implements Runnable {
         byte[] buffer = new byte[MAX_PACKET_SIZE + MAX_PACKET_OVERHEAD];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
         socket.receive(packet);
-        System.out.println("Received packet with size: " + packet.getLength() + " bytes");
 
         return packet.getData();
     }
 
-    public byte[] getDataFromQueue() {
-        if (semaphore.tryAcquire()) { // Try to acquire a permit
-            try {
-                System.out.println("Got in BB");
-                return listenerQueue.take();
-            } catch (InterruptedException e) {
-                System.err.println("Error: " + e.getMessage());
-                return null;
-            } finally {
-                semaphore.release(); // Always release the permit
-            }
-        } else {
-            System.out.println("Could not acquire permit in getDataFromQueue");
+    public byte[] getDataFromQueue(){
+        try {
+            return listenerQueue.take();
+        } catch (InterruptedException e) {
+            System.err.println("Error: " + e.getMessage());
             return null;
         }
     }

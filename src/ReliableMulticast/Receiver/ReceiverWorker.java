@@ -1,13 +1,13 @@
 package ReliableMulticast.Receiver;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.concurrent.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.concurrent.SynchronousQueue;
 import java.util.zip.GZIPInputStream;
 
 import ReliableMulticast.Objects.Container;
@@ -21,17 +21,15 @@ public class ReceiverWorker implements Runnable {
     private final HashMap<String, Container[]> containersReceived;
 
     // Queue for whatever the worker needs
-    private SynchronousQueue<byte[]> workerQueue;
+    private final BlockingQueue<Object> workerQueue;
 
     // Flag to control the worker's execution
     private volatile boolean running = true;
 
-    ReceiverWorker(ReceiverListener listener, SynchronousQueue<byte[]> workerQueue) {
+    ReceiverWorker(ReceiverListener listener, BlockingQueue<Object> workerQueue) {
         this.listener = listener;
+        this.workerQueue = workerQueue;
         this.containersReceived = new HashMap<>();
-
-        // Start the worker thread
-        new Thread(this).start();
 
         // In case of CTRL+C, set running to false
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
@@ -42,12 +40,20 @@ public class ReceiverWorker implements Runnable {
         try {
             while (running) {
                 Container receivedContainer = unpackContainer(listener.getDataFromQueue());
+                System.out.println("Received packet " + (receivedContainer.getPacketNumber() + 1) + " of " + receivedContainer.getTotalPackets() + 
+                " with UUID:" + receivedContainer.hashCode());
                 addContainerToMap(receivedContainer);
                 int[] missingContainers = findMissingContainers(receivedContainer);
 
-                if (missingContainers.length == 0 && receivedContainer.isLastPacket()) {
-                    reconstructData(receivedContainer.getDataID());
-                    workerQueue.add(receivedContainer.getData());
+                if(missingContainers.length > 0) {
+                    for (int missingContainer : missingContainers) {
+                        // TODO: Send retransmit request
+                        System.out.println("Missing packet " + missingContainer + " of " + receivedContainer.getTotalPackets());
+                    }
+                    workerQueue.add(missingContainers);
+                }
+                else if (receivedContainer.isLastPacket()) {
+                    workerQueue.add(reconstructData(receivedContainer.getDataID()).getClass());                
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -88,11 +94,7 @@ public class ReceiverWorker implements Runnable {
         return arr;
     }
 
-    private Class<?> reconstructData(String dataID) throws IOException, ClassNotFoundException {
-        // Checking if dataID is in the map
-        if (!containersReceived.containsKey(dataID))
-            return null;
-
+    private Object reconstructData(String dataID) throws IOException, ClassNotFoundException {
         // Buffer to assemble the data
         ByteArrayOutputStream dataBuffer = new ByteArrayOutputStream();
 
@@ -102,19 +104,22 @@ public class ReceiverWorker implements Runnable {
         // Iterate the containers array
         for (Container container : containers) {
             // If a container is missing, break the loop
-            if (container == null)
+            if (container == null) {
+                // TODO tirar este debug obviamente
+                System.out.println("MUITA MERDA! NULL NA RECONSTRUÇÃO");
                 break;
+            }
             // Write the data of the container to the buffer
             dataBuffer.write(container.getData());
         }
 
         // Get the object
-        ByteArrayInputStream compressedMessageBis = new ByteArrayInputStream(dataBuffer.toByteArray());
+        ByteArrayInputStream compressedDataBis = new ByteArrayInputStream(dataBuffer.toByteArray());
 
-        return getMessage(compressedMessageBis);
+        return deserializeData(compressedDataBis);
     }
 
-    private static Class<?> getMessage(ByteArrayInputStream compressedMessageBis) throws IOException, ClassNotFoundException {
+    private static Object deserializeData(ByteArrayInputStream compressedMessageBis) throws IOException, ClassNotFoundException {
         // Decompress the object
         GZIPInputStream gzipInputStream = new GZIPInputStream(compressedMessageBis);
         ByteArrayOutputStream decompressedByteStream = new ByteArrayOutputStream();
@@ -128,8 +133,8 @@ public class ReceiverWorker implements Runnable {
         byte[] decompressedData = decompressedByteStream.toByteArray();
 
         // Deserialize the object
-        ByteArrayInputStream messageBis = new ByteArrayInputStream(decompressedData);
-        ObjectInputStream objectOis = new ObjectInputStream(messageBis);
-        return (Class<?>) objectOis.readObject();
+        ByteArrayInputStream dataBis = new ByteArrayInputStream(decompressedData);
+        ObjectInputStream objectOis = new ObjectInputStream(dataBis);
+        return objectOis.readObject();
     }
 }
