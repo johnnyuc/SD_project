@@ -37,8 +37,7 @@ public class Worker implements Runnable {
         this.queueIP = queueIP;
         this.minWaitTime = minWaitTime;
         this.maxWaitTime = maxWaitTime;
-        Thread thread = new Thread(this);
-        thread.start();
+        new Thread(this).start();
 
         // In case of CTRL+C, set running to false
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
