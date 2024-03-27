@@ -22,7 +22,6 @@ public class Container implements Serializable {
         this.senderIP = senderIP;
         this.packetNumber = packetNumber;
         this.totalPackets = totalPackets;
-        this.retransmit = retransmit;
     }
 
     // Retransmit constructor

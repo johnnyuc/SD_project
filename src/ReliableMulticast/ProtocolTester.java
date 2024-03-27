@@ -6,38 +6,28 @@ import java.net.URL;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
-import java.io.IOException;
 import java.net.MalformedURLException;
 
 // Import Multicast classes
 import ReliableMulticast.Objects.*;
-import ReliableMulticast.Sender.*;
-import ReliableMulticast.Receiver.*;
 
 public class ProtocolTester {
 
-    //! Default macros for the protocol tester
-    private final static String senderIP = "DOWNLOADER_1_IP";
-
     // Main method
     public static void main(String[] args){
+        // Create a ReliableMulticast object
+        ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
+
         // One thread to send messages
         Thread senderThread = new Thread(() -> {
-            // Create a Sender object and send a large Message object
-            Sender sender;
-            try {
-                sender = new Sender("224.0.0.1", 12345, senderIP);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
+            // Send a large Message object
             CrawlData crawlData;
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 2; i++) {
                 crawlData = createLargeMessage("iteration+" + i);
-                sender.send(crawlData);
-                // Sleep for Random time between 0 and 10000 milliseconds
+                reliableMulticast.send(crawlData);
+                // Sleep for Random time between 0 and 2500 milliseconds
                 Random rand = new Random();
-                int Random = rand.nextInt(10000);
+                int Random = rand.nextInt(2500);
                 try {
                     System.out.println("Sleeping for " + Random + " milliseconds");
                     Thread.sleep(Random);
@@ -45,20 +35,16 @@ public class ProtocolTester {
                     throw new RuntimeException(e);
                 }
             }
-            sender.close();
+
+            reliableMulticast.stopReceiving();
+            System.out.println("Sender thread finished");
         });
 
         // One thread to receive messages
         Thread receiverThread = new Thread(() -> {
-            try {
-                // Keep receiving messages
-                Receiver receiver = new Receiver("224.0.0.1", 12345);
-            } catch (IOException e) {
-                System.out.println("IOException: " + e.getMessage());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
+            // Start receiving messages
+            reliableMulticast.startReceiving();
+            System.out.println("Receiver thread finished");
         });
 
         // Start the threads
@@ -72,6 +58,9 @@ public class ProtocolTester {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        // Exit with code 0
+        System.exit(0);
     }
 
     // Method to create a large Message object
