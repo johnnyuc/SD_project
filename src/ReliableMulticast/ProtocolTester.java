@@ -51,10 +51,8 @@ public class ProtocolTester {
         // One thread to receive messages
         Thread receiverThread = new Thread(() -> {
             try {
+                // Keep receiving messages
                 Receiver receiver = new Receiver("224.0.0.1", 12345);
-                while (true) {
-                    receiver.receive();
-                }
             } catch (IOException e) {
                 System.out.println("IOException: " + e.getMessage());
             }
