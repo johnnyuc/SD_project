@@ -9,11 +9,14 @@ public class Receiver {
     // Socket
     private final MulticastSocket socket;
 
-    // Queue for worker to get data from
-    private SynchronousQueue<byte[]> dataQueue;
+    // Queue for container objects
+    private SynchronousQueue<byte[]> listenerQueue;
+
+    // Queue for whatever the worker needs
+    private SynchronousQueue<byte[]> workerQueue;
 
     // Constructor
-    public Receiver(String multicastGroup, int port) throws IOException {
+    public Receiver(String multicastGroup, int port) throws IOException, InterruptedException {
         this.socket = new MulticastSocket(port);
 
         // Join the multicast group
@@ -22,12 +25,18 @@ public class Receiver {
         socket.joinGroup(socketAddress, networkInterface);
 
         // Thread for ReceiverListener
-        ReceiverListener receiverListener = new ReceiverListener(socket, dataQueue);
+        ReceiverListener receiverListener = new ReceiverListener(socket, listenerQueue);
         new Thread(receiverListener).start();
 
         // Thread for ReceiverWorker
-        ReceiverWorker receiverWorker = new ReceiverWorker(receiverListener, dataQueue);
+        ReceiverWorker receiverWorker = new ReceiverWorker(receiverListener, workerQueue);
         new Thread(receiverWorker).start();
+
+        // Continuous print of the received data
+        while (true) {
+            byte[] receivedData = workerQueue.take();
+            System.out.println("Received data: " + new String(receivedData));
+        }
     }
 
     // Method to close the socket

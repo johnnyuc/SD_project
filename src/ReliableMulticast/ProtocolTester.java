@@ -55,6 +55,8 @@ public class ProtocolTester {
                 Receiver receiver = new Receiver("224.0.0.1", 12345);
             } catch (IOException e) {
                 System.out.println("IOException: " + e.getMessage());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
         });

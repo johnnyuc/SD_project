@@ -20,10 +20,13 @@ public class ReceiverWorker implements Runnable {
     // Map to store the received containers
     private final HashMap<String, Container[]> containersReceived;
 
+    // Queue for whatever the worker needs
+    private SynchronousQueue<byte[]> workerQueue;
+
     // Flag to control the worker's execution
     private volatile boolean running = true;
 
-    ReceiverWorker(ReceiverListener listener, SynchronousQueue<byte[]> dataQueue) {
+    ReceiverWorker(ReceiverListener listener, SynchronousQueue<byte[]> workerQueue) {
         this.listener = listener;
         this.containersReceived = new HashMap<>();
 
@@ -41,15 +44,13 @@ public class ReceiverWorker implements Runnable {
                 Container receivedContainer = unpackContainer(listener.getDataFromQueue());
                 addContainerToMap(receivedContainer);
                 int[] missingContainers = findMissingContainers(receivedContainer);
-                // If find missing containers = [] && container é ultimo, dados bons para usar
+
                 if (missingContainers.length == 0 && receivedContainer.isLastPacket()) {
                     reconstructData(receivedContainer.getDataID());
-                    // TODO: Adicionar reconstructedData a uma queue que depois quem esteja a usar
-                    // este protocolo de reliable multicast possa ir buscar
+                    workerQueue.add(receivedContainer.getData());
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
-            // TODO: handle exception
             System.err.println("Error: " + e.getMessage());
         }
     }
@@ -70,11 +71,6 @@ public class ReceiverWorker implements Runnable {
         containersReceived.get(container.getDataID())[container.getPacketNumber()] = container;
     }
 
-    //TODO: Podemos pensar em formas de memorizar se nao faltam mensagens para
-    // tras. Por exemplo, memorizar que do 1 - 30 já estão todos. Assim encurtamos
-    // este ciclo. Vale a pena?
-    //TODO: Acho que se o ultimo container for perdido, não vai ser dado como
-    // perdido. ver melhor sff
     private int[] findMissingContainers(Container currContainer) {
         Container[] containers = containersReceived.get(currContainer.getDataID());
         List<Integer> missingContainers = new ArrayList<>();
