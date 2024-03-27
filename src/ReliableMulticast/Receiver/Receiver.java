@@ -9,15 +9,15 @@ public class Receiver {
     // Socket
     private final MulticastSocket socket;
 
-    // Queue for container objects
-    private SynchronousQueue<byte[]> listenerQueue;
-
-    // Queue for whatever the worker needs
-    private SynchronousQueue<byte[]> workerQueue;
-
     // Constructor
     public Receiver(String multicastGroup, int port) throws IOException, InterruptedException {
         this.socket = new MulticastSocket(port);
+
+        // Initialize the queues
+        // Queue for container objects
+        SynchronousQueue<byte[]> listenerQueue = new SynchronousQueue<>();
+        // Queue for whatever the worker needs
+        SynchronousQueue<byte[]> workerQueue = new SynchronousQueue<>();
 
         // Join the multicast group
         NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());

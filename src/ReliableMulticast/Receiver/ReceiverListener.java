@@ -42,8 +42,10 @@ public class ReceiverListener implements Runnable {
                 // STATUS OF THE LOCK
                 System.out.println("Unlocked? " + semaphore.tryAcquire());
                 semaphore.acquire(); // Acquire a permit before accessing the queue
+                System.out.println("Got in AA");
                 listenerQueue.add(receivePacket());
                 semaphore.release(); // Release the permit after accessing the queue
+                System.out.println("Released");
             }
         } catch (IOException | InterruptedException e) {
             System.err.println("Error: " + e.getMessage());
@@ -63,13 +65,18 @@ public class ReceiverListener implements Runnable {
     }
 
     public byte[] getDataFromQueue() {
-        try {
-            semaphore.acquire(); // Acquire a permit before accessing the queue
-            byte[] data = listenerQueue.take();
-            semaphore.release(); // Release the permit after accessing the queue
-            return data;
-        } catch (InterruptedException e) {
-            System.err.println("Error: " + e.getMessage());
+        if (semaphore.tryAcquire()) { // Try to acquire a permit
+            try {
+                System.out.println("Got in BB");
+                return listenerQueue.take();
+            } catch (InterruptedException e) {
+                System.err.println("Error: " + e.getMessage());
+                return null;
+            } finally {
+                semaphore.release(); // Always release the permit
+            }
+        } else {
+            System.out.println("Could not acquire permit in getDataFromQueue");
             return null;
         }
     }
