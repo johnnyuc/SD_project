@@ -53,7 +53,7 @@ public class ReceiverWorker implements Runnable {
                     workerQueue.add(missingContainers);
                 }
                 else if (receivedContainer.isLastPacket()) {
-                    workerQueue.add(reconstructData(receivedContainer.getDataID()).getClass());                
+                    workerQueue.add(reconstructData(receivedContainer.getDataID()));
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
