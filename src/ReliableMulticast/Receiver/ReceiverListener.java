@@ -25,6 +25,7 @@ public class ReceiverListener implements Runnable {
         this.socket = socket;
 
         // In case of CTRL+C, set running to false
+        // TODO isto está bem? criar um nova thread?
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
     }
 
@@ -51,7 +52,7 @@ public class ReceiverListener implements Runnable {
         return packet.getData();
     }
 
-    public byte[] getDataFromQueue(){
+    public byte[] getDataFromQueue() {
         try {
             return listenerQueue.take();
         } catch (InterruptedException e) {

@@ -21,7 +21,7 @@ public class ReceiverWorker implements Runnable {
     private final ReceiverListener listener;
 
     // Map to store the received containers
-    private final HashMap<String, Container[]> containersReceived;
+    private final HashMap<String, Container[]> containersReceived = new HashMap<>();
 
     // Queue for whatever the worker needs
     private final BlockingQueue<Object> workerQueue;
@@ -33,7 +33,6 @@ public class ReceiverWorker implements Runnable {
         this.sender = sender;
         this.listener = listener;
         this.workerQueue = workerQueue;
-        this.containersReceived = new HashMap<>();
 
         // In case of CTRL+C, set running to false
         Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
@@ -44,17 +43,15 @@ public class ReceiverWorker implements Runnable {
         try {
             while (running) {
                 Container receivedContainer = unpackContainer(listener.getDataFromQueue());
-                System.out.println("Received packet " + (receivedContainer.getPacketNumber() + 1) + " of " + receivedContainer.getTotalPackets() + 
-                " with UUID:" + receivedContainer.hashCode());
+                System.out.println("Received packet " + (receivedContainer.getPacketNumber() + 1) + " of "
+                        + receivedContainer.getTotalPackets());
                 addContainerToMap(receivedContainer);
                 int[] missingContainers = findMissingContainers(receivedContainer);
 
-                if(missingContainers.length > 0) {
+                if (missingContainers.length > 0) {
                     for (int missingContainer : missingContainers)
                         sender.requestRetransmit(missingContainer, receivedContainer.getDataID());
-                    workerQueue.add(missingContainers);
-                }
-                else if (receivedContainer.isLastPacket()) {
+                } else if (receivedContainer.isLastPacket()) {
                     workerQueue.add(reconstructData(receivedContainer.getDataID()));
                 }
             }
@@ -121,7 +118,8 @@ public class ReceiverWorker implements Runnable {
         return deserializeData(compressedDataBis);
     }
 
-    private static Object deserializeData(ByteArrayInputStream compressedMessageBis) throws IOException, ClassNotFoundException {
+    private static Object deserializeData(ByteArrayInputStream compressedMessageBis)
+            throws IOException, ClassNotFoundException {
         // Decompress the object
         GZIPInputStream gzipInputStream = new GZIPInputStream(compressedMessageBis);
         ByteArrayOutputStream decompressedByteStream = new ByteArrayOutputStream();

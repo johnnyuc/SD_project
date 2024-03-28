@@ -21,10 +21,14 @@ public class Receiver {
     // Sender
     private final Sender sender;
 
-    // Flag to control the receiver's execution
-    private volatile boolean running = true;
+    private ReceiverListener receiverListener;
+    private Thread listenerThread;
 
-    // CountDownLatch to ensure receive method has finished before closing the socket
+    private ReceiverWorker receiverWorker;
+    private Thread workerThread;
+
+    // CountDownLatch to ensure receive method has finished before closing the
+    // socket
     private final CountDownLatch latch = new CountDownLatch(1);
 
     // Constructor
@@ -42,43 +46,14 @@ public class Receiver {
     // Method to start receiving data
     public void receive() throws InterruptedException {
         // Thread for ReceiverListener
-        ReceiverListener receiverListener = new ReceiverListener(socket);
-        Thread listenerThread = new Thread(receiverListener);
+        receiverListener = new ReceiverListener(socket);
+        listenerThread = new Thread(receiverListener);
         listenerThread.start();
 
         // Thread for ReceiverWorker
-        ReceiverWorker receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
-        Thread workerThread = new Thread(receiverWorker);
+        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
+        workerThread = new Thread(receiverWorker);
         workerThread.start();
-
-        // Continuous print of the received data
-        while (running && !socket.isClosed()) {
-            Object obj = workerQueue.poll(1, TimeUnit.SECONDS);
-            if (obj != null) {
-                if (obj instanceof CrawlData receivedData) {
-                    System.out.println("Received data: " + receivedData.getUrl());
-                } else {
-                    System.out.println("Unexpected object in queue: " + obj);
-                }
-            }
-        }
-
-        // Stop the listener and worker threads
-        receiverListener.stop();
-        receiverWorker.stop();
-
-        // Wait for the threads to finish
-        //TODO: GETTING STUCK IN HERE
-        // THREADS SHOULD CLOSE PROPERLY USING JOIN (NOT WORKING YET, NEED TO FIX THIS)
-        try {
-            listenerThread.join();
-            workerThread.join();
-        } catch (InterruptedException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        // Count down the latch to signal that the receive method has finished
-        latch.countDown();
     }
 
     // Method to close the socket
@@ -90,7 +65,22 @@ public class Receiver {
 
     // Add a method to stop receiving
     public void stopReceiving() {
-        running = false;
+        // Stop the listener and worker threads
+        receiverListener.stop();
+        receiverWorker.stop();
+
+        // Wait for the threads to finish
+        // TODO: GETTING STUCK IN HERE
+        // THREADS SHOULD CLOSE PROPERLY USING JOIN (NOT WORKING YET, NEED TO FIX THIS)
+        try {
+            listenerThread.join();
+            workerThread.join();
+        } catch (InterruptedException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+
+        // Count down the latch to signal that the receive method has finished
+        latch.countDown();
 
         // Wait for the receive method to finish
         try {
@@ -101,5 +91,9 @@ public class Receiver {
 
         // Close the socket
         close();
+    }
+
+    public BlockingQueue<Object> getWorkerQueue() {
+        return workerQueue;
     }
 }

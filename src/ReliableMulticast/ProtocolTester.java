@@ -14,7 +14,7 @@ import ReliableMulticast.Objects.*;
 public class ProtocolTester {
 
     // Main method
-    public static void main(String[] args){
+    public static void main(String[] args) {
         // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
 
@@ -22,7 +22,7 @@ public class ProtocolTester {
         Thread senderThread = new Thread(() -> {
             // Send a large Message object
             CrawlData crawlData;
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 5; i++) {
                 crawlData = createLargeMessage("iteration+" + i);
                 reliableMulticast.send(crawlData);
                 // Sleep for Random time between 0 and 2500 milliseconds
@@ -36,28 +36,34 @@ public class ProtocolTester {
                 }
             }
 
-            reliableMulticast.stopReceiving();
             System.out.println("Sender thread finished");
+            return;
         });
 
         // One thread to receive messages
-        Thread receiverThread = new Thread(() -> {
-            // Start receiving messages
-            reliableMulticast.startReceiving();
-            System.out.println("Receiver thread finished");
-        });
+        reliableMulticast.startReceiving();
 
         // Start the threads
         senderThread.start();
-        receiverThread.start();
+
+        Object data = reliableMulticast.getData();
+        while (data != null) {
+            if (data instanceof CrawlData receivedData) {
+                System.out.println("Received data: " + receivedData.getUrl());
+            } else {
+                System.out.println("Unexpected object in queue: " + data);
+            }
+            data = reliableMulticast.getData();
+        }
 
         // Wait for the threads to finish
         try {
+            System.out.println(" Alooo");
             senderThread.join();
-            receiverThread.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        reliableMulticast.stopReceiving();
 
         // Exit with code 0
         System.exit(0);
@@ -83,7 +89,7 @@ public class ProtocolTester {
         List<URL> urlStrings = new ArrayList<>();
         for (int i = 0; i < Random; i++) {
             try {
-                urlStrings.add(URI.create("http://"+iteration+".com/" + i).toURL());
+                urlStrings.add(URI.create("http://" + iteration + ".com/" + i).toURL());
             } catch (MalformedURLException e) {
                 System.out.println("Malformed URL: " + e.getMessage());
             }
@@ -92,7 +98,7 @@ public class ProtocolTester {
         // Create a large MessageType object
         URL multicastMessage = null;
         try {
-            multicastMessage = URI.create("http://MULTICAST_WORKING/"+iteration).toURL();
+            multicastMessage = URI.create("http://MULTICAST_WORKING/" + iteration).toURL();
         } catch (MalformedURLException e) {
             System.out.println("Malformed URL: " + e.getMessage());
         }
