@@ -19,12 +19,19 @@ import java.util.zip.GZIPOutputStream;
 public class Sender {
     //! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
+    private static final int MAX_CONTAINERS = 2048; // MAX 2MBytes of data/ram
 
     // Socket and multicast group, as well as identification
     private final MulticastSocket socket;
     private final InetAddress multicastGroup;
     private final int port;
     private final String senderIP;
+
+    // Circular buffer for retransmissions
+    private final byte[][] retransmissionBuffer = new byte[MAX_CONTAINERS][];
+
+    private int bufferStart = 0;
+    private int bufferEnd = 0;
 
     // Constructor
     public Sender(String multicastGroup, int port, String senderIP) throws IOException {
@@ -59,11 +66,19 @@ public class Sender {
 
             // Send each packet
             for (int i = 0; i < numPackets; i++) {
-                byte[] packetData = getContainerData(i, objectData, objectHash, numPackets);
-                DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
+                byte[] containerData = getContainerData(i, objectData, objectHash, numPackets);
+                DatagramPacket datagram = new DatagramPacket(containerData, containerData.length, multicastGroup, port);
                 socket.send(datagram);
+
+                // Add containerData to retransmission buffer
+                retransmissionBuffer[bufferEnd] = containerData;
+                bufferEnd = (bufferEnd + 1) % MAX_CONTAINERS;
+
+                if (bufferEnd == bufferStart)
+                    bufferStart = (bufferStart + 1) % MAX_CONTAINERS; // Overwrite the oldest data
+
                 System.out.println("Sent packet " + (i + 1) + " of "
-                        + numPackets + " with size: " + packetData.length + " bytes");
+                        + numPackets + " with size: " + containerData.length + " bytes");
             }
 
         } catch (IOException e) {
@@ -71,7 +86,13 @@ public class Sender {
         }
     }
 
+    // Method to send a retransmission request for a missing packet
     public void sendRetransmit(int missingPacket, String dataID) {
+        // TODO: IMPLEMENT THIS
+    }
+
+    // Method to request a retransmission of a missing packet
+    public void requestRetransmit(int missingPacket, String dataID) {
         try {
             Container container = new Container(dataID, senderIP, missingPacket);
 
@@ -89,11 +110,6 @@ public class Sender {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    // Method to close the socket
-    public void close() {
-        socket.close();
     }
 
     // Hashing function to get the hash of an object
@@ -123,5 +139,10 @@ public class Sender {
         packetStream.writeObject(container);
         packetStream.flush();
         return packetByteStream.toByteArray();
+    }
+
+    // Method to close the socket
+    public void close() {
+        socket.close();
     }
 }

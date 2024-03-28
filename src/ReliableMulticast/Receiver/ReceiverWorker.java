@@ -50,10 +50,8 @@ public class ReceiverWorker implements Runnable {
                 int[] missingContainers = findMissingContainers(receivedContainer);
 
                 if(missingContainers.length > 0) {
-                    for (int missingContainer : missingContainers) {
-                        sender.sendRetransmit(missingContainer, receivedContainer.getDataID());
-                        System.out.println("Missing packet " + missingContainer + " of " + receivedContainer.getTotalPackets());
-                    }
+                    for (int missingContainer : missingContainers)
+                        sender.requestRetransmit(missingContainer, receivedContainer.getDataID());
                     workerQueue.add(missingContainers);
                 }
                 else if (receivedContainer.isLastPacket()) {
