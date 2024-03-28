@@ -12,7 +12,6 @@ public class Container implements Serializable {
     private String senderIP;
     private int packetNumber;
     private int totalPackets;
-    private boolean retransmit;
 
     // Default Constructor
     public Container(byte[] data, Class<?> dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
@@ -29,7 +28,6 @@ public class Container implements Serializable {
         this.dataID = dataID;
         this.senderIP = senderIP;
         this.packetNumber = packetNumber;
-        this.retransmit = true;
     }
 
     // Getters and setters
@@ -79,14 +77,6 @@ public class Container implements Serializable {
 
     public void setTotalPackets(int totalPackets) {
         this.totalPackets = totalPackets;
-    }
-
-    public boolean isRetransmit() {
-        return retransmit;
-    }
-
-    public void setRetransmit(boolean retransmit) {
-        this.retransmit = retransmit;
     }
 
     // Boolean method to check if the packet is the last packet

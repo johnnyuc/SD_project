@@ -3,7 +3,8 @@ package ReliableMulticast.Receiver;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
-import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -16,17 +17,16 @@ public class ReceiverListener implements Runnable {
     private final MulticastSocket socket;
 
     // Queue for worker to get data from
-    private final BlockingQueue<byte[]> listenerQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Object> listenerQueue = new LinkedBlockingQueue<>();
 
     // Flag to control the listener's execution
     private volatile boolean running = true;
 
+    // Define the POISON_PILL
+    public static final Object POISON_PILL = new Object();
+
     public ReceiverListener(MulticastSocket socket) {
         this.socket = socket;
-
-        // In case of CTRL+C, set running to false
-        // TODO isto está bem? criar um nova thread?
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
     }
 
     @Override
@@ -54,14 +54,24 @@ public class ReceiverListener implements Runnable {
 
     public byte[] getDataFromQueue() {
         try {
-            return listenerQueue.take();
+            return (byte[]) listenerQueue.take();
         } catch (InterruptedException e) {
             System.err.println("Error: " + e.getMessage());
             return null;
         }
     }
 
-    public void stop() {
-        running = false;
+    public void poisonListenerQueue() {
+        System.out.println("Adding poison pill");
+        listenerQueue.add(POISON_PILL);
     }
+
+    public MulticastSocket getSocket() {
+        return socket;
+    }
+
+    public void setRunning(boolean running){
+        this.running = running;
+    }
+
 }

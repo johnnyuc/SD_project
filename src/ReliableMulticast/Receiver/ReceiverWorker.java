@@ -12,6 +12,8 @@ import java.util.zip.GZIPInputStream;
 
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Sender.Sender;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 public class ReceiverWorker implements Runnable {
     // Sender to send retransmit requests
@@ -33,30 +35,37 @@ public class ReceiverWorker implements Runnable {
         this.sender = sender;
         this.listener = listener;
         this.workerQueue = workerQueue;
-
-        // In case of CTRL+C, set running to false
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
     }
 
     @Override
     public void run() {
         try {
-            while (running) {
-                Container receivedContainer = unpackContainer(listener.getDataFromQueue());
-                System.out.println("Received packet " + (receivedContainer.getPacketNumber() + 1) + " of "
-                        + receivedContainer.getTotalPackets());
-                addContainerToMap(receivedContainer);
-                int[] missingContainers = findMissingContainers(receivedContainer);
-
-                if (missingContainers.length > 0) {
-                    for (int missingContainer : missingContainers)
-                        sender.requestRetransmit(missingContainer, receivedContainer.getDataID());
-                } else if (receivedContainer.isLastPacket()) {
-                    workerQueue.add(reconstructData(receivedContainer.getDataID()));
-                }
-            }
+            while(running)
+                processContainer();
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void processContainer() throws IOException, ClassNotFoundException {
+        // Check whether the listener container is a poison pill
+        Object packedContainer = listener.getDataFromQueue();
+        if (packedContainer == ReceiverListener.POISON_PILL) {
+            System.out.println("Worker got poisoned");
+            running = false;
+            return;
+        }
+
+        Container container = unpackContainer((byte[]) packedContainer);
+        System.out.println("Received packet " + (container.getPacketNumber() + 1) + " of "
+                + container.getTotalPackets());
+        addContainerToMap(container);
+        int[] missingContainers = findMissingContainers(container);
+        if (missingContainers.length > 0) {
+            for (int missingContainer : missingContainers)
+                sender.requestRetransmit(missingContainer, container.getDataID());
+        } else if (container.isLastPacket()) {
+            workerQueue.add(reconstructData(container.getDataID()));
         }
     }
 
@@ -138,7 +147,11 @@ public class ReceiverWorker implements Runnable {
         return objectOis.readObject();
     }
 
-    public void stop() {
-        running = false;
+    public void poisonWorkerQueue() {
+        workerQueue.add(ReceiverListener.POISON_PILL);
+    }
+
+    public void setRunning(boolean running){
+        this.running = running;
     }
 }

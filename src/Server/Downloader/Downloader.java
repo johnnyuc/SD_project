@@ -22,7 +22,7 @@ public class Downloader {
 
         // Create the downloader workers (multi-threading)
         for (int i = 0; i < downloaderNum; i++)
-            new Worker(i, queueIP, minWaitTime, maxWaitTime);
+            new DownloaderWorker(i, queueIP, minWaitTime, maxWaitTime);
     }
 
     // Argument processing method

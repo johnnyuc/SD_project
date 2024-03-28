@@ -1,17 +1,16 @@
 package ReliableMulticast;
 
 import ReliableMulticast.Sender.Sender;
+import ReliableMulticast.Objects.SyncData;
 import ReliableMulticast.Receiver.Receiver;
+import ReliableMulticast.Receiver.ReceiverListener;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
 
 public class ReliableMulticast {
     private final Sender sender;
     private final Receiver receiver;
-    private Object[] senderBuffer;
-    private Thread receiverThread;
 
     public ReliableMulticast(String multicastGroup, int port) {
         try {
@@ -38,14 +37,21 @@ public class ReliableMulticast {
         }
     }
 
-    public void stopReceiving() {
+    public void stopProtocol() {
         System.out.println("Stopping receiving");
         receiver.stopReceiving();
+        sender.getSendBuffer().add(ReceiverListener.POISON_PILL);
     }
 
     public Object getData() {
         try {
-            return receiver.getWorkerQueue().poll(5, TimeUnit.SECONDS);
+            Object data = receiver.getWorkerQueue().take();
+            if (data == ReceiverListener.POISON_PILL){
+                System.out.println("Got poisoned");
+                return null;
+            }
+
+            return data;
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

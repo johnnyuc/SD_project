@@ -47,12 +47,12 @@ public class Receiver {
     public void receive() throws InterruptedException {
         // Thread for ReceiverListener
         receiverListener = new ReceiverListener(socket);
-        listenerThread = new Thread(receiverListener);
+        listenerThread = new Thread(receiverListener, "Multicast Listener Thread");
         listenerThread.start();
 
         // Thread for ReceiverWorker
         receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
-        workerThread = new Thread(receiverWorker);
+        workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
         workerThread.start();
     }
 
@@ -65,16 +65,23 @@ public class Receiver {
 
     // Add a method to stop receiving
     public void stopReceiving() {
+        receiverListener.setRunning(false);
+        receiverListener.poisonListenerQueue();
+        
+        receiverWorker.poisonWorkerQueue();
         // Stop the listener and worker threads
-        receiverListener.stop();
-        receiverWorker.stop();
 
         // Wait for the threads to finish
         // TODO: GETTING STUCK IN HERE
         // THREADS SHOULD CLOSE PROPERLY USING JOIN (NOT WORKING YET, NEED TO FIX THIS)
         try {
+            System.out.println("Waiting for to finish1");
             listenerThread.join();
+            
+            System.out.println("Waiting for to finish2");
             workerThread.join();
+        
+            System.out.println("Waiting for to finish3");
         } catch (InterruptedException e) {
             System.err.println("Error: " + e.getMessage());
         }

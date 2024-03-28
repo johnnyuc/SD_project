@@ -17,12 +17,17 @@ public class ProtocolTester {
     public static void main(String[] args) {
         // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
-
+        // Ctrl+c hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            reliableMulticast.stopProtocol();
+            System.out.println("Shutting down");
+        }));
+        
         // One thread to send messages
         Thread senderThread = new Thread(() -> {
             // Send a large Message object
             CrawlData crawlData;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 2; i++) {
                 crawlData = createLargeMessage("iteration+" + i);
                 reliableMulticast.send(crawlData);
                 // Sleep for Random time between 0 and 2500 milliseconds
@@ -37,7 +42,6 @@ public class ProtocolTester {
             }
 
             System.out.println("Sender thread finished");
-            return;
         });
 
         // One thread to receive messages
@@ -63,12 +67,12 @@ public class ProtocolTester {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        reliableMulticast.stopReceiving();
+        reliableMulticast.stopProtocol();
 
         // Exit with code 0
         System.exit(0);
     }
-
+    
     // Method to create a large Message object
     private static CrawlData createLargeMessage(String iteration) {
 

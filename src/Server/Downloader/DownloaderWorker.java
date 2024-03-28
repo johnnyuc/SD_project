@@ -1,7 +1,6 @@
 package Server.Downloader;// Java imports
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
@@ -19,7 +18,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class Worker implements Runnable {
+public class DownloaderWorker implements Runnable {
     // Flag to control the downloader's execution
     private volatile boolean running = true;
     // Worker's ID, Server.URLQueue IP, and Server.URLQueue object
@@ -32,7 +31,7 @@ public class Worker implements Runnable {
     private final int maxWaitTime;
 
     // Default constructor
-    public Worker(int id, String queueIP, int minWaitTime, int maxWaitTime) {
+    public DownloaderWorker(int id, String queueIP, int minWaitTime, int maxWaitTime) {
         this.id = id;
         this.queueIP = queueIP;
         this.minWaitTime = minWaitTime;

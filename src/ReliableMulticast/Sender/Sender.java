@@ -2,6 +2,8 @@ package ReliableMulticast.Sender;
 
 // General imports
 import ReliableMulticast.Objects.Container;
+import ReliableMulticast.Objects.RetransmitRequest;
+import ReliableMulticast.Receiver.ReceiverListener;
 
 import java.io.*;
 import java.net.*;
@@ -38,20 +40,13 @@ public class Sender implements Runnable {
 
     private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
 
-    public BlockingQueue<Object> getSendBuffer() {
-        return sendBuffer;
-    }
-
     // Constructor
     public Sender(String multicastGroup, int port, String senderIP) throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
         this.port = port;
         this.socket = new MulticastSocket(port);
         this.senderIP = senderIP;
-
-        new Thread(this).start();
-        // In case of CTRL+C, set running to false
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
+        new Thread(this, "Multicast Sender Thread").start();
     }
 
     @Override
@@ -68,6 +63,8 @@ public class Sender implements Runnable {
     public void startSender() throws InterruptedException, IOException {
         while (running) {
             Object object = sendBuffer.take();
+            if (object == ReceiverListener.POISON_PILL)
+                return;
             // TODO: If object is retransmit coiso, retransmite
             byte[] objectData = serializeObject(object);
             objectData = compressData(objectData);
@@ -131,30 +128,25 @@ public class Sender implements Runnable {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
     }
 
-    // Method to request a retransmission of a missing packet
-    public void requestRetransmit(int missingPacket, String dataID) {
+     // Method to request a retransmission of a missing packet
+    public void requestRetransmit(int missingContainer, String dataID) {
         try {
-            Container container = new Container(dataID, senderIP, missingPacket);
+            RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainer, dataID);
+            byte[] retransmitReqData = serializeObject(retransmitRequest);
+            retransmitReqData = compressData(retransmitReqData);
 
-            // Serialize the Container object
-            ByteArrayOutputStream packetByteStream = new ByteArrayOutputStream();
-            ObjectOutputStream packetStream = new ObjectOutputStream(packetByteStream);
-            packetStream.writeObject(container);
-            packetStream.flush();
-            byte[] packetData = packetByteStream.toByteArray();
 
             // Send the packet
-            DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
-            socket.send(datagram);
-            System.out.println("Sent retransmit request for packet " + (missingPacket + 1));
+            //DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
+            //socket.send(datagram);
+            System.out.println("Sent retransmit request for packet " + (missingContainer + 1));
         } catch (IOException e) {
             // TODO: Treat better!!
             throw new RuntimeException(e);
         }
-    }
+    } 
 
     // Hashing function to get the hash of an object
     private static String getHash(Object object) throws IOException {
@@ -185,6 +177,11 @@ public class Sender implements Runnable {
         packetStream.flush();
         return packetByteStream.toByteArray();
     }
+
+    public BlockingQueue<Object> getSendBuffer() {
+        return sendBuffer;
+    }
+
 
     // Method to close the socket
     public void close() {
