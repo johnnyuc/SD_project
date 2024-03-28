@@ -55,6 +55,7 @@ public class ProtocolTester {
                 System.out.println("Unexpected object in queue: " + data);
             }
             data = reliableMulticast.getData();
+            System.out.println("Data received");
         }
     }
     

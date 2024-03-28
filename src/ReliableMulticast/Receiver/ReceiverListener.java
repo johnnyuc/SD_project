@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 // Poison pilling
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import ReliableMulticast.Receiver.ReceiverListener;
 
 // Logging
 import ReliableMulticast.LogUtil;
@@ -31,7 +32,8 @@ public class ReceiverListener implements Runnable {
     private final BlockingQueue<Object> listenerQueue = new LinkedBlockingQueue<>();
 
     // Running flag
-    private boolean running = true;
+    private volatile boolean running = true;
+
 
     public ReceiverListener(DatagramChannel channel) {
         this.channel = channel;
@@ -46,6 +48,7 @@ public class ReceiverListener implements Runnable {
         } catch (IOException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
+        System.out.println("ReceiverListener thread stopped");
     }
 
     private Optional<byte[]> receivePacket() throws IOException {
@@ -78,25 +81,26 @@ public class ReceiverListener implements Runnable {
         }
     }
 
-    public byte[] getDataFromQueue() {
+    public Object getDataFromQueue() {
         try {
-            return (byte[]) listenerQueue.take();
+            return listenerQueue.take();
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
             return null;
         }
     }
 
+    public void putDataInQueue(Object obj) {
+        listenerQueue.add(obj);
+    }
+
     public void stop() {
         lock.lock();
         try {
+            // Stop the listener
             this.running = false;
-            channel.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             lock.unlock();
-            System.out.println("ReceiverListener stopped");
         }
     }
 }

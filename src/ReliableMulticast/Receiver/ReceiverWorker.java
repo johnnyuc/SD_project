@@ -27,6 +27,12 @@ public class ReceiverWorker implements Runnable {
     // Queue for whatever the worker needs
     private final BlockingQueue<Object> workerQueue;
 
+    // Running flag
+    private volatile boolean running = true;
+
+    // Stopping pill
+    public static final Object STOP_PILL = new Object();
+
     ReceiverWorker(Sender sender, ReceiverListener listener, BlockingQueue<Object> workerQueue) {
         this.sender = sender;
         this.listener = listener;
@@ -36,16 +42,23 @@ public class ReceiverWorker implements Runnable {
     @Override
     public void run() {
         try {
-            while(true)
+            while (running)
                 processContainer();
         } catch (IOException | ClassNotFoundException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
+        System.out.println("ReceiverWorker thread stopped");
     }
 
     private void processContainer() throws IOException, ClassNotFoundException {
-        Object packedContainer = listener.getDataFromQueue();
-        Container container = unpackContainer((byte[]) packedContainer);
+        Object data = listener.getDataFromQueue();
+        if (data == STOP_PILL) {
+            running = false;
+            return;
+        }
+
+        byte[] packedContainer = (byte[]) data;
+        Container container = unpackContainer(packedContainer);
         System.out.println("Received packet " + (container.getPacketNumber() + 1) + " of "
                 + container.getTotalPackets());
         addContainerToMap(container);
@@ -134,5 +147,9 @@ public class ReceiverWorker implements Runnable {
         ByteArrayInputStream dataBis = new ByteArrayInputStream(decompressedData);
         ObjectInputStream objectOis = new ObjectInputStream(dataBis);
         return objectOis.readObject();
+    }
+
+    public void stop() {
+        listener.putDataInQueue(STOP_PILL);
     }
 }

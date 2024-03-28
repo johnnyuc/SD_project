@@ -52,14 +52,18 @@ public class Receiver {
         workerThread.start();
     }
 
+    // Method to pass the workerQueue to the ReliableMulticast object
     public BlockingQueue<Object> getWorkerQueue() {
         return workerQueue;
     }
 
     public void stop() {
         try {
+            // Kill sub-threads
             receiverListener.stop();
-            //receiverWorker.stop();
+            receiverWorker.stop();
+
+            // Close the channel/socket
             channel.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
