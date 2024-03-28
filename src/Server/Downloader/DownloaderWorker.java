@@ -38,9 +38,6 @@ public class Worker implements Runnable {
         this.minWaitTime = minWaitTime;
         this.maxWaitTime = maxWaitTime;
         new Thread(this).start();
-
-        // In case of CTRL+C, set running to false
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
     }
 
     @Override
