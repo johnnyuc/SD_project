@@ -38,6 +38,12 @@ public class Sender implements Runnable {
 
     private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
 
+    // Running flag
+    private volatile boolean running = true;
+
+    // Stopping pill
+    public static final Object STOP_PILL = new Object();
+
     // Constructor
     public Sender(String multicastGroup, int port, String senderIP) throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
@@ -55,12 +61,17 @@ public class Sender implements Runnable {
             // TODO Auto-generated catch block
             LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
+        System.out.println("Sender thread stopped");
     }
 
     // Method to send an object
     public void startSender() throws InterruptedException, IOException {
-        while (true) {
+        while (running) {
             Object object = sendBuffer.take();
+            if (object == STOP_PILL) {
+                running = false;
+                continue;
+            }
 
             if(object instanceof RetransmitRequest)
                 sendRetransmit((RetransmitRequest) object);
@@ -192,5 +203,9 @@ public class Sender implements Runnable {
         protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
             return size() > maxSize;
         }
+    }
+
+    public void stop() {
+        sendBuffer.add(STOP_PILL);
     }
 }

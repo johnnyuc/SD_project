@@ -36,9 +36,8 @@ public class ProtocolTester {
                 }
             }
 
-            // Stop the receiver
+            reliableMulticast.stopSending();
             reliableMulticast.stopReceiving();
-            System.out.println("Sender thread finished");
         });
 
         // One thread to receive messages
@@ -56,6 +55,14 @@ public class ProtocolTester {
             }
             data = reliableMulticast.getData();
             System.out.println("Data received");
+        }
+
+        // Wait for the threads to finish
+        try {
+            System.out.println("Waiting for threads to finish");
+            senderThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
     

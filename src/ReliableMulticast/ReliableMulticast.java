@@ -24,6 +24,10 @@ public class ReliableMulticast {
         sender.getSendBuffer().add(object);
     }
 
+    public void stopSending() {
+        sender.stop();
+    }
+
     public void startReceiving() {
         try {
             receiver.receive();
