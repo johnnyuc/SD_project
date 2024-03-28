@@ -11,8 +11,11 @@ import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
 import ReliableMulticast.Objects.Container;
+import ReliableMulticast.Sender.Sender;
 
 public class ReceiverWorker implements Runnable {
+    // Sender to send retransmit requests
+    private final Sender sender;
 
     // Listener to get data from
     private final ReceiverListener listener;
@@ -26,7 +29,8 @@ public class ReceiverWorker implements Runnable {
     // Flag to control the worker's execution
     private volatile boolean running = true;
 
-    ReceiverWorker(ReceiverListener listener, BlockingQueue<Object> workerQueue) {
+    ReceiverWorker(Sender sender, ReceiverListener listener, BlockingQueue<Object> workerQueue) {
+        this.sender = sender;
         this.listener = listener;
         this.workerQueue = workerQueue;
         this.containersReceived = new HashMap<>();
@@ -47,7 +51,7 @@ public class ReceiverWorker implements Runnable {
 
                 if(missingContainers.length > 0) {
                     for (int missingContainer : missingContainers) {
-                        // TODO: Send retransmit request
+                        sender.sendRetransmit(missingContainer, receivedContainer.getDataID());
                         System.out.println("Missing packet " + missingContainer + " of " + receivedContainer.getTotalPackets());
                     }
                     workerQueue.add(missingContainers);
@@ -105,8 +109,8 @@ public class ReceiverWorker implements Runnable {
         for (Container container : containers) {
             // If a container is missing, break the loop
             if (container == null) {
-                // TODO tirar este debug obviamente
-                System.out.println("MUITA MERDA! NULL NA RECONSTRUÇÃO");
+                // TODO: REMOVE THIS WHEN FIXED
+                System.err.println("SHOULDN'T HAPPEN; RECONSTRUCT ERROR: Missing container!");
                 break;
             }
             // Write the data of the container to the buffer
@@ -136,5 +140,9 @@ public class ReceiverWorker implements Runnable {
         ByteArrayInputStream dataBis = new ByteArrayInputStream(decompressedData);
         ObjectInputStream objectOis = new ObjectInputStream(dataBis);
         return objectOis.readObject();
+    }
+
+    public void stop() {
+        running = false;
     }
 }

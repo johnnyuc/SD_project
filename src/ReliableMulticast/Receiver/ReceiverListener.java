@@ -3,6 +3,7 @@ package ReliableMulticast.Receiver;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
+import java.net.SocketException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -31,14 +32,14 @@ public class ReceiverListener implements Runnable {
     public void run() {
         try {
             while (running) {
-                // Print queue size
                 listenerQueue.add(receivePacket());
             }
         } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
         } finally {
-            running = false;
-            socket.close();
+            if (!socket.isClosed()) {
+                socket.close();
+            }
         }
     }
 
@@ -57,5 +58,9 @@ public class ReceiverListener implements Runnable {
             System.err.println("Error: " + e.getMessage());
             return null;
         }
+    }
+
+    public void stop() {
+        running = false;
     }
 }

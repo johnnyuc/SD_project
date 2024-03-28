@@ -14,7 +14,7 @@ public class ReliableMulticast {
         try {
             String senderIP = InetAddress.getLocalHost().getHostAddress();
             this.sender = new Sender(multicastGroup, port, senderIP);
-            this.receiver = new Receiver(multicastGroup, port);
+            this.receiver = new Receiver(sender, multicastGroup, port);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }

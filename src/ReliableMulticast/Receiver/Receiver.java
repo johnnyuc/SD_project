@@ -7,7 +7,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import ReliableMulticast.Objects.CrawlData;
+import ReliableMulticast.Objects.*;
+import ReliableMulticast.Sender.*;
 
 public class Receiver {
 
@@ -17,6 +18,9 @@ public class Receiver {
     // Queue for whatever the worker needs
     private final BlockingQueue<Object> workerQueue;
 
+    // Sender
+    private final Sender sender;
+
     // Flag to control the receiver's execution
     private volatile boolean running = true;
 
@@ -24,9 +28,10 @@ public class Receiver {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     // Constructor
-    public Receiver(String multicastGroup, int port) throws IOException, InterruptedException {
+    public Receiver(Sender sender, String multicastGroup, int port) throws IOException, InterruptedException {
         this.socket = new MulticastSocket(port);
         this.workerQueue = new LinkedBlockingQueue<>();
+        this.sender = sender;
 
         // Join the multicast group
         NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
@@ -38,15 +43,16 @@ public class Receiver {
     public void receive() throws InterruptedException {
         // Thread for ReceiverListener
         ReceiverListener receiverListener = new ReceiverListener(socket);
-        new Thread(receiverListener).start();
+        Thread listenerThread = new Thread(receiverListener);
+        listenerThread.start();
 
         // Thread for ReceiverWorker
-        ReceiverWorker receiverWorker = new ReceiverWorker(receiverListener, workerQueue);
-        new Thread(receiverWorker).start();
+        ReceiverWorker receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
+        Thread workerThread = new Thread(receiverWorker);
+        workerThread.start();
 
         // Continuous print of the received data
         while (running && !socket.isClosed()) {
-            System.out.println(running);
             Object obj = workerQueue.poll(1, TimeUnit.SECONDS);
             if (obj != null) {
                 if (obj instanceof CrawlData receivedData) {
@@ -55,6 +61,20 @@ public class Receiver {
                     System.out.println("Unexpected object in queue: " + obj);
                 }
             }
+        }
+
+        // Stop the listener and worker threads
+        receiverListener.stop();
+        receiverWorker.stop();
+
+        // Wait for the threads to finish
+        //TODO: GETTING STUCK IN HERE
+        // THREADS SHOULD CLOSE PROPERLY USING JOIN (NOT WORKING YET, NEED TO FIX THIS)
+        try {
+            listenerThread.join();
+            workerThread.join();
+        } catch (InterruptedException e) {
+            System.err.println("Error: " + e.getMessage());
         }
 
         // Count down the latch to signal that the receive method has finished
