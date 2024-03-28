@@ -17,53 +17,44 @@ public class ProtocolTester {
     public static void main(String[] args) {
         // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
-        
-        // One thread to send messages
-        Thread senderThread = new Thread(() -> {
-            // Send a large Message object
-            CrawlData crawlData;
-            for (int i = 0; i < 2; i++) {
-                crawlData = createLargeMessage("iteration+" + i);
-                reliableMulticast.send(crawlData);
-                // Sleep for Random time between 0 and 2500 milliseconds
-                Random rand = new Random();
-                int Random = rand.nextInt(2500);
-                try {
-                    System.out.println("Sleeping for " + Random + " milliseconds");
-                    Thread.sleep(Random);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
 
-            reliableMulticast.stopSending();
-            reliableMulticast.stopReceiving();
-        });
-
-        // One thread to receive messages
+        // Start to receive stuff, by listening to the multicast group
         reliableMulticast.startReceiving();
 
-        // Start the threads
-        senderThread.start();
+        // Send stuff
+        for (int i = 0; i < 2; i++) {
+            CrawlData crawlData = createLargeMessage("iteration+" + i);
+            reliableMulticast.send(crawlData);
 
-        Object data = reliableMulticast.getData();
-        while (data != null) {
+            // Sleep for Random time between 0 and 2500 milliseconds
+            Random rand = new Random();
+            int Random = rand.nextInt(2500);
+
+            try {
+                System.out.println("Sleeping for " + Random + " milliseconds");
+                Thread.sleep(Random);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Stop sending and receiving threads
+        reliableMulticast.stopSending();
+        reliableMulticast.stopReceiving();
+
+        // Read whatever might be on the worker queue
+        // REMEMBER THAT EVEN THOUGH THE THREADS ARE STOPPED, DATA STILL MIGHT BE ON THE QUEUE!
+        Object data;
+        do {
+            data = reliableMulticast.getData();
             if (data instanceof CrawlData receivedData) {
                 System.out.println("Received data: " + receivedData.getUrl());
-            } else {
+            } else if (data != null) {
                 System.out.println("Unexpected object in queue: " + data);
             }
-            data = reliableMulticast.getData();
-            System.out.println("Data received");
-        }
+        } while (data != null);
 
-        // Wait for the threads to finish
-        try {
-            System.out.println("Waiting for threads to finish");
-            senderThread.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        System.out.println("Closing the program");
     }
     
     // Method to create a large Message object

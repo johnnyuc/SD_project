@@ -1,10 +1,13 @@
 package ReliableMulticast;
 
+import ReliableMulticast.Receiver.ReceiverWorker;
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Receiver.Receiver;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.sql.Time;
+import java.util.concurrent.TimeUnit;
 
 public class ReliableMulticast {
     private final Sender sender;
@@ -44,7 +47,12 @@ public class ReliableMulticast {
 
     public Object getData() {
         try {
-            return receiver.getWorkerQueue().take();
+            Object data = receiver.getWorkerQueue().take();
+            if (data == ReceiverWorker.STOP_PILL) {
+                stopReceiving();
+                return null;
+            }
+            return data;
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
             return null;

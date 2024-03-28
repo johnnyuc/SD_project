@@ -150,6 +150,8 @@ public class ReceiverWorker implements Runnable {
     }
 
     public void stop() {
+        // Adding stopping pills to the queues
         listener.putDataInQueue(STOP_PILL);
+        workerQueue.add(STOP_PILL);
     }
 }
