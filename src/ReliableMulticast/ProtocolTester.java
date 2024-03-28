@@ -15,8 +15,16 @@ public class ProtocolTester {
 
     // Main method
     public static void main(String[] args) {
+
         // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
+
+        // Add shutdown hook for CTRL+C [doesn't work in Intellij because it doesn't like CTRL+C - use STOP button]
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("CTRL+C detected. Shutting down...");
+            reliableMulticast.stopSending();
+            reliableMulticast.stopReceiving();
+        }));
 
         // Start to receive stuff, by listening to the multicast group
         reliableMulticast.startReceiving();
@@ -56,7 +64,7 @@ public class ProtocolTester {
 
         System.out.println("Closing the program");
     }
-    
+
     // Method to create a large Message object
     private static CrawlData createLargeMessage(String iteration) {
 

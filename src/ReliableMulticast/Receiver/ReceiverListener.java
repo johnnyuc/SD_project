@@ -12,12 +12,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 // Poison pilling
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import ReliableMulticast.Receiver.ReceiverListener;
 
 // Logging
 import ReliableMulticast.LogUtil;
 
 public class ReceiverListener implements Runnable {
+
+
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
     private static final int MAX_PACKET_OVERHEAD = 512;
@@ -46,7 +47,7 @@ public class ReceiverListener implements Runnable {
                 receivePacket().ifPresent(listenerQueue::add);
             }
         } catch (IOException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
         System.out.println("ReceiverListener thread stopped");
     }
@@ -85,7 +86,7 @@ public class ReceiverListener implements Runnable {
         try {
             return listenerQueue.take();
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
             return null;
         }
     }

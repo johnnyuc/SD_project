@@ -59,7 +59,7 @@ public class Sender implements Runnable {
             startSender();
         } catch (InterruptedException | IOException e) {
             // TODO Auto-generated catch block
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
         System.out.println("Sender thread stopped");
     }
@@ -112,6 +112,14 @@ public class Sender implements Runnable {
 
         // Send each packet
         for (int i = 0; i < numContainers; i++) {
+            // TODO: REMOVE THIS ---------------------------------------------------------------------------------------
+            // Fail sending packets with a probability of 5% to check recovery from errors
+            if (Math.random() < 0.05) {
+                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER, new IOException("Failed to send packet"));
+                continue;
+            }
+            // TODO ----------------------------------------------------------------------------------------------------
+
             Container container = sliceObject(i, data, objectHash, numContainers);
             sendContainer(container, numContainers, i);
 
@@ -133,7 +141,7 @@ public class Sender implements Runnable {
                         System.out.println("Sent container " + (i + 1) + " of "
                     + numContainers + " with size: " + serializedContainer.length + " bytes");
         } catch (IOException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
     }
 
@@ -162,7 +170,7 @@ public class Sender implements Runnable {
             byte[] hash = digest.digest(object.toString().getBytes(StandardCharsets.UTF_8));
             return new String(hash, StandardCharsets.UTF_8);
         } catch (NoSuchAlgorithmException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
             throw new RuntimeException(e);
         }
     }

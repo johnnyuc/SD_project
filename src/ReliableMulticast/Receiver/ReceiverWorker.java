@@ -45,7 +45,7 @@ public class ReceiverWorker implements Runnable {
             while (running)
                 processContainer();
         } catch (IOException | ClassNotFoundException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
         System.out.println("ReceiverWorker thread stopped");
     }

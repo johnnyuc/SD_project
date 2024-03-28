@@ -10,6 +10,7 @@ import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 
 public class ReliableMulticast {
+
     private final Sender sender;
     private final Receiver receiver;
 
@@ -35,7 +36,7 @@ public class ReliableMulticast {
         try {
             receiver.receive();
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -54,7 +55,7 @@ public class ReliableMulticast {
             }
             return data;
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
             return null;
         }
     }
