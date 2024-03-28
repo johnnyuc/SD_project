@@ -1,14 +1,10 @@
 package ReliableMulticast.Receiver;
+import ReliableMulticast.Sender.*;
 
 import java.net.*;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import ReliableMulticast.Objects.*;
-import ReliableMulticast.Sender.*;
 
 public class Receiver {
 
@@ -20,16 +16,6 @@ public class Receiver {
 
     // Sender
     private final Sender sender;
-
-    private ReceiverListener receiverListener;
-    private Thread listenerThread;
-
-    private ReceiverWorker receiverWorker;
-    private Thread workerThread;
-
-    // CountDownLatch to ensure receive method has finished before closing the
-    // socket
-    private final CountDownLatch latch = new CountDownLatch(1);
 
     // Constructor
     public Receiver(Sender sender, String multicastGroup, int port) throws IOException, InterruptedException {
@@ -46,58 +32,14 @@ public class Receiver {
     // Method to start receiving data
     public void receive() throws InterruptedException {
         // Thread for ReceiverListener
-        receiverListener = new ReceiverListener(socket);
-        listenerThread = new Thread(receiverListener, "Multicast Listener Thread");
+        ReceiverListener receiverListener = new ReceiverListener(socket);
+        Thread listenerThread = new Thread(receiverListener, "Multicast Listener Thread");
         listenerThread.start();
 
         // Thread for ReceiverWorker
-        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
-        workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
+        ReceiverWorker receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
+        Thread workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
         workerThread.start();
-    }
-
-    // Method to close the socket
-    public void close() {
-        if (!socket.isClosed()) {
-            socket.close();
-        }
-    }
-
-    // Add a method to stop receiving
-    public void stopReceiving() {
-        receiverListener.setRunning(false);
-        receiverListener.poisonListenerQueue();
-        
-        receiverWorker.poisonWorkerQueue();
-        // Stop the listener and worker threads
-
-        // Wait for the threads to finish
-        // TODO: GETTING STUCK IN HERE
-        // THREADS SHOULD CLOSE PROPERLY USING JOIN (NOT WORKING YET, NEED TO FIX THIS)
-        try {
-            System.out.println("Waiting for to finish1");
-            listenerThread.join();
-            
-            System.out.println("Waiting for to finish2");
-            workerThread.join();
-        
-            System.out.println("Waiting for to finish3");
-        } catch (InterruptedException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        // Count down the latch to signal that the receive method has finished
-        latch.countDown();
-
-        // Wait for the receive method to finish
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        // Close the socket
-        close();
     }
 
     public BlockingQueue<Object> getWorkerQueue() {

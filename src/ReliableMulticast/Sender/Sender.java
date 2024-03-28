@@ -1,9 +1,9 @@
 package ReliableMulticast.Sender;
 
 // General imports
+import ReliableMulticast.LogUtil;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.RetransmitRequest;
-import ReliableMulticast.Receiver.ReceiverListener;
 
 import java.io.*;
 import java.net.*;
@@ -32,11 +32,9 @@ public class Sender implements Runnable {
     private final InetAddress multicastGroup;
     private final int port;
     private final String senderIP;
-    private boolean running = true;
 
-    // Circular buffer for retransmissions
     // TODO: Mudar o tamanho porque 2048 dataID's se calhar é muito
-    private final HashMap<String, byte[][]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
+    private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
     private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
 
@@ -55,17 +53,20 @@ public class Sender implements Runnable {
             startSender();
         } catch (InterruptedException | IOException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
     }
 
     // Method to send an object
     public void startSender() throws InterruptedException, IOException {
-        while (running) {
+        while (true) {
             Object object = sendBuffer.take();
-            if (object == ReceiverListener.POISON_PILL)
-                return;
-            // TODO: If object is retransmit coiso, retransmite
+
+            if(object instanceof RetransmitRequest)
+                sendRetransmit((RetransmitRequest) object);
+            else if(object instanceof Container)
+                sendContainer((Container) object, -1, -1);
+
             byte[] objectData = serializeObject(object);
             objectData = compressData(objectData);
             sendContainers(objectData, object);
@@ -91,7 +92,7 @@ public class Sender implements Runnable {
         return compressedByteStream.toByteArray();
     }
 
-    private void sendContainers(byte[] data, Object object) throws IOException {
+    private void sendContainers(byte[] data, Object object) {
         // Calculate the number of packets needed
         int numContainers = (int) Math.ceil((double) data.length / MAX_PACKET_SIZE);
 
@@ -100,96 +101,78 @@ public class Sender implements Runnable {
 
         // Send each packet
         for (int i = 0; i < numContainers; i++) {
-            byte[] containerData = getContainerData(i, data, objectHash, numContainers);
-            DatagramPacket datagram = new DatagramPacket(containerData, containerData.length, multicastGroup,
-                    port);
-            socket.send(datagram);
+            Container container = sliceObject(i, data, objectHash, numContainers);
+            sendContainer(container, numContainers, i);
 
             if (!retransmissionBuffer.containsKey(objectHash))
-                retransmissionBuffer.put(objectHash, new byte[numContainers][MAX_PACKET_SIZE]);
+                retransmissionBuffer.put(objectHash, new Container[numContainers]);
             // Add containerData to retransmission buffer
-            retransmissionBuffer.get(objectHash)[i] = containerData;
+            retransmissionBuffer.get(objectHash)[i] = container;
 
-            System.out.println("Sent packet " + (i + 1) + " of "
-                    + numContainers + " with size: " + containerData.length + " bytes");
+        }
+    }
+
+    // TODO: remover numContainers, só serve para print
+    private void sendContainer(Container container, int numContainers, int i){
+        try {
+            byte[] serializedContainer = serializeObject(container);
+            DatagramPacket datagram = new DatagramPacket(serializedContainer, serializedContainer.length,
+            multicastGroup, port);
+            socket.send(datagram);
+                        System.out.println("Sent container " + (i + 1) + " of "
+                    + numContainers + " with size: " + serializedContainer.length + " bytes");
+        } catch (IOException e) {
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
     }
 
     // Method to send a retransmission request for a missing packet
-    public void sendRetransmit(int missingPacket, String dataID) {
-        if (!retransmissionBuffer.containsKey(dataID))
+    public void sendRetransmit(RetransmitRequest retransmitRequest) {
+        if (!retransmissionBuffer.containsKey(retransmitRequest.getDataID()))
             return;
-        byte[] containerData = retransmissionBuffer.get(dataID)[missingPacket];
-        DatagramPacket datagram = new DatagramPacket(containerData, containerData.length, multicastGroup, port);
-
-        try {
-            socket.send(datagram);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        
+        for (int i : retransmitRequest.getMissingContainers()) {
+            Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[i];
+            sendBuffer.add(container);
         }
     }
 
      // Method to request a retransmission of a missing packet
-    public void requestRetransmit(int missingContainer, String dataID) {
-        try {
-            RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainer, dataID);
-            byte[] retransmitReqData = serializeObject(retransmitRequest);
-            retransmitReqData = compressData(retransmitReqData);
-
-
-            // Send the packet
-            //DatagramPacket datagram = new DatagramPacket(packetData, packetData.length, multicastGroup, port);
-            //socket.send(datagram);
-            System.out.println("Sent retransmit request for packet " + (missingContainer + 1));
-        } catch (IOException e) {
-            // TODO: Treat better!!
-            throw new RuntimeException(e);
-        }
+    public void requestRetransmit(int[] missingContainers, String dataID) {
+        RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainers, dataID);
+        sendBuffer.add(retransmitRequest);
+        System.out.println("Sent retransmit request for packet " + (missingContainers[0] + 1));
     } 
 
     // Hashing function to get the hash of an object
-    private static String getHash(Object object) throws IOException {
+    private static String getHash(Object object) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(object.toString().getBytes(StandardCharsets.UTF_8));
             return new String(hash, StandardCharsets.UTF_8);
         } catch (NoSuchAlgorithmException e) {
-            // TODO: Treat better!!
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
             throw new RuntimeException(e);
         }
     }
 
-    // Method to send a retransmission request for a missing packet
-    private byte[] getContainerData(int i, byte[] objectData, String objectHash, int numPackets) throws IOException {
+    // Slices the object and returns it in a container
+    private Container sliceObject(int i, byte[] objectData, String objectHash, int numPackets) {
         // Get the slice of the object data
         int offset = i * MAX_PACKET_SIZE;
         int length = Math.min(MAX_PACKET_SIZE, objectData.length - offset);
         byte[] objectSlice = Arrays.copyOfRange(objectData, offset, offset + length);
 
         // Convert the serialized object into a Packet object
-        Container container = new Container(objectSlice, objectData.getClass(), objectHash, senderIP, i, numPackets);
-
-        // Serialize the Packet object
-        ByteArrayOutputStream packetByteStream = new ByteArrayOutputStream();
-        ObjectOutputStream packetStream = new ObjectOutputStream(packetByteStream);
-        packetStream.writeObject(container);
-        packetStream.flush();
-        return packetByteStream.toByteArray();
+        return new Container(objectSlice, objectData.getClass(), objectHash, senderIP, i, numPackets);
     }
 
     public BlockingQueue<Object> getSendBuffer() {
         return sendBuffer;
     }
 
-
-    // Method to close the socket
-    public void close() {
-        socket.close();
-    }
-
     // TODO: See where to put this class
-    public class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
+    public static class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
         private final int maxSize;
 
         public CircularHashMap(int maxSize) {

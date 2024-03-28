@@ -19,8 +19,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class DownloaderWorker implements Runnable {
-    // Flag to control the downloader's execution
-    private volatile boolean running = true;
     // Worker's ID, Server.URLQueue IP, and Server.URLQueue object
     private final int id;
     private final String queueIP;
@@ -45,9 +43,7 @@ public class DownloaderWorker implements Runnable {
             // Connect to the Server.URLQueue
             urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(queueIP, 6000).lookup("urlqueue");
 
-            // TODO: Shouldn't be true, but for now it's a way to keep the downloader
-            // running
-            while (running)
+            while (true)
                 visitURL(urlQueue.dequeueURL(id));
 
         } catch (NotBoundException | IOException e) {

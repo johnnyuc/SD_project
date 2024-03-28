@@ -10,10 +10,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
+import ReliableMulticast.LogUtil;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Sender.Sender;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 public class ReceiverWorker implements Runnable {
     // Sender to send retransmit requests
@@ -28,9 +27,6 @@ public class ReceiverWorker implements Runnable {
     // Queue for whatever the worker needs
     private final BlockingQueue<Object> workerQueue;
 
-    // Flag to control the worker's execution
-    private volatile boolean running = true;
-
     ReceiverWorker(Sender sender, ReceiverListener listener, BlockingQueue<Object> workerQueue) {
         this.sender = sender;
         this.listener = listener;
@@ -40,30 +36,22 @@ public class ReceiverWorker implements Runnable {
     @Override
     public void run() {
         try {
-            while(running)
+            while(true)
                 processContainer();
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Error: " + e.getMessage());
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
     }
 
     private void processContainer() throws IOException, ClassNotFoundException {
-        // Check whether the listener container is a poison pill
         Object packedContainer = listener.getDataFromQueue();
-        if (packedContainer == ReceiverListener.POISON_PILL) {
-            System.out.println("Worker got poisoned");
-            running = false;
-            return;
-        }
-
         Container container = unpackContainer((byte[]) packedContainer);
         System.out.println("Received packet " + (container.getPacketNumber() + 1) + " of "
                 + container.getTotalPackets());
         addContainerToMap(container);
         int[] missingContainers = findMissingContainers(container);
         if (missingContainers.length > 0) {
-            for (int missingContainer : missingContainers)
-                sender.requestRetransmit(missingContainer, container.getDataID());
+            sender.requestRetransmit(missingContainers, container.getDataID());
         } else if (container.isLastPacket()) {
             workerQueue.add(reconstructData(container.getDataID()));
         }
@@ -85,6 +73,7 @@ public class ReceiverWorker implements Runnable {
         containersReceived.get(container.getDataID())[container.getPacketNumber()] = container;
     }
 
+    // TODO: Se forem perdidos os ultimos 10 containers, por exemplo, nunca mais vao ser encontrados. 
     private int[] findMissingContainers(Container currContainer) {
         Container[] containers = containersReceived.get(currContainer.getDataID());
         List<Integer> missingContainers = new ArrayList<>();
@@ -145,13 +134,5 @@ public class ReceiverWorker implements Runnable {
         ByteArrayInputStream dataBis = new ByteArrayInputStream(decompressedData);
         ObjectInputStream objectOis = new ObjectInputStream(dataBis);
         return objectOis.readObject();
-    }
-
-    public void poisonWorkerQueue() {
-        workerQueue.add(ReceiverListener.POISON_PILL);
-    }
-
-    public void setRunning(boolean running){
-        this.running = running;
     }
 }

@@ -9,7 +9,7 @@ public class Container implements Serializable {
     private byte[] data;
     private Class<?> dataType;
     private String dataID;
-    private String senderIP;
+    private final String senderIP;
     private int packetNumber;
     private int totalPackets;
 
@@ -57,10 +57,6 @@ public class Container implements Serializable {
 
     public String getSenderIP() {
         return senderIP;
-    }
-
-    public void setSenderIP(String downloaderIP) {
-        this.senderIP = senderIP;
     }
 
     public int getPacketNumber() {

@@ -1,9 +1,7 @@
 package ReliableMulticast;
 
 import ReliableMulticast.Sender.Sender;
-import ReliableMulticast.Objects.SyncData;
 import ReliableMulticast.Receiver.Receiver;
-import ReliableMulticast.Receiver.ReceiverListener;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -22,8 +20,6 @@ public class ReliableMulticast {
         }
     }
 
-    // TODO Adicionar o objeto a uma queue aqui e a thread sender que vai ser
-    // começada dentro do reliable multicast vem buscar quando houver informação
     public void send(Object object) {
         sender.getSendBuffer().add(object);
     }
@@ -32,29 +28,15 @@ public class ReliableMulticast {
         try {
             receiver.receive();
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
         }
-    }
-
-    public void stopProtocol() {
-        System.out.println("Stopping receiving");
-        receiver.stopReceiving();
-        sender.getSendBuffer().add(ReceiverListener.POISON_PILL);
     }
 
     public Object getData() {
         try {
-            Object data = receiver.getWorkerQueue().take();
-            if (data == ReceiverListener.POISON_PILL){
-                System.out.println("Got poisoned");
-                return null;
-            }
-
-            return data;
+            return receiver.getWorkerQueue().take();
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
             return null;
         }
     }

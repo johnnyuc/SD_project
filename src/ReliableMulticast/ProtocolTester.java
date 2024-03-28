@@ -17,11 +17,6 @@ public class ProtocolTester {
     public static void main(String[] args) {
         // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
-        // Ctrl+c hook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            reliableMulticast.stopProtocol();
-            System.out.println("Shutting down");
-        }));
         
         // One thread to send messages
         Thread senderThread = new Thread(() -> {
@@ -59,18 +54,6 @@ public class ProtocolTester {
             }
             data = reliableMulticast.getData();
         }
-
-        // Wait for the threads to finish
-        try {
-            System.out.println(" Alooo");
-            senderThread.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        reliableMulticast.stopProtocol();
-
-        // Exit with code 0
-        System.exit(0);
     }
     
     // Method to create a large Message object

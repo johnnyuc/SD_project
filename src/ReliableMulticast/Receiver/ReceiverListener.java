@@ -3,10 +3,10 @@ package ReliableMulticast.Receiver;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import ReliableMulticast.LogUtil;
 
 public class ReceiverListener implements Runnable {
     // ! Macros for the protocol
@@ -19,12 +19,6 @@ public class ReceiverListener implements Runnable {
     // Queue for worker to get data from
     private final BlockingQueue<Object> listenerQueue = new LinkedBlockingQueue<>();
 
-    // Flag to control the listener's execution
-    private volatile boolean running = true;
-
-    // Define the POISON_PILL
-    public static final Object POISON_PILL = new Object();
-
     public ReceiverListener(MulticastSocket socket) {
         this.socket = socket;
     }
@@ -32,11 +26,11 @@ public class ReceiverListener implements Runnable {
     @Override
     public void run() {
         try {
-            while (running) {
+            while (true) {
                 listenerQueue.add(receivePacket());
             }
         } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
         } finally {
             if (!socket.isClosed()) {
                 socket.close();
@@ -56,22 +50,9 @@ public class ReceiverListener implements Runnable {
         try {
             return (byte[]) listenerQueue.take();
         } catch (InterruptedException e) {
-            System.err.println("Error: " + e.getMessage());
+            LogUtil.logError(LogUtil.logging.LOGGER, e);
             return null;
         }
-    }
-
-    public void poisonListenerQueue() {
-        System.out.println("Adding poison pill");
-        listenerQueue.add(POISON_PILL);
-    }
-
-    public MulticastSocket getSocket() {
-        return socket;
-    }
-
-    public void setRunning(boolean running){
-        this.running = running;
     }
 
 }
