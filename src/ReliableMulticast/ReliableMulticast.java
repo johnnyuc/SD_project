@@ -29,6 +29,8 @@ public class ReliableMulticast {
             receiver.receive();
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

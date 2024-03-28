@@ -1,8 +1,10 @@
 package ReliableMulticast.Receiver;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.MulticastSocket;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -13,37 +15,46 @@ public class ReceiverListener implements Runnable {
     private static final int MAX_PACKET_SIZE = 1024;
     private static final int MAX_PACKET_OVERHEAD = 512;
 
-    // Socket
-    private final MulticastSocket socket;
+    // Channel
+    private final DatagramChannel channel;
 
     // Queue for worker to get data from
     private final BlockingQueue<Object> listenerQueue = new LinkedBlockingQueue<>();
 
-    public ReceiverListener(MulticastSocket socket) {
-        this.socket = socket;
+    public ReceiverListener(DatagramChannel channel) {
+        this.channel = channel;
     }
 
     @Override
     public void run() {
         try {
             while (true) {
-                listenerQueue.add(receivePacket());
+                listenerQueue.add(Objects.requireNonNull(receivePacket()));
             }
         } catch (IOException e) {
             LogUtil.logError(LogUtil.logging.LOGGER, e);
-        } finally {
-            if (!socket.isClosed()) {
-                socket.close();
-            }
         }
     }
 
     private byte[] receivePacket() throws IOException {
-        byte[] buffer = new byte[MAX_PACKET_SIZE + MAX_PACKET_OVERHEAD];
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-        socket.receive(packet);
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE + MAX_PACKET_OVERHEAD);
 
-        return packet.getData();
+        // Non-blocking receive
+        SocketAddress senderAddress = channel.receive(buffer);
+
+        if (senderAddress != null) {
+            // Flip the buffer to prepare it for get operations
+            buffer.flip();
+
+            // Convert ByteBuffer to byte array
+            byte[] byteArray = new byte[buffer.remaining()];
+            buffer.get(byteArray);
+
+            return byteArray;
+        } else {
+            // No data was available to read, return null
+            return null;
+        }
     }
 
     public byte[] getDataFromQueue() {
@@ -54,5 +65,4 @@ public class ReceiverListener implements Runnable {
             return null;
         }
     }
-
 }
