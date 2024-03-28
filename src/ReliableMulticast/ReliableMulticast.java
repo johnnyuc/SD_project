@@ -34,6 +34,10 @@ public class ReliableMulticast {
         }
     }
 
+    public void stopReceiving() {
+        receiver.stop();
+    }
+
     public Object getData() {
         try {
             return receiver.getWorkerQueue().take();

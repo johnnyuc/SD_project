@@ -18,6 +18,11 @@ public class Receiver {
     // Sender
     private final Sender sender;
 
+    // ReceiverListener
+    private ReceiverListener receiverListener;
+    // ReceiverWorker
+    private ReceiverWorker receiverWorker;
+
     // Constructor
     public Receiver(Sender sender, String multicastGroup, int port) throws IOException, InterruptedException {
         this.workerQueue = new LinkedBlockingQueue<>();
@@ -30,23 +35,34 @@ public class Receiver {
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .bind(new InetSocketAddress(port))
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
+        this.channel.configureBlocking(false);
         this.channel.join(groupAddress, networkInterface);
     }
 
     // Method to start receiving data
     public void receive() throws InterruptedException, IOException {
         // Thread for ReceiverListener
-        ReceiverListener receiverListener = new ReceiverListener(channel);
+        receiverListener = new ReceiverListener(channel);
         Thread listenerThread = new Thread(receiverListener, "Multicast Listener Thread");
         listenerThread.start();
 
         // Thread for ReceiverWorker
-        ReceiverWorker receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
+        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
         Thread workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
         workerThread.start();
     }
 
     public BlockingQueue<Object> getWorkerQueue() {
         return workerQueue;
+    }
+
+    public void stop() {
+        try {
+            receiverListener.stop();
+            //receiverWorker.stop();
+            channel.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

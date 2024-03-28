@@ -36,6 +36,8 @@ public class ProtocolTester {
                 }
             }
 
+            // Stop the receiver
+            reliableMulticast.stopReceiving();
             System.out.println("Sender thread finished");
         });
 
