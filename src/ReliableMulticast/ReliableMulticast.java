@@ -1,22 +1,32 @@
+// TODO: REMOVE ALL THE TODO COMMENTS
+// TODO: REMOVE ALL SYSTEM.OUT.PRINTLN LINES UNLESS STRICTLY NECESSARY FOR THE CODE
+// TODO: FIX RELIABILITY ISSUES, INCLUDING LAST X CONTAINERS NOT BEING SEND
+
 package ReliableMulticast;
 
-import ReliableMulticast.Receiver.ReceiverWorker;
+// Multicast imports
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Receiver.Receiver;
+import ReliableMulticast.Receiver.ReceiverWorker;
 
-import java.io.IOException;
+// General imports
 import java.net.InetAddress;
-import java.sql.Time;
-import java.util.concurrent.TimeUnit;
+
+// Error imports
+import java.io.IOException;
 
 public class ReliableMulticast {
 
+    // Variables
     private final Sender sender;
     private final Receiver receiver;
 
+    // Constructor
     public ReliableMulticast(String multicastGroup, int port) {
         try {
+            // Gets machine IP
             String senderIP = InetAddress.getLocalHost().getHostAddress();
+            // Creates sender and receiver
             this.sender = new Sender(multicastGroup, port, senderIP);
             this.receiver = new Receiver(sender, multicastGroup, port);
         } catch (IOException | InterruptedException e) {
@@ -24,14 +34,17 @@ public class ReliableMulticast {
         }
     }
 
+    // Method to start sending data
     public void send(Object object) {
         sender.getSendBuffer().add(object);
     }
 
+    // Method to stop sending data
     public void stopSending() {
         sender.stop();
     }
 
+    // Method to start receiving data
     public void startReceiving() {
         try {
             receiver.receive();
@@ -42,10 +55,12 @@ public class ReliableMulticast {
         }
     }
 
+    // Method to stop receiving data
     public void stopReceiving() {
         receiver.stop();
     }
 
+    // Method to retrieve workable objects
     public Object getData() {
         try {
             Object data = receiver.getWorkerQueue().take();

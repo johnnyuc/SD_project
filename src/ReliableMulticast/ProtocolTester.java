@@ -1,22 +1,22 @@
 package ReliableMulticast;
 
+// Multicast imports
+import ReliableMulticast.Objects.*;
+
 // General imports
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Random;
-import java.net.MalformedURLException;
+import java.util.ArrayList;
 
-// Import Multicast classes
-import ReliableMulticast.Objects.*;
+// Error imports
+import java.net.MalformedURLException;
 
 public class ProtocolTester {
 
     // Main method
     public static void main(String[] args) {
-
-        // Create a ReliableMulticast object
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
 
         // Add shutdown hook for CTRL+C [doesn't work in Intellij because it doesn't like CTRL+C - use STOP button]

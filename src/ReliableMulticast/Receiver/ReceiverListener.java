@@ -1,30 +1,27 @@
 package ReliableMulticast.Receiver;
 
+// Multicast imports
+import ReliableMulticast.LogUtil;
+
 // General imports
-import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-// Poison pilling
+// Error imports
+import java.io.IOException;
+
+// Stop imports
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-// Logging
-import ReliableMulticast.LogUtil;
-
 public class ReceiverListener implements Runnable {
-
-
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
     private static final int MAX_PACKET_OVERHEAD = 512;
-
-    // Lock for atomic operations
-    private final Lock lock = new ReentrantLock();
 
     // Channel
     private final DatagramChannel channel;
@@ -35,24 +32,30 @@ public class ReceiverListener implements Runnable {
     // Running flag
     private volatile boolean running = true;
 
+    // Stopping the thread
+    private final Lock lock = new ReentrantLock();
 
+    // Constructor
     public ReceiverListener(DatagramChannel channel) {
         this.channel = channel;
     }
 
+    // Thread startup
     @Override
     public void run() {
         try {
             while (running) {
-                receivePacket().ifPresent(listenerQueue::add);
+                receiveContainer().ifPresent(listenerQueue::add);
             }
         } catch (IOException e) {
             LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
-        System.out.println("ReceiverListener thread stopped");
+
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "ReceiverListener thread stopped");
     }
 
-    private Optional<byte[]> receivePacket() throws IOException {
+    // Method to receive a container
+    private Optional<byte[]> receiveContainer() throws IOException {
         lock.lock();
         try {
             if (!running) {
@@ -82,7 +85,8 @@ public class ReceiverListener implements Runnable {
         }
     }
 
-    public Object getDataFromQueue() {
+    // Method to retreive data to the worker
+    public Object getData() {
         try {
             return listenerQueue.take();
         } catch (InterruptedException e) {
@@ -91,10 +95,13 @@ public class ReceiverListener implements Runnable {
         }
     }
 
-    public void putDataInQueue(Object obj) {
+    // Method to put data into the listenerQueue
+    // The only purpose it serves is for the worker to put a STOP_PILL
+    public void putData(Object obj) {
         listenerQueue.add(obj);
     }
 
+    // Method to stop the listener
     public void stop() {
         lock.lock();
         try {

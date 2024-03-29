@@ -39,4 +39,8 @@ public class LogUtil {
                         + ". Error message: " + throwable.getMessage()
                         + ". Stack trace: " + stackTrace + ANSI_RESET);
     }
+
+    public static void logInfo(String color, Logger logger, String message) {
+        logger.info(color + message + ANSI_RESET);
+    }
 }

@@ -1,34 +1,36 @@
 package ReliableMulticast.Receiver;
 import ReliableMulticast.Sender.*;
 
+// General imports
 import java.net.*;
-import java.io.IOException;
 import java.nio.channels.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+// Error imports
+import java.io.IOException;
+
 public class Receiver {
-
-    // Channel
-    private final DatagramChannel channel;
-
-    // Queue for whatever the worker needs
-    private final BlockingQueue<Object> workerQueue;
-
+    // Multicast main objects
     // Sender
     private final Sender sender;
-
     // ReceiverListener
     private ReceiverListener receiverListener;
     // ReceiverWorker
     private ReceiverWorker receiverWorker;
+
+    // Channel [DatagramChannel/Socket]
+    private final DatagramChannel channel;
+
+    // Queue for clean final data
+    private final BlockingQueue<Object> workerQueue;
 
     // Constructor
     public Receiver(Sender sender, String multicastGroup, int port) throws IOException, InterruptedException {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
 
-        // Join the multicast group
+        // Join the multicast group using channel [non blocking]
         NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
@@ -52,11 +54,13 @@ public class Receiver {
         workerThread.start();
     }
 
-    // Method to pass the workerQueue to the ReliableMulticast object
+    // Getter for the workerQueue to the ReliableMulticast class
+    // Used to store final received objects
     public BlockingQueue<Object> getWorkerQueue() {
         return workerQueue;
     }
 
+    // Method to stop receiving data
     public void stop() {
         try {
             // Kill sub-threads

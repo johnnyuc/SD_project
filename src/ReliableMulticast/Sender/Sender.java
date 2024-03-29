@@ -1,18 +1,20 @@
 package ReliableMulticast.Sender;
 
-// General imports
+// Multicast imports
 import ReliableMulticast.LogUtil;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.RetransmitRequest;
 
+// General imports
 import java.io.*;
 import java.net.*;
+import java.util.Map;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
 // Hashing imports
 import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
@@ -21,28 +23,28 @@ import java.security.NoSuchAlgorithmException;
 // Compression imports
 import java.util.zip.GZIPOutputStream;
 
-// Sends objects via reliable multicast to all receivers
 public class Sender implements Runnable {
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
     private static final int MAX_CONTAINERS = 2048; // MAX 2MBytes of data/ram
 
-    // Socket and multicast group, as well as identification
-    private final MulticastSocket socket;
-    private final InetAddress multicastGroup;
-    private final int port;
-    private final String senderIP;
-
-    // TODO: Mudar o tamanho porque 2048 dataID's se calhar é muito
-    private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
-
-    private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
-
     // Running flag
     private volatile boolean running = true;
 
-    // Stopping pill
+    // Stopping the thread
     public static final Object STOP_PILL = new Object();
+
+    // Socket and multicast group
+    private final MulticastSocket socket;
+    private final InetAddress multicastGroup;
+
+    // Sender IP and port
+    private final String senderIP;
+    private final int port;
+
+    // Buffers
+    private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
+    private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
     // Constructor
     public Sender(String multicastGroup, int port, String senderIP) throws IOException {
@@ -50,40 +52,47 @@ public class Sender implements Runnable {
         this.port = port;
         this.socket = new MulticastSocket(port);
         this.senderIP = senderIP;
+
         new Thread(this, "Multicast Sender Thread").start();
     }
 
+    // Thread startup
     @Override
     public void run() {
         try {
             startSender();
         } catch (InterruptedException | IOException e) {
-            // TODO Auto-generated catch block
             LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
-        System.out.println("Sender thread stopped");
+
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "Sender thread stopped");
     }
 
-    // Method to send an object
+    // Method to send all the data contained in the sendBuffer
     public void startSender() throws InterruptedException, IOException {
         while (running) {
             Object object = sendBuffer.take();
+
+            // Check if the object is a stopping pill
             if (object == STOP_PILL) {
                 running = false;
                 continue;
             }
 
+            // Check if the object is a retransmit request or a container
             if(object instanceof RetransmitRequest)
                 sendRetransmit((RetransmitRequest) object);
             else if(object instanceof Container)
                 sendContainer((Container) object, -1, -1);
 
+            // Serialize and compress the object
             byte[] objectData = serializeObject(object);
             objectData = compressData(objectData);
             sendContainers(objectData, object);
         }
     }
 
+    // Method to serialize an object
     private byte[] serializeObject(Object object) throws IOException {
         ByteArrayOutputStream objectByteStream = new ByteArrayOutputStream();
         ObjectOutputStream objectStream;
@@ -94,25 +103,29 @@ public class Sender implements Runnable {
         return objectByteStream.toByteArray();
     }
 
+    // Method to compress data using GZIP
     private byte[] compressData(byte[] data) throws IOException {
         ByteArrayOutputStream compressedByteStream = new ByteArrayOutputStream();
         GZIPOutputStream gzipStream;
         gzipStream = new GZIPOutputStream(compressedByteStream);
         gzipStream.write(data);
         gzipStream.close();
+
         return compressedByteStream.toByteArray();
     }
 
+    // Method to send the data in separate 1024 byte containers
+    // Used for a full object slicing or retransmission
     private void sendContainers(byte[] data, Object object) {
-        // Calculate the number of packets needed
+        // Calculate the number of containers needed
         int numContainers = (int) Math.ceil((double) data.length / MAX_PACKET_SIZE);
 
-        // Get object hash
+        // Get object hash to uniquely identify it
         String objectHash = getHash(object);
 
-        // Send each packet
+        // Send each container
         for (int i = 0; i < numContainers; i++) {
-            // TODO: REMOVE THIS ---------------------------------------------------------------------------------------
+            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE ----------------------------------------------
             // Fail sending packets with a probability of 5% to check recovery from errors
             if (Math.random() < 0.05) {
                 LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER, new IOException("Failed to send packet"));
@@ -131,7 +144,9 @@ public class Sender implements Runnable {
         }
     }
 
-    // TODO: remover numContainers, só serve para print
+    // Method to send a single container
+    // Used by sendContainers method
+    // TODO: REMOVE NUMCONTAINERS, ONLY USED FOR PRINTING
     private void sendContainer(Container container, int numContainers, int i){
         try {
             byte[] serializedContainer = serializeObject(container);
@@ -147,32 +162,22 @@ public class Sender implements Runnable {
 
     // Method to send a retransmission request for a missing packet
     public void sendRetransmit(RetransmitRequest retransmitRequest) {
+        // Check if the retransmission buffer contains the dataID
         if (!retransmissionBuffer.containsKey(retransmitRequest.getDataID()))
             return;
-        
+
+        // Send the missing containers
         for (int i : retransmitRequest.getMissingContainers()) {
             Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[i];
             sendBuffer.add(container);
         }
     }
 
-     // Method to request a retransmission of a missing packet
+    // Method to request a retransmission of a missing packet
     public void requestRetransmit(int[] missingContainers, String dataID) {
         RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainers, dataID);
         sendBuffer.add(retransmitRequest);
         System.out.println("Sent retransmit request for packet " + (missingContainers[0] + 1));
-    } 
-
-    // Hashing function to get the hash of an object
-    private static String getHash(Object object) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(object.toString().getBytes(StandardCharsets.UTF_8));
-            return new String(hash, StandardCharsets.UTF_8);
-        } catch (NoSuchAlgorithmException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
-            throw new RuntimeException(e);
-        }
     }
 
     // Slices the object and returns it in a container
@@ -186,11 +191,20 @@ public class Sender implements Runnable {
         return new Container(objectSlice, objectData.getClass(), objectHash, senderIP, i, numPackets);
     }
 
-    public BlockingQueue<Object> getSendBuffer() {
-        return sendBuffer;
+    // Hashing function to get the hash of an object
+    private static String getHash(Object object) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(object.toString().getBytes(StandardCharsets.UTF_8));
+            return new String(hash, StandardCharsets.UTF_8);
+        } catch (NoSuchAlgorithmException e) {
+            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            throw new RuntimeException(e);
+        }
     }
 
-    // TODO: See where to put this class
+    // TODO: SEE WHERE TO PUT THIS CLASS
+    // CircularHashMap class to store the retransmission buffer
     public static class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
         private final int maxSize;
 
@@ -198,21 +212,19 @@ public class Sender implements Runnable {
             this.maxSize = maxSize;
         }
 
-        /**
-         * Determines whether to remove the eldest entry after a new element is
-         * inserted.
-         * If the current size of the map exceeds the maximum size, returns true to
-         * remove the eldest entry.
-         *
-         * @param eldest the eldest entry in the map
-         * @return true if the eldest entry should be removed, otherwise false
-         */
         @Override
         protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
             return size() > maxSize;
         }
     }
 
+    // Getter for the sendBuffer to the ReliableMulticast class
+    // Used to store sent objects
+    public BlockingQueue<Object> getSendBuffer() {
+        return sendBuffer;
+    }
+
+    // Method to stop the sender thread
     public void stop() {
         sendBuffer.add(STOP_PILL);
     }

@@ -1,44 +1,50 @@
 package ReliableMulticast.Receiver;
 
+// Multicast imports
+import ReliableMulticast.LogUtil;
+import ReliableMulticast.Sender.Sender;
+import ReliableMulticast.Objects.Container;
+
+// General imports
 import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.concurrent.*;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
-import ReliableMulticast.LogUtil;
-import ReliableMulticast.Objects.Container;
-import ReliableMulticast.Sender.Sender;
+// Error imports
+import java.io.IOException;
 
 public class ReceiverWorker implements Runnable {
-    // Sender to send retransmit requests
+    // Multicast main objects
+    // Sender
     private final Sender sender;
-
-    // Listener to get data from
-    private final ReceiverListener listener;
+    // ReceiverListener
+    private final ReceiverListener receiverListener;
 
     // Map to store the received containers
     private final HashMap<String, Container[]> containersReceived = new HashMap<>();
 
-    // Queue for whatever the worker needs
+    // Queue for clean final data
     private final BlockingQueue<Object> workerQueue;
 
     // Running flag
     private volatile boolean running = true;
 
-    // Stopping pill
+    // Stopping the thread
     public static final Object STOP_PILL = new Object();
 
+    // Constructor
     ReceiverWorker(Sender sender, ReceiverListener listener, BlockingQueue<Object> workerQueue) {
         this.sender = sender;
-        this.listener = listener;
+        this.receiverListener = listener;
         this.workerQueue = workerQueue;
     }
 
+    // Thread startup
     @Override
     public void run() {
         try {
@@ -47,22 +53,31 @@ public class ReceiverWorker implements Runnable {
         } catch (IOException | ClassNotFoundException e) {
             LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
-        System.out.println("ReceiverWorker thread stopped");
+
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "ReceiverWorker thread stopped");
     }
 
+    // Method to process a container
     private void processContainer() throws IOException, ClassNotFoundException {
-        Object data = listener.getDataFromQueue();
+        Object data = receiverListener.getData();
+
+        // Check if the data is a stopping pill
         if (data == STOP_PILL) {
             running = false;
             return;
         }
 
+        // Unpack the container
         byte[] packedContainer = (byte[]) data;
         Container container = unpackContainer(packedContainer);
         System.out.println("Received packet " + (container.getPacketNumber() + 1) + " of "
                 + container.getTotalPackets());
+
+        // Add the container to the map
         addContainerToMap(container);
         int[] missingContainers = findMissingContainers(container);
+
+        // If there are missing containers send a retransmit request
         if (missingContainers.length > 0) {
             sender.requestRetransmit(missingContainers, container.getDataID());
         } else if (container.isLastPacket()) {
@@ -70,12 +85,14 @@ public class ReceiverWorker implements Runnable {
         }
     }
 
+    // Method to unpack a container
     private Container unpackContainer(byte[] serializedContainer) throws IOException, ClassNotFoundException {
         ByteArrayInputStream bis = new ByteArrayInputStream(serializedContainer);
         ObjectInputStream ois = new ObjectInputStream(bis);
         return (Container) ois.readObject();
     }
 
+    // Method to add a container to the map
     private void addContainerToMap(Container container) {
         // If the dataID of the container is new
         if (!containersReceived.containsKey(container.getDataID()))
@@ -86,7 +103,8 @@ public class ReceiverWorker implements Runnable {
         containersReceived.get(container.getDataID())[container.getPacketNumber()] = container;
     }
 
-    // TODO: Se forem perdidos os ultimos 10 containers, por exemplo, nunca mais vao ser encontrados. 
+    // TODO: IF THE LAST CONTAINER IS LOST, THE DATA WILL NEVER BE RECONSTRUCTED. SAME FOR LAST X CONTAINERS
+    // Method to find missing containers
     private int[] findMissingContainers(Container currContainer) {
         Container[] containers = containersReceived.get(currContainer.getDataID());
         List<Integer> missingContainers = new ArrayList<>();
@@ -104,6 +122,7 @@ public class ReceiverWorker implements Runnable {
         return arr;
     }
 
+    // Method to reconstruct the data
     private Object reconstructData(String dataID) throws IOException, ClassNotFoundException {
         // Buffer to assemble the data
         ByteArrayOutputStream dataBuffer = new ByteArrayOutputStream();
@@ -129,6 +148,7 @@ public class ReceiverWorker implements Runnable {
         return deserializeData(compressedDataBis);
     }
 
+    // Method to deserialize the data
     private static Object deserializeData(ByteArrayInputStream compressedMessageBis)
             throws IOException, ClassNotFoundException {
         // Decompress the object
@@ -149,9 +169,10 @@ public class ReceiverWorker implements Runnable {
         return objectOis.readObject();
     }
 
+    // Method to stop the thread
     public void stop() {
         // Adding stopping pills to the queues
-        listener.putDataInQueue(STOP_PILL);
+        receiverListener.putData(STOP_PILL);
         workerQueue.add(STOP_PILL);
     }
 }
