@@ -10,6 +10,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 // Error imports
 import java.io.IOException;
 
+// Network debugging imports
+//import java.util.Enumeration;
+
 public class Receiver {
     // Multicast main objects
     // Sender
@@ -30,8 +33,18 @@ public class Receiver {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
 
+        /* Debugging network interfaces
+        Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+        while (networkInterfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = networkInterfaces.nextElement();
+            System.out.println(networkInterface);
+        }
+         */
+
         // Join the multicast group using channel [non blocking]
-        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        //NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName("127.0.0.1"));
+        //System.out.println("Network Interface: " + networkInterface);
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
