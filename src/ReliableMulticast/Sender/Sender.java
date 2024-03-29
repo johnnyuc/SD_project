@@ -12,7 +12,9 @@ import java.util.Map;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 
 // Hashing imports
@@ -43,7 +45,7 @@ public class Sender implements Runnable {
     private final int port;
 
     // Buffers
-    private final BlockingQueue<Object> sendBuffer = new LinkedBlockingQueue<>();
+    private final BlockingDeque<Object> sendBuffer = new LinkedBlockingDeque<>();
     private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
     // Constructor
@@ -74,21 +76,19 @@ public class Sender implements Runnable {
             Object object = sendBuffer.take();
 
             // Check if the object is a stopping pill
-            if (object == STOP_PILL) {
+            if (object == STOP_PILL)
                 running = false;
-                continue;
-            }
-
             // Check if the object is a retransmit request or a container
-            if(object instanceof RetransmitRequest)
+            else if (object instanceof RetransmitRequest)
                 sendRetransmit((RetransmitRequest) object);
-            else if(object instanceof Container)
+            else if (object instanceof Container)
                 sendContainer((Container) object, -1, -1);
-
-            // Serialize and compress the object
-            byte[] objectData = serializeObject(object);
-            objectData = compressData(objectData);
-            sendContainers(objectData, object);
+            else {
+                // Serialize and compress the object
+                byte[] objectData = serializeObject(object);
+                objectData = compressData(objectData);
+                sendContainers(objectData, object);
+            }
         }
     }
 
@@ -125,36 +125,36 @@ public class Sender implements Runnable {
 
         // Send each container
         for (int i = 0; i < numContainers; i++) {
-            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE ----------------------------------------------
-            // Fail sending packets with a probability of 5% to check recovery from errors
-            if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER, new IOException("Failed to send packet"));
-                continue;
-            }
-            // TODO ----------------------------------------------------------------------------------------------------
-
             Container container = sliceObject(i, data, objectHash, numContainers);
-            sendContainer(container, numContainers, i);
-
             if (!retransmissionBuffer.containsKey(objectHash))
                 retransmissionBuffer.put(objectHash, new Container[numContainers]);
             // Add containerData to retransmission buffer
             retransmissionBuffer.get(objectHash)[i] = container;
 
+            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE
+            // ----------------------------------------------
+            // Fail sending packets with a probability of 5% to check recovery from errors
+            if (Math.random() < 0.05) {
+                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER, new IOException("Failed to send packet"));
+                continue;
+            }
+            // TODO
+            // ----------------------------------------------------------------------------------------------------
+            sendContainer(container, numContainers, i);
         }
     }
 
     // Method to send a single container
     // Used by sendContainers method
     // TODO: REMOVE NUMCONTAINERS, ONLY USED FOR PRINTING
-    private void sendContainer(Container container, int numContainers, int i){
+    private void sendContainer(Container container, int numContainers, int i) {
         try {
             byte[] serializedContainer = serializeObject(container);
             DatagramPacket datagram = new DatagramPacket(serializedContainer, serializedContainer.length,
-            multicastGroup, port);
+                    multicastGroup, port);
             socket.send(datagram);
-                        System.out.println("Sent container " + (i + 1) + " of "
-                    + numContainers + " with size: " + serializedContainer.length + " bytes");
+            // System.out.println("Sent container " + (i + 1) + " of "
+            // + numContainers + " with size: " + serializedContainer.length + " bytes");
         } catch (IOException e) {
             LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
         }
@@ -168,15 +168,18 @@ public class Sender implements Runnable {
 
         // Send the missing containers
         for (int i : retransmitRequest.getMissingContainers()) {
+            System.out.println("Sending packet " + (i + 1) + " again");
             Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[i];
-            sendBuffer.add(container);
+            // Add the container to the start of the buffer so it has priority
+            sendBuffer.addFirst(container);
         }
     }
 
     // Method to request a retransmission of a missing packet
     public void requestRetransmit(int[] missingContainers, String dataID) {
         RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainers, dataID);
-        sendBuffer.add(retransmitRequest);
+        // Add the request to the start of the buffer so it has priority
+        sendBuffer.addFirst(retransmitRequest);
         System.out.println("Sent retransmit request for packet " + (missingContainers[0] + 1));
     }
 
@@ -187,7 +190,6 @@ public class Sender implements Runnable {
         int length = Math.min(MAX_PACKET_SIZE, objectData.length - offset);
         byte[] objectSlice = Arrays.copyOfRange(objectData, offset, offset + length);
 
-        // Convert the serialized object into a Packet object
         return new Container(objectSlice, objectData.getClass(), objectHash, senderIP, i, numPackets);
     }
 
@@ -220,7 +222,7 @@ public class Sender implements Runnable {
 
     // Getter for the sendBuffer to the ReliableMulticast class
     // Used to store sent objects
-    public BlockingQueue<Object> getSendBuffer() {
+    public BlockingDeque<Object> getSendBuffer() {
         return sendBuffer;
     }
 
