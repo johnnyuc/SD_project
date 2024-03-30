@@ -6,9 +6,7 @@ import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.ContainersTimestamp;
 
 // General imports
-import java.util.List;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
@@ -110,9 +108,7 @@ public class ReceiverWorker implements Runnable {
         Container[] containers = containersReceived.get(container.getDataID()).getContainers();
         // If the container is not the first one and the previous container is not
         // missing
-        if (container.getPacketNumber() == 0 || containers[container.getPacketNumber() - 1] != null)
-            return false;
-        return true;
+        return container.getPacketNumber() != 0 && containers[container.getPacketNumber() - 1] == null;
     }
 
     // Method to reconstruct the data

@@ -12,9 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 
 // Hashing imports
 import java.security.MessageDigest;
@@ -132,16 +130,13 @@ public class Sender implements Runnable {
             // Add containerData to retransmission buffer
             retransmissionBuffer.get(objectHash)[i] = container;
 
-            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE
-            // ----------------------------------------------
+            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE ----------------------------------------------
             // Fail sending packets with a probability of 5% to check recovery from errors
             if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class,
-                        new IOException("Failed to send packet " + (i + 1)));
+                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class, new IOException("Failed to send packet " + (i + 1)));
                 continue;
             }
-            // TODO
-            // ----------------------------------------------------------------------------------------------------
+            // TODO ----------------------------------------------------------------------------------------------------
             sendContainer(container, numContainers, i);
         }
     }

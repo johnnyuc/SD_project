@@ -1,65 +1,54 @@
 package Server.IndexStorageBarrel;
 
 // Database imports
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.io.IOException;
+
 // Util imports
+import java.util.*;
 import java.io.Serializable;
+
 // Multicast imports
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 
-/**
- * Server.IndexStorageBarrel
- */
+import static Server.IndexStorageBarrel.Operations.BarrelSetup.*;
+
 public class IndexStorageBarrel implements Serializable {
-    private static String MULTICAST_ADDRESS = "224.67.68.70";
-    private static int PORT = 6002;
-    private MulticastSocket multicastSocket;
     private Connection conn;
-    private int id;
+    private MulticastSocket multicastSocket;
 
     public static void main(String[] args) {
-        new IndexStorageBarrel(args);
+        IndexStorageBarrel indexStorageBarrel = new IndexStorageBarrel(args);
+        indexStorageBarrel.populateTables();
+        indexStorageBarrel.displayTables();
     }
 
-    /**
-     * Constructs an instance of IndexStorageBarrel with the provided command-line
-     * arguments.
-     * Initializes the database connection and sets up the necessary database
-     * schema.
-     * 
-     * @param args the command-line arguments passed to the program
-     */
     IndexStorageBarrel(String[] args) {
         if (!processArgs(args))
             return;
 
         try {
-            connectDatabase();
-            setupDatabase();
+            conn = connectDatabase();
+            databaseIntegrity(conn);
             joinMulticastGroup();
             synchronizeDatabase();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         } finally {
+            try {
+                if (conn != null) {
+                    conn.close(); // Close the connection here
+                }
+            } catch (SQLException ex) {
+                System.out.println(ex.getMessage());
+            }
             multicastSocket.close();
         }
     }
 
-    /**
-     * Parses the command line arguments.
-     * 
-     * @param args array of arguments passed from the command line
-     * @return true if parsing was successful, false otherwise
-     */
     private boolean processArgs(String[] args) {
         if (args.length != 2) {
             System.err.println("Wrong number of arguments: expected -id <barrel id>");
@@ -69,13 +58,11 @@ public class IndexStorageBarrel implements Serializable {
         // Parse the arguments
         try {
             for (int i = 0; i < args.length; i++) {
-                switch (args[i]) {
-                    case "-id":
-                        this.id = Integer.parseInt(args[++i]);
-                        break;
-                    default:
-                        System.err.println("Unexpected argument: " + args[i]);
-                        return false;
+                if (args[i].equals("-id")) {
+                    int id = Integer.parseInt(args[++i]);
+                } else {
+                    System.err.println("Unexpected argument: " + args[i]);
+                    return false;
                 }
             }
         } catch (NumberFormatException e) {
@@ -86,79 +73,21 @@ public class IndexStorageBarrel implements Serializable {
         return true;
     }
 
-    /**
-     * Establishes a connection to the database for the storage barrel.
-     * 
-     * @throws IOException if an I/O error occurs while connecting to the database
-     */
-    private void connectDatabase() throws IOException {
+    private Connection connectDatabase() {
+        Connection conn;
         try {
-            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
+            conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
             System.out.println("Connected to database");
-            // Checking if database is empty
-            DatabaseMetaData dbm = conn.getMetaData();
-
-            ResultSet tables = dbm.getTables(null, null, "websites", null);
-            if (tables.next()) {
-                System.out.println("Database is not empty");
-            } else {
-                System.out.println("Database is empty");
-            }
         } catch (SQLException e) {
-            // TODO: Treat exception better
             throw new Error("Problem connecting to database", e);
         }
-    }
-
-    /**
-     * Sets up the database schema for the barrel application.
-     */
-    private static void setupDatabase() {
-        String url = "jdbc:sqlite:data/testBarrel.db";
-        try (Connection conn = DriverManager.getConnection(url)) {
-            // SQL statements for creating tables
-            String websites = """
-                    CREATE TABLE IF NOT EXISTS websites (
-                        id		 INTEGER,
-                        url	 TEXT,
-                        title	 TEXT,
-                        description TEXT,
-                        visit_date	 DATE,
-                        PRIMARY KEY(id)
-                    );
-                    """;
-
-            String keywords = """
-                    CREATE TABLE IF NOT EXISTS keywords (
-                    	text TEXT,
-                    	PRIMARY KEY(text)
-                    );
-                    """;
-
-            String websites_keywords = """
-                    CREATE TABLE IF NOT EXISTS websites_keywords (
-                        websites_id	 INTEGER,
-                        keywords_text TEXT,
-                        PRIMARY KEY(websites_id,keywords_text)
-                    );
-                    ALTER TABLE websites_keywords ADD CONSTRAINT websites_keywords_fk1 FOREIGN KEY (websites_id) REFERENCES websites(id);
-                    ALTER TABLE websites_keywords ADD CONSTRAINT websites_keywords_fk2 FOREIGN KEY (keywords_text) REFERENCES keywords(text);
-                    """;
-
-            // Execute SQL statements to create tables
-            conn.createStatement().execute(websites);
-            conn.createStatement().execute(keywords);
-            conn.createStatement().execute(websites_keywords);
-
-            System.out.println("Tables created successfully");
-        } catch (SQLException e) {
-            // TODO: Treat exception better
-            System.out.println(e.getMessage());
-        }
+        return conn;
     }
 
     private void joinMulticastGroup() throws IOException {
+        int PORT = 6002;
         multicastSocket = new MulticastSocket(PORT); // create socket and bind it
+        String MULTICAST_ADDRESS = "224.67.68.70";
         InetAddress mcastaddr = InetAddress.getByName(MULTICAST_ADDRESS);
         multicastSocket.joinGroup(new InetSocketAddress(mcastaddr, 0),
                 NetworkInterface.getByIndex(0));
@@ -174,13 +103,128 @@ public class IndexStorageBarrel implements Serializable {
         return;
     }
 
+    private void populateTables() {
+        String url = "jdbc:sqlite:data/testBarrel.db";
+        Random random = new Random();
+
+        try (Connection conn = DriverManager.getConnection(url)) {
+            // Insert data into websites table
+            String sql = "INSERT INTO websites(url, title, description) VALUES(?,?,?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                for (int i = 0; i < 100; i++) { // Insert 100 rows of random data
+                    pstmt.setString(1, "www.site" + i + ".com");
+                    pstmt.setString(2, "Title " + i);
+                    pstmt.setString(3, "Description " + i);
+                    pstmt.executeUpdate();
+
+                    // Get the generated website id
+                    try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            int websiteId = generatedKeys.getInt(1);
+
+                            // Insert data into keywords and website_keywords tables
+                            String keywordSql = "INSERT INTO keywords(text) VALUES(?)";
+                            String websiteKeywordSql = "INSERT INTO website_keywords(website_id, keyword_id, count) VALUES(?,?,?)";
+                            String selectKeywordSql = "SELECT id FROM keywords WHERE text = ?";
+                            try (PreparedStatement keywordPstmt = conn.prepareStatement(keywordSql, Statement.RETURN_GENERATED_KEYS);
+                                 PreparedStatement websiteKeywordPstmt = conn.prepareStatement(websiteKeywordSql);
+                                 PreparedStatement selectKeywordPstmt = conn.prepareStatement(selectKeywordSql)) {
+                                for (int j = 0; j < 10; j++) { // Insert 10 keywords for each website
+                                    String keyword = "Keyword" + j;
+                                    selectKeywordPstmt.setString(1, keyword);
+                                    ResultSet rs = selectKeywordPstmt.executeQuery();
+                                    int keywordId;
+                                    if (rs.next()) {
+                                        keywordId = rs.getInt(1);
+                                    } else {
+                                        keywordPstmt.setString(1, keyword);
+                                        keywordPstmt.executeUpdate();
+                                        try (ResultSet keywordGeneratedKeys = keywordPstmt.getGeneratedKeys()) {
+                                            keywordGeneratedKeys.next();
+                                            keywordId = keywordGeneratedKeys.getInt(1);
+                                        }
+                                    }
+
+                                    // Insert into website_keywords table
+                                    websiteKeywordPstmt.setInt(1, websiteId);
+                                    websiteKeywordPstmt.setInt(2, keywordId);
+                                    websiteKeywordPstmt.setInt(3, random.nextInt(10) + 1); // Random count between 1 and 10
+                                    websiteKeywordPstmt.executeUpdate();
+                                }
+                            }
+
+                            // Insert data into urls and website_urls tables
+                            String urlSql = "INSERT INTO urls(url) VALUES(?)";
+                            String websiteUrlSql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
+                            try (PreparedStatement urlPstmt = conn.prepareStatement(urlSql, Statement.RETURN_GENERATED_KEYS);
+                                 PreparedStatement websiteUrlPstmt = conn.prepareStatement(websiteUrlSql)) {
+                                for (int k = 0; k < 10; k++) { // Insert 10 urls for each website
+                                    urlPstmt.setString(1, "www.url" + k + ".com");
+                                    urlPstmt.executeUpdate();
+
+                                    // Get the generated url id
+                                    try (ResultSet urlGeneratedKeys = urlPstmt.getGeneratedKeys()) {
+                                        if (urlGeneratedKeys.next()) {
+                                            int urlId = urlGeneratedKeys.getInt(1);
+
+                                            // Insert into website_urls table
+                                            websiteUrlPstmt.setInt(1, websiteId);
+                                            websiteUrlPstmt.setInt(2, urlId);
+                                            websiteUrlPstmt.executeUpdate();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void displayTables() {
+        String url = "jdbc:sqlite:data/testBarrel.db";
+
+        try (Connection conn = DriverManager.getConnection(url)) {
+            // Display data in tables
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT * FROM websites");
+                System.out.println("Websites:");
+                displayData(rs);
+
+                rs = stmt.executeQuery("SELECT * FROM keywords");
+                System.out.println("Keywords:");
+                displayData(rs);
+
+                rs = stmt.executeQuery("SELECT * FROM urls");
+                System.out.println("URLs:");
+                displayData(rs);
+
+                rs = stmt.executeQuery("SELECT * FROM website_keywords");
+                System.out.println("Website Keywords:");
+                displayData(rs);
+
+                rs = stmt.executeQuery("SELECT * FROM website_urls");
+                System.out.println("Website URLs:");
+                displayData(rs);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     private static void displayData(ResultSet rs) throws SQLException {
-        System.out.println("id:" + rs.getInt(1));
-        System.out.println("url:" + rs.getString(2));
-        System.out.println("title:" + rs.getString(3));
-        System.out.println("description:" + rs.getString(4));
-        System.out.println("keywords:" + rs.getString(5));
-        System.out.println("date:" + rs.getString(6));
-        System.out.println("");
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int columnsNumber = rsmd.getColumnCount();
+        while (rs.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1) System.out.print(",  ");
+                String columnValue = rs.getString(i);
+                System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
+            }
+            System.out.println();
+        }
     }
 }
