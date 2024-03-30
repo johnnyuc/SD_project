@@ -160,11 +160,11 @@ public class Sender implements Runnable {
     // Method to send a retransmission request for a missing packet
     public void sendRetransmit(RetransmitRequest retransmitRequest) {
         // Check if the retransmission buffer contains the dataID
-        if (!retransmissionBuffer.containsKey(retransmitRequest.getDataID()))
+        if (!retransmissionBuffer.containsKey(retransmitRequest.dataID()))
             return;
 
-        Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[retransmitRequest
-                .getMissingContainer()];
+        Container container = retransmissionBuffer.get(retransmitRequest.dataID())[retransmitRequest
+                .missingContainer()];
         // Add the container to the start of the buffer so it has priority
         sendBuffer.addFirst(container);
     }
