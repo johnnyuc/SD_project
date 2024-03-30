@@ -19,7 +19,8 @@ public class ProtocolTester {
     public static void main(String[] args) {
         ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345);
 
-        // Add shutdown hook for CTRL+C [doesn't work in Intellij because it doesn't like CTRL+C - use STOP button]
+        // Add shutdown hook for CTRL+C [doesn't work in Intellij because it doesn't
+        // like CTRL+C - use STOP button]
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("CTRL+C detected. Shutting down...");
             reliableMulticast.stopSending();
@@ -30,7 +31,7 @@ public class ProtocolTester {
         reliableMulticast.startReceiving();
 
         // Send stuff
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 10; i++) {
             CrawlData crawlData = createLargeMessage("iteration+" + i);
             reliableMulticast.send(crawlData);
 
@@ -46,12 +47,9 @@ public class ProtocolTester {
             }
         }
 
-        // Stop sending and receiving threads
-        reliableMulticast.stopSending();
-        reliableMulticast.stopReceiving();
-
         // Read whatever might be on the worker queue
-        // REMEMBER THAT EVEN THOUGH THE THREADS ARE STOPPED, DATA STILL MIGHT BE ON THE QUEUE!
+        // REMEMBER THAT EVEN THOUGH THE THREADS ARE STOPPED, DATA STILL MIGHT BE ON THE
+        // QUEUE!
         Object data;
         do {
             data = reliableMulticast.getData();
@@ -61,6 +59,10 @@ public class ProtocolTester {
                 System.out.println("Unexpected object in queue: " + data);
             }
         } while (data != null);
+
+        // Stop sending and receiving threads
+        reliableMulticast.stopSending();
+        reliableMulticast.stopReceiving();
 
         System.out.println("Closing the program");
     }

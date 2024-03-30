@@ -135,7 +135,8 @@ public class Sender implements Runnable {
             // ----------------------------------------------
             // Fail sending packets with a probability of 5% to check recovery from errors
             if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER, new IOException("Failed to send packet"));
+                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER,
+                        new IOException("Failed to send packet " + (i + 1)));
                 continue;
             }
             // TODO
@@ -166,21 +167,18 @@ public class Sender implements Runnable {
         if (!retransmissionBuffer.containsKey(retransmitRequest.getDataID()))
             return;
 
-        // Send the missing containers
-        for (int i : retransmitRequest.getMissingContainers()) {
-            System.out.println("Sending packet " + (i + 1) + " again");
-            Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[i];
-            // Add the container to the start of the buffer so it has priority
-            sendBuffer.addFirst(container);
-        }
+        Container container = retransmissionBuffer.get(retransmitRequest.getDataID())[retransmitRequest
+                .getMissingContainer()];
+        // Add the container to the start of the buffer so it has priority
+        sendBuffer.addFirst(container);
     }
 
     // Method to request a retransmission of a missing packet
-    public void requestRetransmit(int[] missingContainers, String dataID) {
-        RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainers, dataID);
+    public void requestRetransmit(int missingContainer, String dataID) {
+        RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainer, dataID);
         // Add the request to the start of the buffer so it has priority
         sendBuffer.addFirst(retransmitRequest);
-        System.out.println("Sent retransmit request for packet " + (missingContainers[0] + 1));
+        System.out.println("Sent retransmit request for packet " + (missingContainer + 1));
     }
 
     // Slices the object and returns it in a container

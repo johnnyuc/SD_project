@@ -1,4 +1,5 @@
 package ReliableMulticast.Receiver;
+
 import ReliableMulticast.Sender.*;
 
 // General imports
@@ -11,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.io.IOException;
 
 // Network debugging imports
-//import java.util.Enumeration;
+import java.util.Enumeration;
 
 public class Receiver {
     // Multicast main objects
@@ -33,18 +34,18 @@ public class Receiver {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
 
-        /* Debugging network interfaces
         Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
         while (networkInterfaces.hasMoreElements()) {
             NetworkInterface networkInterface = networkInterfaces.nextElement();
             System.out.println(networkInterface);
         }
-         */
 
         // Join the multicast group using channel [non blocking]
-        //NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName("127.0.0.1"));
-        //System.out.println("Network Interface: " + networkInterface);
+        // NetworkInterface networkInterface =
+        // NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName("172.23.173.134"));
+        System.out.println("Network Interface: " + networkInterface);
+        System.out.println("IP Address: " + Inet4Address.getLocalHost());
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
@@ -52,8 +53,15 @@ public class Receiver {
                 .setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
         this.channel.configureBlocking(false);
         this.channel.join(groupAddress, networkInterface);
-    }
 
+        /*
+         * this.channel = DatagramChannel.open();
+         * this.channel.socket().setReuseAddress(true);
+         * this.channel.socket().bind(new InetSocketAddress(port));
+         * this.channel.configureBlocking(false);
+         */ }
+
+    
     // Method to start receiving data
     public void receive() throws InterruptedException, IOException {
         // Thread for ReceiverListener
