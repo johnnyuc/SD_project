@@ -9,7 +9,7 @@ public class ContainersTimestamp {
         this.timestamp = timestamp;
     }
 
-    // getters and setters
+    // Getters and setters
     public Container[] getContainers() {
         return containers;
     }

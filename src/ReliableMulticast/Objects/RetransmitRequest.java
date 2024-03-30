@@ -12,6 +12,7 @@ public class RetransmitRequest {
         this.dataID = dataID;
     }
 
+    // Getters
     public int getMissingContainer() {
         return missingContainer;
     }

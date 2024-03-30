@@ -67,7 +67,7 @@ public class BarrelSetup {
             String keywords = """
                 CREATE TABLE IF NOT EXISTS keywords (
                     id INTEGER PRIMARY KEY,
-                    text TEXT UNIQUE
+                    keyword TEXT UNIQUE
                 );
                 """;
 

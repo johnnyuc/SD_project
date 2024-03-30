@@ -5,7 +5,6 @@ import java.sql.*;
 import java.io.IOException;
 
 // Util imports
-import java.util.*;
 import java.io.Serializable;
 
 // Multicast imports
@@ -17,8 +16,11 @@ import java.net.NetworkInterface;
 import static Server.IndexStorageBarrel.Operations.BarrelSetup.*;
 
 public class IndexStorageBarrel implements Serializable {
-    private Connection conn;
-    private MulticastSocket multicastSocket;
+    private static Connection conn;
+    private static MulticastSocket multicastSocket;
+    private static String multicastGroupAddress;
+    private static int multicastPort;
+    private int id;
 
     public static void main(String[] args) {
         IndexStorageBarrel indexStorageBarrel = new IndexStorageBarrel(args);
@@ -33,14 +35,14 @@ public class IndexStorageBarrel implements Serializable {
         try {
             conn = connectDatabase();
             databaseIntegrity(conn);
-            joinMulticastGroup();
+            joinMulticastGroup(multicastGroupAddress, multicastPort);
             synchronizeDatabase();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         } finally {
             try {
                 if (conn != null) {
-                    conn.close(); // Close the connection here
+                    conn.close();
                 }
             } catch (SQLException ex) {
                 System.out.println(ex.getMessage());
@@ -50,23 +52,26 @@ public class IndexStorageBarrel implements Serializable {
     }
 
     private boolean processArgs(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Wrong number of arguments: expected -id <barrel id>");
+        if (args.length != 6) {
+            System.err.println("Wrong number of arguments: expected -id <barrel id> -mcast <multicast group address> -port <port number>");
             return false;
         }
 
         // Parse the arguments
         try {
             for (int i = 0; i < args.length; i++) {
-                if (args[i].equals("-id")) {
-                    int id = Integer.parseInt(args[++i]);
-                } else {
-                    System.err.println("Unexpected argument: " + args[i]);
-                    return false;
+                switch (args[i]) {
+                    case "-id" -> id = Integer.parseInt(args[++i]);
+                    case "-mcast" -> multicastGroupAddress = args[++i];
+                    case "-port" -> multicastPort = Integer.parseInt(args[++i]);
+                    default -> {
+                        System.err.println("Unexpected argument: " + args[i]);
+                        return false;
+                    }
                 }
             }
         } catch (NumberFormatException e) {
-            System.err.println("Wrong type of argument: expected int for barrel id");
+            System.err.println("Wrong type of argument: expected int for barrel id and port number");
             return false;
         }
 
@@ -84,11 +89,9 @@ public class IndexStorageBarrel implements Serializable {
         return conn;
     }
 
-    private void joinMulticastGroup() throws IOException {
-        int PORT = 6002;
-        multicastSocket = new MulticastSocket(PORT); // create socket and bind it
-        String MULTICAST_ADDRESS = "224.67.68.70";
-        InetAddress mcastaddr = InetAddress.getByName(MULTICAST_ADDRESS);
+    private void joinMulticastGroup(String multicastGroupAddress, int port) throws IOException {
+        multicastSocket = new MulticastSocket(port); // create socket and bind it
+        InetAddress mcastaddr = InetAddress.getByName(multicastGroupAddress);
         multicastSocket.joinGroup(new InetSocketAddress(mcastaddr, 0),
                 NetworkInterface.getByIndex(0));
     }
@@ -105,13 +108,12 @@ public class IndexStorageBarrel implements Serializable {
 
     private void populateTables() {
         String url = "jdbc:sqlite:data/testBarrel.db";
-        Random random = new Random();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             // Insert data into websites table
             String sql = "INSERT INTO websites(url, title, description) VALUES(?,?,?)";
             try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                for (int i = 0; i < 100; i++) { // Insert 100 rows of random data
+                for (int i = 0; i < 5; i++) { // Insert 100 rows of random data
                     pstmt.setString(1, "www.site" + i + ".com");
                     pstmt.setString(2, "Title " + i);
                     pstmt.setString(3, "Description " + i);
@@ -122,56 +124,28 @@ public class IndexStorageBarrel implements Serializable {
                         if (generatedKeys.next()) {
                             int websiteId = generatedKeys.getInt(1);
 
-                            // Insert data into keywords and website_keywords tables
-                            String keywordSql = "INSERT INTO keywords(text) VALUES(?)";
-                            String websiteKeywordSql = "INSERT INTO website_keywords(website_id, keyword_id, count) VALUES(?,?,?)";
-                            String selectKeywordSql = "SELECT id FROM keywords WHERE text = ?";
-                            try (PreparedStatement keywordPstmt = conn.prepareStatement(keywordSql, Statement.RETURN_GENERATED_KEYS);
-                                 PreparedStatement websiteKeywordPstmt = conn.prepareStatement(websiteKeywordSql);
-                                 PreparedStatement selectKeywordPstmt = conn.prepareStatement(selectKeywordSql)) {
-                                for (int j = 0; j < 10; j++) { // Insert 10 keywords for each website
-                                    String keyword = "Keyword" + j;
-                                    selectKeywordPstmt.setString(1, keyword);
-                                    ResultSet rs = selectKeywordPstmt.executeQuery();
-                                    int keywordId;
-                                    if (rs.next()) {
-                                        keywordId = rs.getInt(1);
-                                    } else {
-                                        keywordPstmt.setString(1, keyword);
-                                        keywordPstmt.executeUpdate();
-                                        try (ResultSet keywordGeneratedKeys = keywordPstmt.getGeneratedKeys()) {
-                                            keywordGeneratedKeys.next();
-                                            keywordId = keywordGeneratedKeys.getInt(1);
-                                        }
-                                    }
-
-                                    // Insert into website_keywords table
-                                    websiteKeywordPstmt.setInt(1, websiteId);
-                                    websiteKeywordPstmt.setInt(2, keywordId);
-                                    websiteKeywordPstmt.setInt(3, random.nextInt(10) + 1); // Random count between 1 and 10
-                                    websiteKeywordPstmt.executeUpdate();
-                                }
-                            }
-
                             // Insert data into urls and website_urls tables
-                            String urlSql = "INSERT INTO urls(url) VALUES(?)";
+                            String urlSql = "INSERT OR IGNORE INTO urls(url) VALUES(?)";
                             String websiteUrlSql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
+                            String selectUrlSql = "SELECT id FROM urls WHERE url = ?";
                             try (PreparedStatement urlPstmt = conn.prepareStatement(urlSql, Statement.RETURN_GENERATED_KEYS);
-                                 PreparedStatement websiteUrlPstmt = conn.prepareStatement(websiteUrlSql)) {
-                                for (int k = 0; k < 10; k++) { // Insert 10 urls for each website
-                                    urlPstmt.setString(1, "www.url" + k + ".com");
+                                 PreparedStatement websiteUrlPstmt = conn.prepareStatement(websiteUrlSql);
+                                 PreparedStatement selectUrlPstmt = conn.prepareStatement(selectUrlSql)) {
+                                for (int k = 0; k < 5; k++) { // Insert 10 urls for each website
+                                    String urlToInsert = "www.url" + i + "_" + k + ".com"; // Make URLs unique for each website
+                                    urlPstmt.setString(1, urlToInsert);
                                     urlPstmt.executeUpdate();
 
-                                    // Get the generated url id
-                                    try (ResultSet urlGeneratedKeys = urlPstmt.getGeneratedKeys()) {
-                                        if (urlGeneratedKeys.next()) {
-                                            int urlId = urlGeneratedKeys.getInt(1);
+                                    // Get the id of the url
+                                    selectUrlPstmt.setString(1, urlToInsert);
+                                    ResultSet rs = selectUrlPstmt.executeQuery();
+                                    if (rs.next()) {
+                                        int urlId = rs.getInt(1);
 
-                                            // Insert into website_urls table
-                                            websiteUrlPstmt.setInt(1, websiteId);
-                                            websiteUrlPstmt.setInt(2, urlId);
-                                            websiteUrlPstmt.executeUpdate();
-                                        }
+                                        // Insert into website_urls table
+                                        websiteUrlPstmt.setInt(1, websiteId);
+                                        websiteUrlPstmt.setInt(2, urlId);
+                                        websiteUrlPstmt.executeUpdate();
                                     }
                                 }
                             }

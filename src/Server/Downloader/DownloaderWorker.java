@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 // URL imports
-import Server.Common.Message;
 import Server.URLQueue.URLQueueInterface;
+import ReliableMulticast.Objects.CrawlData;
 
 // Jsoup imports
 import org.jsoup.Jsoup;
@@ -98,11 +98,11 @@ public class DownloaderWorker implements Runnable {
              * System.out.println(token);
              */
 
-            // Create a Message object
-            Message message = new Message(url, doc.title(), doc.text(), urlList, tokenList);
+            // Create a CrawlData object
+            CrawlData crawlData = new CrawlData(url, doc.title(), doc.text(), tokenList, urlList);
 
-            // Send the message via reliable multicast
-            reliableMulticast(message);
+            // Send the crawling data via reliable multicast
+            reliableMulticast(crawlData);
 
             // Calculate the wait time based on the response time
             // Auto throttle the downloader
@@ -114,7 +114,7 @@ public class DownloaderWorker implements Runnable {
         }
     }
 
-    private void reliableMulticast(Message message) {
+    private void reliableMulticast(CrawlData crawlData) {
         // TODO: To be done
     }
 }
