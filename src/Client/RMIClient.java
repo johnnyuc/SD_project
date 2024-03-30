@@ -1,6 +1,6 @@
 package Client;
 
-import Server.Controller.RMIGatewayInterface;
+import Server.Controller.RMIGateway.RMIGatewayInterface;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;

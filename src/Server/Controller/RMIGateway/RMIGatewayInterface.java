@@ -1,4 +1,4 @@
-package Server.Controller;
+package Server.Controller.RMIGateway;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
