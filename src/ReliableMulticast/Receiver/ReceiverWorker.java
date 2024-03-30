@@ -1,7 +1,6 @@
 package ReliableMulticast.Receiver;
 
 // Multicast imports
-import ReliableMulticast.LogUtil;
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.ContainersTimestamp;
@@ -15,6 +14,8 @@ import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
+
+import Logger.LogUtil;
 
 // Error imports
 import java.io.IOException;
@@ -53,10 +54,10 @@ public class ReceiverWorker implements Runnable {
             while (running)
                 processContainer();
         } catch (IOException | ClassNotFoundException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, ReceiverWorker.class, e);
         }
 
-        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "ReceiverWorker thread stopped");
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, ReceiverWorker.class, "ReceiverWorker thread stopped");
     }
 
     // Method to process a container

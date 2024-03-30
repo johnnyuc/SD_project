@@ -12,6 +12,8 @@ import ReliableMulticast.Receiver.ReceiverWorker;
 // General imports
 import java.net.InetAddress;
 
+import Logger.LogUtil;
+
 // Error imports
 import java.io.IOException;
 
@@ -49,7 +51,7 @@ public class ReliableMulticast {
         try {
             receiver.receive();
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, ReliableMulticast.class, e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -70,7 +72,7 @@ public class ReliableMulticast {
             }
             return data;
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, ReliableMulticast.class, e);
             return null;
         }
     }

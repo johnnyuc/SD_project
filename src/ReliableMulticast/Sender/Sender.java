@@ -1,7 +1,6 @@
 package ReliableMulticast.Sender;
 
 // Multicast imports
-import ReliableMulticast.LogUtil;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.RetransmitRequest;
 
@@ -24,6 +23,8 @@ import java.security.NoSuchAlgorithmException;
 
 // Compression imports
 import java.util.zip.GZIPOutputStream;
+
+import Logger.LogUtil;
 
 public class Sender implements Runnable {
     // ! Macros for the protocol
@@ -64,10 +65,10 @@ public class Sender implements Runnable {
         try {
             startSender();
         } catch (InterruptedException | IOException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, Sender.class, e);
         }
 
-        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "Sender thread stopped");
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, Sender.class, "Sender thread stopped");
     }
 
     // Method to send all the data contained in the sendBuffer
@@ -135,7 +136,7 @@ public class Sender implements Runnable {
             // ----------------------------------------------
             // Fail sending packets with a probability of 5% to check recovery from errors
             if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, LogUtil.logging.LOGGER,
+                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class,
                         new IOException("Failed to send packet " + (i + 1)));
                 continue;
             }
@@ -157,7 +158,7 @@ public class Sender implements Runnable {
             // System.out.println("Sent container " + (i + 1) + " of "
             // + numContainers + " with size: " + serializedContainer.length + " bytes");
         } catch (IOException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, Sender.class, e);
         }
     }
 
@@ -198,7 +199,7 @@ public class Sender implements Runnable {
             byte[] hash = digest.digest(object.toString().getBytes(StandardCharsets.UTF_8));
             return new String(hash, StandardCharsets.UTF_8);
         } catch (NoSuchAlgorithmException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, Sender.class, e);
             throw new RuntimeException(e);
         }
     }

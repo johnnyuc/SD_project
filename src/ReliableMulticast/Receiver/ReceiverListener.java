@@ -1,8 +1,5 @@
 package ReliableMulticast.Receiver;
 
-// Multicast imports
-import ReliableMulticast.LogUtil;
-
 // General imports
 import java.nio.ByteBuffer;
 import java.net.SocketAddress;
@@ -17,6 +14,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import Logger.LogUtil;
 
 public class ReceiverListener implements Runnable {
     // ! Macros for the protocol
@@ -48,10 +47,10 @@ public class ReceiverListener implements Runnable {
                 receiveContainer().ifPresent(listenerQueue::add);
             }
         } catch (IOException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, ReceiverListener.class, e);
         }
 
-        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "ReceiverListener thread stopped");
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, ReceiverListener.class, "ReceiverListener thread stopped");
     }
 
     // Method to receive a container
@@ -90,7 +89,7 @@ public class ReceiverListener implements Runnable {
         try {
             return listenerQueue.take();
         } catch (InterruptedException e) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, LogUtil.logging.LOGGER, e);
+            LogUtil.logError(LogUtil.ANSI_WHITE, ReceiverListener.class, e);
             return null;
         }
     }

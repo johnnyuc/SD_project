@@ -1,4 +1,4 @@
-package ReliableMulticast;
+package Logger;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,10 +20,13 @@ public class LogUtil {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     public static class logging {
-        public static final Logger LOGGER = LogManager.getLogger(ReliableMulticast.class);
+        public static Logger getLogger(Class<?> clazz) {
+            return LogManager.getLogger(clazz);
+        }
     }
 
-    public static void logError(String color, Logger logger, Throwable throwable) {
+    public static void logError(String color, Class<?> clazz, Throwable throwable) {
+        Logger logger = LogUtil.logging.getLogger(clazz);
         StackTraceElement element = throwable.getStackTrace()[0];
 
         // Capture the stack trace as a string
@@ -40,7 +43,8 @@ public class LogUtil {
                         + ". Stack trace: " + stackTrace + ANSI_RESET);
     }
 
-    public static void logInfo(String color, Logger logger, String message) {
+    public static void logInfo(String color, Class<?> clazz, String message) {
+        Logger logger = LogUtil.logging.getLogger(clazz);
         logger.info(color + message + ANSI_RESET);
     }
 }

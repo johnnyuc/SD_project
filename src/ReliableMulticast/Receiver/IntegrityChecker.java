@@ -1,6 +1,6 @@
 package ReliableMulticast.Receiver;
 
-import ReliableMulticast.LogUtil;
+import Logger.LogUtil;
 import ReliableMulticast.Objects.Container;
 
 public class IntegrityChecker implements Runnable {
@@ -25,7 +25,7 @@ public class IntegrityChecker implements Runnable {
                 // Handle interruption
             }
         }
-        LogUtil.logInfo(LogUtil.ANSI_CYAN, LogUtil.logging.LOGGER, "IntegrityChecker thread stopped");
+        System.out.println("IntegrityChecker thread stopped");
     }
 
     private void checkTimedout(String dataID) {

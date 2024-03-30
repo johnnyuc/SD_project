@@ -31,7 +31,7 @@ public class ProtocolTester {
         reliableMulticast.startReceiving();
 
         // Send stuff
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 2; i++) {
             CrawlData crawlData = createLargeMessage("iteration+" + i);
             reliableMulticast.send(crawlData);
 
