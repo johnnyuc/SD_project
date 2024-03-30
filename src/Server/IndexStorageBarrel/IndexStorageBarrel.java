@@ -126,9 +126,10 @@ public class IndexStorageBarrel implements Serializable {
                             String keywordSql = "INSERT INTO keywords(text) VALUES(?)";
                             String websiteKeywordSql = "INSERT INTO website_keywords(website_id, keyword_id, count) VALUES(?,?,?)";
                             String selectKeywordSql = "SELECT id FROM keywords WHERE text = ?";
-                            try (PreparedStatement keywordPstmt = conn.prepareStatement(keywordSql, Statement.RETURN_GENERATED_KEYS);
-                                 PreparedStatement websiteKeywordPstmt = conn.prepareStatement(websiteKeywordSql);
-                                 PreparedStatement selectKeywordPstmt = conn.prepareStatement(selectKeywordSql)) {
+                            try (PreparedStatement keywordPstmt = conn.prepareStatement(keywordSql,
+                                    Statement.RETURN_GENERATED_KEYS);
+                                    PreparedStatement websiteKeywordPstmt = conn.prepareStatement(websiteKeywordSql);
+                                    PreparedStatement selectKeywordPstmt = conn.prepareStatement(selectKeywordSql)) {
                                 for (int j = 0; j < 10; j++) { // Insert 10 keywords for each website
                                     String keyword = "Keyword" + j;
                                     selectKeywordPstmt.setString(1, keyword);
@@ -148,7 +149,8 @@ public class IndexStorageBarrel implements Serializable {
                                     // Insert into website_keywords table
                                     websiteKeywordPstmt.setInt(1, websiteId);
                                     websiteKeywordPstmt.setInt(2, keywordId);
-                                    websiteKeywordPstmt.setInt(3, random.nextInt(10) + 1); // Random count between 1 and 10
+                                    websiteKeywordPstmt.setInt(3, random.nextInt(10) + 1); // Random count between 1 and
+                                                                                           // 10
                                     websiteKeywordPstmt.executeUpdate();
                                 }
                             }
@@ -156,8 +158,9 @@ public class IndexStorageBarrel implements Serializable {
                             // Insert data into urls and website_urls tables
                             String urlSql = "INSERT INTO urls(url) VALUES(?)";
                             String websiteUrlSql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
-                            try (PreparedStatement urlPstmt = conn.prepareStatement(urlSql, Statement.RETURN_GENERATED_KEYS);
-                                 PreparedStatement websiteUrlPstmt = conn.prepareStatement(websiteUrlSql)) {
+                            try (PreparedStatement urlPstmt = conn.prepareStatement(urlSql,
+                                    Statement.RETURN_GENERATED_KEYS);
+                                    PreparedStatement websiteUrlPstmt = conn.prepareStatement(websiteUrlSql)) {
                                 for (int k = 0; k < 10; k++) { // Insert 10 urls for each website
                                     urlPstmt.setString(1, "www.url" + k + ".com");
                                     urlPstmt.executeUpdate();
@@ -220,7 +223,8 @@ public class IndexStorageBarrel implements Serializable {
         int columnsNumber = rsmd.getColumnCount();
         while (rs.next()) {
             for (int i = 1; i <= columnsNumber; i++) {
-                if (i > 1) System.out.print(",  ");
+                if (i > 1)
+                    System.out.print(",  ");
                 String columnValue = rs.getString(i);
                 System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
             }
