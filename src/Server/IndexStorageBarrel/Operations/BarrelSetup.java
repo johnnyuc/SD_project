@@ -1,17 +1,14 @@
 package Server.IndexStorageBarrel.Operations;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class BarrelSetup {
 
     public static void databaseIntegrity(Connection conn) {
         try {
             // Define the expected table names and the expected number of tables
-            List<String> expectedTableNames = Arrays.asList("websites", "keywords", "urls", "websites_keywords", "websites_urls");
+            List<String> expectedTableNames = Arrays.asList("websites", "keywords", "urls", "website_keywords", "website_urls");
             int expectedTableCount = expectedTableNames.size();
 
             // Retrieve all table names
@@ -47,6 +44,7 @@ public class BarrelSetup {
             System.err.println("Error checking database integrity: " + e.getMessage());
         }
     }
+
 
     static void setupDatabase() {
         String url = "jdbc:sqlite:data/testBarrel.db";

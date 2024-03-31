@@ -18,6 +18,9 @@ public class BarrelProcessing {
     }
 
     public double calculateTf(String term) {
+        System.err.println("termCounts: " + termCounts);
+        System.err.println("term: " + term);
+        System.err.println("termCounts.getOrDefault(term, 0): " + termCounts.getOrDefault(term, 0));
         return (double) termCounts.getOrDefault(term, 0) / totalTerms;
     }
 
@@ -28,6 +31,9 @@ public class BarrelProcessing {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 int docsWithTerm = rs.getInt(1);
+                System.err.println("docsWithTerm: " + docsWithTerm);
+                System.err.println("totalTerms: " + totalTerms);
+                System.err.println("Math.log((double) totalTerms / (1 + docsWithTerm)): " + Math.log((double) totalTerms / (1 + docsWithTerm)));
                 return Math.log((double) totalTerms / (1 + docsWithTerm));
             }
         }
