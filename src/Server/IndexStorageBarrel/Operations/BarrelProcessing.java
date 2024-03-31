@@ -25,9 +25,21 @@ public class BarrelProcessing {
     }
 
     public double calculateIdf(String term) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM websites WHERE description LIKE ?";
+        // Get keyword_id for the given term
+        String sql = "SELECT id FROM keywords WHERE keyword = ?";
+        int keywordId = 0;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, "%" + term + "%");
+            pstmt.setString(1, term);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                keywordId = rs.getInt("id");
+            }
+        }
+
+        // Use keyword_id to get the count of distinct website_id
+        sql = "SELECT COUNT(DISTINCT website_id) FROM website_keywords WHERE keyword_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, keywordId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 int docsWithTerm = rs.getInt(1);
@@ -38,5 +50,19 @@ public class BarrelProcessing {
             }
         }
         return 0;
+    }
+
+    public double calculateTfIdf(String term) {
+        double tf = calculateTf(term);
+        double idf = 0;
+        try {
+            idf = calculateIdf(term);
+        } catch (SQLException e) {
+            System.err.println("Error calculating IDF: " + e.getMessage());
+        }
+        System.err.println("tf: " + tf);
+        System.err.println("idf: " + idf);
+        System.err.println("tf * idf: " + tf * idf);
+        return tf * idf;
     }
 }
