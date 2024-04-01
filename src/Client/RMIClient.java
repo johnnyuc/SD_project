@@ -1,5 +1,6 @@
 package Client;
 
+import Server.Controller.RMIGateway.RMIGateway;
 import Server.Controller.RMIGateway.RMIGatewayInterface;
 
 import java.rmi.NotBoundException;
@@ -20,8 +21,8 @@ public class RMIClient {
 
     RMIClient() {
         try {
-            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(6001)
-                    .lookup("rmigateway");
+            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(RMIGateway.PORT)
+                    .lookup(RMIGateway.REMOTE_REFERENCE_NAME);
             scanner = new Scanner(System.in);
             menu();
             scanner.close();
@@ -41,9 +42,9 @@ public class RMIClient {
     private boolean treatChoice(int choice) throws RemoteException {
         switch (choice) {
             case 1:
-                System.out.println("Write below the message to be sent:");
-                rmiGateway.sendMessage(readMessage());
-                System.out.println("Message sent.");
+                System.out.println("Enter query:");
+                rmiGateway.searchQuery(readQuery());
+                System.out.println("Links will be displayed here.");
                 break;
             case 2:
                 System.out.println("Quitting...");
@@ -56,7 +57,7 @@ public class RMIClient {
         return true;
     }
 
-    private String readMessage() {
+    private String readQuery() {
         return scanner.nextLine();
     }
 
@@ -66,7 +67,7 @@ public class RMIClient {
 
     private void printMenu() {
         System.out.println("----------------------------------");
-        System.out.println("1. Send message");
+        System.out.println("1. Search");
         System.out.println("2. Quit");
         System.out.println("----------------------------------");
     }

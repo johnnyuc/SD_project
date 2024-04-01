@@ -1,18 +1,21 @@
 package Server.Controller.RMIGateway;
 
-import Server.IndexStorageBarrel.IndexStorageBarrel;
+import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 
 public class BarrelTimestamp {
-    private IndexStorageBarrel barrel;
-    private long timestamp;
+    private IndexStorageBarrelInterface remoteBarrel;
 
-    public BarrelTimestamp(IndexStorageBarrel barrel, long timestamp) {
-        this.barrel = barrel;
+    private long timestamp;
+    private int barrelID;
+
+    public BarrelTimestamp(IndexStorageBarrelInterface remoteBarrel, long timestamp, int barrelId) {
+        this.remoteBarrel = remoteBarrel;
         this.timestamp = timestamp;
+        this.barrelID = barrelId;
     }
 
-    public IndexStorageBarrel getBarrel() {
-        return barrel;
+    public IndexStorageBarrelInterface getRemoteBarrel() {
+        return remoteBarrel;
     }
 
     public long getTimestamp() {
@@ -21,5 +24,9 @@ public class BarrelTimestamp {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public int getBarrelID() {
+        return barrelID;
     }
 }
