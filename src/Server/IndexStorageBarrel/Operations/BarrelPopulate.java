@@ -4,24 +4,19 @@ import ReliableMulticast.Objects.CrawlData;
 
 import java.net.URL;
 import java.sql.*;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class BarrelPopulate {
     private final Connection conn;
-    private final Map<String, Integer> termCounts;
-    private int totalTerms;
     private BarrelProcessing barrelProcessing;
 
     public BarrelPopulate(Connection conn) {
         this.conn = conn;
-        this.termCounts = new HashMap<>();
-        this.totalTerms = 0;
-        this.barrelProcessing = new BarrelProcessing(conn, termCounts, totalTerms);
+        this.barrelProcessing = new BarrelProcessing(conn);
     }
 
-    public void insertData(CrawlData crawlData) {
+    public void insertData(CrawlData crawlData) throws SQLException {
         // Extract data from CrawlData object
         String url = String.valueOf(crawlData.getUrl());
         String title = crawlData.getTitle();
@@ -29,14 +24,8 @@ public class BarrelPopulate {
         List<String> tokens = crawlData.getTokens();
         List<URL> urls = crawlData.getUrlStrings();
 
-        // Update term counts and total terms
-        for (String token : tokens) {
-            termCounts.put(token, termCounts.getOrDefault(token, 0) + 1);
-            totalTerms++;
-        }
-
         // Update BarrelProcessing with new term counts and total terms
-        barrelProcessing = new BarrelProcessing(conn, termCounts, totalTerms);
+        barrelProcessing = new BarrelProcessing(conn);
 
         // Check if URL already exists in websites table
         String sql = "SELECT id FROM websites WHERE url = ?";
@@ -73,6 +62,8 @@ public class BarrelPopulate {
         }
 
         // Insert each token into keywords table, link it to the website in website_keywords table, and calculate TF-IDF
+        int docNr = barrelProcessing.getDocnr();
+        if (!barrelProcessing.docContainsToken(websiteId, String.valueOf(tokens))) docNr++;
         for (String token : tokens) {
             int keywordId = 0;
             sql = "SELECT id FROM keywords WHERE keyword = ?";
@@ -94,7 +85,7 @@ public class BarrelPopulate {
                 }
 
                 // Calculate TF-IDF by multiplying TF and IDF
-                double tfIdf = barrelProcessing.calculateTfIdf(token);
+                double tfIdf = barrelProcessing.calcTFIDF(token, new ArrayList<>(tokens), docNr);
 
                 // Check if the combination of website_id and keyword_id already exists in the website_keywords table
                 sql = "SELECT 1 FROM website_keywords WHERE website_id = ? AND keyword_id = ?";
