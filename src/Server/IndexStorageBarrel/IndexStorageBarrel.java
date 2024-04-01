@@ -44,13 +44,16 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         processArgs(args);
         startRMI();
 
-        // this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
-        // BarrelSetup.databaseIntegrity(conn); // Check database integrity
-        // this.barrelPopulate = new BarrelPopulate(conn);
-        // this.barrelRetriever = new BarrelRetriever(conn);
-        new BarrelPinger(barrelID);
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Index Storage Barrel ready.");
-
+        try {
+            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
+            BarrelSetup.databaseIntegrity(conn); // Check database integrity
+            this.barrelPopulate = new BarrelPopulate(conn);
+            this.barrelRetriever = new BarrelRetriever(conn);
+            new BarrelPinger(barrelID);
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Index Storage Barrel ready.");
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, IndexStorageBarrel.class, e);
+        }
     }
 
     private boolean processArgs(String[] args) {
