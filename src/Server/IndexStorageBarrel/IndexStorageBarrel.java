@@ -1,11 +1,11 @@
 package Server.IndexStorageBarrel;
 
+import ReliableMulticast.ReliableMulticast;
 import ReliableMulticast.Objects.CrawlData;
 import Server.Controller.RMIGateway.RMIGateway;
 import Server.IndexStorageBarrel.Objects.SearchData;
 import Server.IndexStorageBarrel.Operations.*;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -24,8 +24,12 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     private BarrelSetup barrelSetup;
 
     private int barrelID;
-    private String multicastGroupAddress;
-    private int multicastPort;
+
+    private String downloaderMcastGroupAddress;
+    private int downloaderMcastPort;
+
+    private String syncMcastGroupAddress;
+    private int syncMcastPort;
 
     public static final int STARTING_PORT = 6000;
     public static final String REMOTE_REFERENCE_NAME = "indexstoragebarrel";
@@ -41,7 +45,9 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     public IndexStorageBarrel(String[] args) throws RemoteException {
         super();
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Starting Index Storage Barrel...");
-        processArgs(args);
+        if (!processArgs(args)) {
+            return;
+        }
         startRMI();
 
         try {
@@ -50,6 +56,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
             new BarrelPinger(barrelID);
+            new BarrelReceiver(barrelPopulate, new ReliableMulticast(downloaderMcastGroupAddress, downloaderMcastPort));
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Index Storage Barrel ready.");
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, IndexStorageBarrel.class, e);
@@ -57,9 +64,11 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     }
 
     private boolean processArgs(String[] args) {
-        if (args.length != 6) {
+        if (args.length != 10) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
-                    "Wrong number of arguments: expected -id <barrel id> -mcast <multicast group address> -port <port number>");
+                    "Wrong number of arguments: expected -id <barrel id> "
+                            + "-dmcast <downloader multicast group address> -dport <downloader port number> "
+                            + "-smcast <sync multicast group address> -sport <sync port number>");
             return false;
         }
         // Parse the arguments
@@ -67,8 +76,10 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "-id" -> barrelID = Integer.parseInt(args[++i]);
-                    case "-mcast" -> multicastGroupAddress = args[++i];
-                    case "-port" -> multicastPort = Integer.parseInt(args[++i]);
+                    case "-dmcast" -> downloaderMcastGroupAddress = args[++i];
+                    case "-dport" -> downloaderMcastPort = Integer.parseInt(args[++i]);
+                    case "-smcast" -> syncMcastGroupAddress = args[++i];
+                    case "-sport" -> syncMcastPort = Integer.parseInt(args[++i]);
                     default -> {
                         LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                                 "Unexpected argument: " + args[i]);

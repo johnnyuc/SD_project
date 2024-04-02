@@ -4,7 +4,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.rmi.NotBoundException;
+import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
+
+import Logger.LogUtil;
+import Server.Controller.RMIGateway.RMIGateway;
+import Server.Controller.RMIGateway.RMIGatewayInterface;
 
 /**
  * Server.Controller.AdminConsole
@@ -14,21 +20,18 @@ public class AdminConsole {
         new AdminConsole();
     }
 
-    private String MULTICAST_ADDRESS = "224.67.68.70";
-    private int PORT = 6002;
-    private MulticastSocket multicastSocket;
+    private RMIGatewayInterface rmiGateway;
     private Scanner scanner;
 
     AdminConsole() {
         try {
-            // Create socket without binding it (only for sending)
-            multicastSocket = new MulticastSocket();
+            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(RMIGateway.PORT)
+                    .lookup(RMIGateway.REMOTE_REFERENCE_NAME);
             scanner = new Scanner(System.in);
             menu();
             scanner.close();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (IOException | NotBoundException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, AdminConsole.class, e);
         }
 
     }
@@ -43,7 +46,6 @@ public class AdminConsole {
         switch (choice) {
             case 1:
                 System.out.println("Write below the SQL query to be sent:");
-                sendMulticast(readMessage());
                 System.out.println("SQL query sent.");
                 break;
             case 2:
@@ -70,13 +72,5 @@ public class AdminConsole {
         System.out.println("1. Send SQL query");
         System.out.println("2. Quit");
         System.out.println("----------------------------------");
-    }
-
-    private void sendMulticast(String message) throws IOException {
-        byte[] buffer = message.getBytes();
-
-        InetAddress group = InetAddress.getByName(MULTICAST_ADDRESS);
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, group, PORT);
-        multicastSocket.send(packet);
     }
 }

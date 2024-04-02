@@ -3,10 +3,11 @@ package Server.Controller.RMIGateway;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 
 public class BarrelTimestamp {
-    private IndexStorageBarrelInterface remoteBarrel;
-
+    private final IndexStorageBarrelInterface remoteBarrel;
     private long timestamp;
-    private int barrelID;
+    private long avgResponseTime = 0;
+
+    private final int barrelID;
 
     public BarrelTimestamp(IndexStorageBarrelInterface remoteBarrel, long timestamp, int barrelId) {
         this.remoteBarrel = remoteBarrel;
@@ -28,5 +29,13 @@ public class BarrelTimestamp {
 
     public int getBarrelID() {
         return barrelID;
+    }
+
+    public long getAvgResponseTime() {
+        return avgResponseTime;
+    }
+
+    public void setAvgResponseTime(long avgResponseTime) {
+        this.avgResponseTime = (this.avgResponseTime + avgResponseTime) / 2;
     }
 }

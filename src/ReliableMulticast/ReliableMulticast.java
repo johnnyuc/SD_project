@@ -32,6 +32,7 @@ public class ReliableMulticast {
             this.sender = new Sender(multicastGroup, port, senderIP);
             this.receiver = new Receiver(sender, multicastGroup, port);
         } catch (IOException | InterruptedException e) {
+            // TODO : mudar?
             throw new RuntimeException(e);
         }
     }

@@ -7,6 +7,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import Logger.LogUtil;
+
 public class BarrelPopulate {
     private final Connection conn;
     private BarrelProcessing barrelProcessing;
@@ -58,12 +60,14 @@ public class BarrelPopulate {
                 }
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }
 
-        // Insert each token into keywords table, link it to the website in website_keywords table, and calculate TF-IDF
+        // Insert each token into keywords table, link it to the website in
+        // website_keywords table, and calculate TF-IDF
         int docNr = barrelProcessing.getDocnr();
-        if (!barrelProcessing.docContainsToken(websiteId, String.valueOf(tokens))) docNr++;
+        if (!barrelProcessing.docContainsToken(websiteId, String.valueOf(tokens)))
+            docNr++;
         for (String token : tokens) {
             int keywordId = 0;
             sql = "SELECT id FROM keywords WHERE keyword = ?";
@@ -87,14 +91,16 @@ public class BarrelPopulate {
                 // Calculate TF-IDF by multiplying TF and IDF
                 double tfIdf = barrelProcessing.calcTFIDF(token, new ArrayList<>(tokens), docNr);
 
-                // Check if the combination of website_id and keyword_id already exists in the website_keywords table
+                // Check if the combination of website_id and keyword_id already exists in the
+                // website_keywords table
                 sql = "SELECT 1 FROM website_keywords WHERE website_id = ? AND keyword_id = ?";
                 try (PreparedStatement pstmt3 = conn.prepareStatement(sql)) {
                     pstmt3.setInt(1, websiteId);
                     pstmt3.setInt(2, keywordId);
                     ResultSet rs5 = pstmt3.executeQuery();
                     if (!rs5.next()) {
-                        // Link the keyword to the website in the website_keywords table and store the TF-IDF score
+                        // Link the keyword to the website in the website_keywords table and store the
+                        // TF-IDF score
                         sql = "INSERT INTO website_keywords(website_id, keyword_id, tf_idf) VALUES(?,?,?)";
                         try (PreparedStatement pstmt4 = conn.prepareStatement(sql)) {
                             pstmt4.setInt(1, websiteId);
@@ -111,7 +117,8 @@ public class BarrelPopulate {
             }
         }
 
-        // Insert each URL into urls table and link it to the website in website_urls table
+        // Insert each URL into urls table and link it to the website in website_urls
+        // table
         for (URL urlItem : urls) {
             int urlId = 0;
             sql = "SELECT id FROM urls WHERE url = ?";
@@ -132,7 +139,8 @@ public class BarrelPopulate {
                     }
                 }
 
-                // Check if the combination of website_id and url_id already exists in the website_urls table
+                // Check if the combination of website_id and url_id already exists in the
+                // website_urls table
                 sql = "SELECT 1 FROM website_urls WHERE website_id = ? AND url_id = ?";
                 try (PreparedStatement pstmt5 = conn.prepareStatement(sql)) {
                     pstmt5.setInt(1, websiteId);

@@ -19,7 +19,8 @@ import Server.IndexStorageBarrel.Operations.BarrelPinger;
 public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
     public static final int PORT = 5999;
     public static final String REMOTE_REFERENCE_NAME = "rmigateway";
-    int currentBarrel = 0;
+    public int currentBarrel = 0;
+    // TODO needs to be synchronized
     ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
 
     public static void main(String[] args) {
@@ -38,16 +39,19 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         super();
     }
 
-    public void searchQuery(String query) throws RemoteException {
+    public boolean searchQuery(String query) throws RemoteException {
         // TODO If a barrel goes down, and the client sends a request, it might be
         // redirected to the crashed barrel and crash the client
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
-        IndexStorageBarrelInterface remoteBarrel = getAvailableBarrel();
-        if (remoteBarrel == null)
-            return;
+        BarrelTimestamp barrel = getAvailableBarrel();
+        // TODO maybe do something better if no barrel is available?
+        if (barrel == null)
+            return false;
 
-        remoteBarrel.sayHi(query);
-
+        long startTime = System.currentTimeMillis();
+        barrel.getRemoteBarrel().sayHi(query);
+        barrel.setAvgResponseTime(System.currentTimeMillis() - startTime);
+        return true;
     }
 
     public void receivePing(int barrelID, long timestamp) throws AccessException, RemoteException, NotBoundException {
@@ -67,10 +71,9 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, timestamp, barrelID));
-
     }
 
-    private IndexStorageBarrelInterface getAvailableBarrel() {
+    private synchronized BarrelTimestamp getAvailableBarrel() {
         for (BarrelTimestamp timedBarrel : timedBarrels)
             if (timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2)
                 timedBarrels.remove(timedBarrel);
@@ -81,6 +84,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
 
         currentBarrel = (currentBarrel + 1) % timedBarrels.size();
-        return timedBarrels.get(currentBarrel).getRemoteBarrel();
+        return timedBarrels.get(currentBarrel);
     }
 }

@@ -29,6 +29,7 @@ public class IntegrityChecker implements Runnable {
     }
 
     private void checkTimedout(String dataID) {
+        // TODO Discard the data if no answear is given in 3 retransmit requests
         // Get the timestamp of the container
         long timestamp = worker.getContainersReceived().get(dataID).getTimestamp();
         Container[] containers = worker.getContainersReceived().get(dataID).getContainers();

@@ -8,6 +8,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
 
+import Logger.LogUtil;
+
 /**
  * Client.RMIClient
  */
@@ -27,24 +29,36 @@ public class RMIClient {
             menu();
             scanner.close();
         } catch (RemoteException | NotBoundException e) {
-            // TODO: Treat exception better
-            System.out.println("Exception in Client.RMIClient: " + e);
-            e.printStackTrace();
+            LogUtil.logError(LogUtil.ANSI_RED, RMIClient.class, e);
         }
     }
 
+    /**
+     * Display the menu
+     * 
+     * @throws RemoteException
+     */
     private void menu() throws RemoteException {
         do {
             printMenu();
         } while (treatChoice(readChoice()));
     }
 
+    /**
+     * Treat the choice of the user
+     * 
+     * @param choice the choice
+     * @return true if the user wants to continue, false otherwise
+     * @throws RemoteException
+     */
     private boolean treatChoice(int choice) throws RemoteException {
         switch (choice) {
             case 1:
                 System.out.println("Enter query:");
-                rmiGateway.searchQuery(readQuery());
-                System.out.println("Links will be displayed here.");
+                if (rmiGateway.searchQuery(readQuery()))
+                    System.out.println("Links will be displayed here.");
+                else
+                    System.out.println("No results available.");
                 break;
             case 2:
                 System.out.println("Quitting...");
@@ -57,14 +71,27 @@ public class RMIClient {
         return true;
     }
 
+    /**
+     * Read the query from the user
+     * 
+     * @return the query
+     */
     private String readQuery() {
         return scanner.nextLine();
     }
 
+    /**
+     * Read the choice from the user
+     * 
+     * @return the choice
+     */
     private int readChoice() {
         return Integer.parseInt(scanner.nextLine());
     }
 
+    /**
+     * Print the menu
+     */
     private void printMenu() {
         System.out.println("----------------------------------");
         System.out.println("1. Search");
