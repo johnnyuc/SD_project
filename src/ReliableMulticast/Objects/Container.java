@@ -6,28 +6,24 @@ import java.io.Serializable;
 // Packet class
 public class Container implements Serializable {
     // Fields
-    private byte[] data;
-    private Class<?> dataType;
-    private String dataID;
+    private final byte[] data;
+    private final Class<?> dataType;
+    private final Class<?> senderClass;
+    private final String dataID;
     private final String senderIP;
-    private int packetNumber;
-    private int totalPackets;
+    private final int packetNumber;
+    private final int totalPackets;
 
     // Default Constructor
-    public Container(byte[] data, Class<?> dataType, String dataID, String senderIP, int packetNumber, int totalPackets) {
+    public Container(byte[] data, Class<?> dataType, Class<?> senderClass,
+            String dataID, String senderIP, int packetNumber, int totalPackets) {
         this.data = data;
         this.dataType = dataType;
+        this.senderClass = senderClass;
         this.dataID = dataID;
         this.senderIP = senderIP;
         this.packetNumber = packetNumber;
         this.totalPackets = totalPackets;
-    }
-
-    // Retransmit constructor
-    public Container(String dataID, String senderIP, int packetNumber) {
-        this.dataID = dataID;
-        this.senderIP = senderIP;
-        this.packetNumber = packetNumber;
     }
 
     // Getters and setters
@@ -35,24 +31,16 @@ public class Container implements Serializable {
         return data;
     }
 
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-
     public Class<?> getDataType() {
         return dataType;
     }
 
-    public void setDataType(Class<?> dataType) {
-        this.dataType = dataType;
+    public Class<?> getSenderClass() {
+        return senderClass;
     }
 
     public String getDataID() {
         return dataID;
-    }
-
-    public void setDataID(String dataID) {
-        this.dataID = dataID;
     }
 
     public String getSenderIP() {
@@ -63,16 +51,8 @@ public class Container implements Serializable {
         return packetNumber;
     }
 
-    public void setPacketNumber(int packetNumber) {
-        this.packetNumber = packetNumber;
-    }
-
     public int getTotalPackets() {
         return totalPackets;
-    }
-
-    public void setTotalPackets(int totalPackets) {
-        this.totalPackets = totalPackets;
     }
 
     // Boolean method to check if the packet is the last packet

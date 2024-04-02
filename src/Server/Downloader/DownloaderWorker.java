@@ -43,7 +43,9 @@ public class DownloaderWorker implements Runnable {
         this.queueIP = queueIP;
         this.minWaitTime = minWaitTime;
         this.maxWaitTime = maxWaitTime;
-        this.reliableMulticast = new ReliableMulticast(multicastGroupAddress, multicastPort);
+        Class<?>[] ignoredClasses = { DownloaderWorker.class };
+        this.reliableMulticast = new ReliableMulticast(multicastGroupAddress, multicastPort,
+                DownloaderWorker.class, ignoredClasses);
 
         // Add ctrl+c shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));

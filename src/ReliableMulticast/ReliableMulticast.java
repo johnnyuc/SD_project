@@ -24,13 +24,13 @@ public class ReliableMulticast {
     private final Receiver receiver;
 
     // Constructor
-    public ReliableMulticast(String multicastGroup, int port) {
+    public ReliableMulticast(String multicastGroup, int port, Class<?> senderClass, Class<?>[] ignoredClasses) {
         try {
             // Gets machine IP
             String senderIP = InetAddress.getLocalHost().getHostAddress();
             // Creates sender and receiver
-            this.sender = new Sender(multicastGroup, port, senderIP);
-            this.receiver = new Receiver(sender, multicastGroup, port);
+            this.sender = new Sender(multicastGroup, port, senderIP, senderClass);
+            this.receiver = new Receiver(sender, multicastGroup, port, ignoredClasses);
         } catch (IOException | InterruptedException e) {
             // TODO : mudar?
             throw new RuntimeException(e);

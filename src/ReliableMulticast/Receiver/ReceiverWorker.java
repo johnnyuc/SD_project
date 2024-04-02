@@ -34,14 +34,18 @@ public class ReceiverWorker implements Runnable {
     // Running flag
     private volatile boolean running = true;
 
+    private final Class<?>[] ignoredClasses;
+
     // Stopping the thread
     public static final Object STOP_PILL = new Object();
 
     // Constructor
-    ReceiverWorker(Sender sender, ReceiverListener listener, BlockingQueue<Object> workerQueue) {
+    ReceiverWorker(Sender sender, ReceiverListener listener,
+            BlockingQueue<Object> workerQueue, Class<?>[] ignoredSenderClasses) {
         this.sender = sender;
         this.receiverListener = listener;
         this.workerQueue = workerQueue;
+        this.ignoredClasses = ignoredSenderClasses;
     }
 
     // Thread startup
@@ -61,7 +65,6 @@ public class ReceiverWorker implements Runnable {
     // Method to process a container
     private void processContainer() throws IOException, ClassNotFoundException {
         Object data = receiverListener.getData();
-
         // Check if the data is a stopping pill
         if (data == STOP_PILL) {
             running = false;
@@ -70,6 +73,14 @@ public class ReceiverWorker implements Runnable {
 
         // Unpack the container
         Container container = unpackContainer((byte[]) data);
+
+        // Check if the data is to be ignored
+        for (Class<?> ignoredClass : ignoredClasses)
+            if (ignoredClass == container.getSenderClass()) {
+                LogUtil.logInfo(LogUtil.ANSI_WHITE, ReceiverWorker.class,
+                        "Ignoring data from " + container.getSenderClass().getName());
+                return;
+            }
 
         // Add the container to the map
         addContainerToMap(container);

@@ -39,20 +39,22 @@ public class Sender implements Runnable {
     private final MulticastSocket socket;
     private final InetAddress multicastGroup;
 
-    // Sender IP and port
+    // Sender info
     private final String senderIP;
     private final int port;
+    private final Class<?> senderClass;
 
     // Buffers
     private final BlockingDeque<Object> sendBuffer = new LinkedBlockingDeque<>();
     private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
     // Constructor
-    public Sender(String multicastGroup, int port, String senderIP) throws IOException {
+    public Sender(String multicastGroup, int port, String senderIP, Class<?> senderClass) throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
         this.port = port;
         this.socket = new MulticastSocket(port);
         this.senderIP = senderIP;
+        this.senderClass = senderClass;
 
         new Thread(this, "Multicast Sender Thread").start();
     }
@@ -186,7 +188,7 @@ public class Sender implements Runnable {
         int length = Math.min(MAX_PACKET_SIZE, objectData.length - offset);
         byte[] objectSlice = Arrays.copyOfRange(objectData, offset, offset + length);
 
-        return new Container(objectSlice, objectData.getClass(), objectHash, senderIP, i, numPackets);
+        return new Container(objectSlice, objectData.getClass(), senderClass, objectHash, senderIP, i, numPackets);
     }
 
     // Hashing function to get the hash of an object

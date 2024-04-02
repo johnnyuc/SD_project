@@ -3,6 +3,7 @@ package Server.IndexStorageBarrel;
 import ReliableMulticast.ReliableMulticast;
 import ReliableMulticast.Objects.CrawlData;
 import Server.Controller.RMIGateway.RMIGateway;
+import Server.Downloader.DownloaderWorker;
 import Server.IndexStorageBarrel.Objects.SearchData;
 import Server.IndexStorageBarrel.Operations.*;
 
@@ -56,7 +57,9 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
             new BarrelPinger(barrelID);
-            new BarrelReceiver(barrelPopulate, new ReliableMulticast(downloaderMcastGroupAddress, downloaderMcastPort));
+            Class<?>[] ignoredClasses = { IndexStorageBarrel.class };
+            new BarrelReceiver(barrelPopulate, new ReliableMulticast(downloaderMcastGroupAddress, downloaderMcastPort,
+                    IndexStorageBarrel.class, ignoredClasses));
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Index Storage Barrel ready.");
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, IndexStorageBarrel.class, e);

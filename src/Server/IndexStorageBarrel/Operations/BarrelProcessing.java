@@ -47,7 +47,7 @@ public class BarrelProcessing {
         }
 
         // Print TF-IDF value
-        System.err.println("tf * idf: " + tf * idf);
+        // System.err.println("tf * idf: " + tf * idf);
 
         return tf * idf;
     }

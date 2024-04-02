@@ -23,9 +23,10 @@ public class IntegrityChecker implements Runnable {
                 Thread.sleep(TIMEOUT_CHECK_PERIOD);
             } catch (InterruptedException e) {
                 // Handle interruption
+                LogUtil.logError(LogUtil.ANSI_WHITE, IntegrityChecker.class, e);
             }
         }
-        System.out.println("IntegrityChecker thread stopped");
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, IntegrityChecker.class, "IntegrityChecker thread stopped");
     }
 
     private void checkTimedout(String dataID) {

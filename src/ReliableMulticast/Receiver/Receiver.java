@@ -26,10 +26,14 @@ public class Receiver {
     // Queue for clean final data
     private final BlockingQueue<Object> workerQueue;
 
+    private final Class<?>[] ignoredClasses;
+
     // Constructor
-    public Receiver(Sender sender, String multicastGroup, int port) throws IOException, InterruptedException {
+    public Receiver(Sender sender, String multicastGroup, int port, Class<?>[] ignoredClasses)
+            throws IOException, InterruptedException {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
+        this.ignoredClasses = ignoredClasses;
 
         // Join the multicast group using channel [non blocking]
         // NetworkInterface networkInterface =
@@ -52,7 +56,7 @@ public class Receiver {
         listenerThread.start();
 
         // Thread for ReceiverWorker
-        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue);
+        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue, ignoredClasses);
         Thread workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
         workerThread.start();
     }
