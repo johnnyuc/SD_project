@@ -130,13 +130,16 @@ public class Sender implements Runnable {
             // Add containerData to retransmission buffer
             retransmissionBuffer.get(objectHash)[i] = container;
 
-            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE ----------------------------------------------
+            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE
+            // ----------------------------------------------
             // Fail sending packets with a probability of 5% to check recovery from errors
             if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class, new IOException("Failed to send packet " + (i + 1)));
+                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class,
+                        new IOException("Failed to send packet " + (i + 1)));
                 continue;
             }
-            // TODO ----------------------------------------------------------------------------------------------------
+            // TODO
+            // ----------------------------------------------------------------------------------------------------
             sendContainer(container, numContainers, i);
         }
     }
@@ -174,7 +177,6 @@ public class Sender implements Runnable {
         RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainer, dataID);
         // Add the request to the start of the buffer so it has priority
         sendBuffer.addFirst(retransmitRequest);
-        System.out.println("Sent retransmit request for packet " + (missingContainer + 1));
     }
 
     // Slices the object and returns it in a container
@@ -199,7 +201,6 @@ public class Sender implements Runnable {
         }
     }
 
-    // TODO: SEE WHERE TO PUT THIS CLASS
     // CircularHashMap class to store the retransmission buffer
     public static class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
         private final int maxSize;

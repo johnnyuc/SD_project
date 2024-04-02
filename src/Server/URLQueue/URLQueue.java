@@ -63,7 +63,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         bloomFilter = new BloomFilter(optimalSize);
 
         try {
-            enqueueURL(URI.create("https://en.wikipedia.org/wiki/Computer_science").toURL(), -1);
+            enqueueURL(URI.create("https://books.toscrape.com/").toURL(), -1);
         } catch (MalformedURLException e) {
             System.out.println("Error in Server.URLQueue.Server.URLQueue: " + e);
         }

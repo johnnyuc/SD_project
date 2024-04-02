@@ -1,7 +1,9 @@
 package Server.Downloader;// Java imports
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
@@ -94,7 +96,7 @@ public class DownloaderWorker implements Runnable {
                 String href = link.attr("abs:href");
                 if (href.startsWith("http://") || href.startsWith("https://")) {
                     try {
-                        System.out.println(href);
+                        // TODO Fix the encoding
                         URL urlObject = URI.create(href).toURL();
                         URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(),
                                 urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
@@ -122,6 +124,21 @@ public class DownloaderWorker implements Runnable {
             System.out.println("Error in Server.Downloader.Server.Downloader.visitURL: " + e);
             System.out.println("URL: " + url);
         }
+    }
+
+    private String encodeHref(String href) throws UnsupportedEncodingException {
+        String[] tokens = href.split("//", 2);
+        String encoded = URLEncoder.encode(tokens[1], "UTF-8");
+
+        encoded.replaceAll("\\+", "%20")
+                .replaceAll("%21", "!")
+                .replaceAll("%27", "'")
+                .replaceAll("%28", "(")
+                .replaceAll("%29", ")")
+                .replaceAll("%2F", "/")
+                .replaceAll("%7E", "~");
+
+        return tokens[0] + "//" + encoded;
     }
 
     private void stop() {

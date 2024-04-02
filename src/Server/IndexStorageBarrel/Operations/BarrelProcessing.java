@@ -14,9 +14,10 @@ public class BarrelProcessing {
     // Method to calculate the TF value of a term in a document
     public double calcTF(String term, List<String> subsetTerms) {
         // Print TF values
-        System.err.println("term: " + term);
-        System.err.println("subsetTerms: " + subsetTerms);
-        System.err.println("TF - termCount/totalSubsetTerms: " + (double) Collections.frequency(subsetTerms, term) / subsetTerms.size());
+        // System.err.println("term: " + term);
+        // System.err.println("subsetTerms: " + subsetTerms);
+        // System.err.println("TF - termCount/totalSubsetTerms: " + (double)
+        // Collections.frequency(subsetTerms, term) / subsetTerms.size());
         int termCount = Collections.frequency(subsetTerms, term);
         int totalSubsetTerms = subsetTerms.size();
         return (double) termCount / totalSubsetTerms;
@@ -27,9 +28,10 @@ public class BarrelProcessing {
         int tokenDocnr = getTokenDocnr(term, subsetTerms);
 
         // Print IDF values
-        System.err.println("docNr: " + docNr);
-        System.err.println("tokenDocnr: " + tokenDocnr);
-        System.err.println("IDF - log(docNr/tokenDocnr): " + Math.log((double) docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr)));
+        // System.err.println("docNr: " + docNr);
+        // System.err.println("tokenDocnr: " + tokenDocnr);
+        // System.err.println("IDF - log(docNr/tokenDocnr): " + Math.log((double) docNr
+        // / ((tokenDocnr == 0) ? 1 : tokenDocnr)));
 
         return Math.log((double) docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr));
     }
@@ -86,7 +88,8 @@ public class BarrelProcessing {
             }
         }
 
-        if (subsetTerms.contains(term)) docsWithTerm++;
+        if (subsetTerms.contains(term))
+            docsWithTerm++;
 
         return docsWithTerm;
     }

@@ -70,8 +70,6 @@ public class ReceiverWorker implements Runnable {
 
         // Unpack the container
         Container container = unpackContainer((byte[]) data);
-        System.out.println("Received packet " + (container.getPacketNumber() + 1) +
-                " of " + container.getTotalPackets());
 
         // Add the container to the map
         addContainerToMap(container);

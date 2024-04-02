@@ -32,9 +32,9 @@ public class Receiver {
         this.sender = sender;
 
         // Join the multicast group using channel [non blocking]
-        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
         // NetworkInterface networkInterface =
-        // NetworkInterface.getByInetAddress(InetAddress.getByName("172.23.173.134"));
+        // NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName("172.23.173.134"));
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
