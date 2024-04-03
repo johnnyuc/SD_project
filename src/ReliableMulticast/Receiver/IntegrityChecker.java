@@ -1,11 +1,15 @@
 package ReliableMulticast.Receiver;
 
+import java.util.HashMap;
+
 import Logger.LogUtil;
 import ReliableMulticast.Objects.Container;
 
 public class IntegrityChecker implements Runnable {
     private final ReceiverWorker worker;
     private static final int TIMEOUT_CHECK_PERIOD = 5000;
+    // This will keep track of how many retransmit requests were sent
+    private final HashMap<String, Integer> retransmitSent = new HashMap<>();
 
     public IntegrityChecker(ReceiverWorker worker) {
         this.worker = worker;
@@ -30,7 +34,22 @@ public class IntegrityChecker implements Runnable {
     }
 
     private void checkTimedout(String dataID) {
-        // TODO Discard the data if no answear is given in 3 retransmit requests
+        Integer retransmitNr = retransmitSent.get(dataID);
+        // If no retransmit request was sent, create the entry in the hash table
+        if (retransmitNr == null)
+            retransmitSent.put(dataID, 1);
+        // Discard the data if no answear is given in 3 retransmit requests
+        else if (retransmitNr == 3) {
+            retransmitSent.remove(dataID);
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, IntegrityChecker.class,
+                    "Too many retransmit requests. Discarding data with ID: " + dataID);
+            worker.getContainersReceived().remove(dataID);
+            return;
+        }
+        // Increment the retransmit request counter
+        else
+            retransmitSent.put(dataID, retransmitNr + 1);
+
         // Get the timestamp of the container
         long timestamp = worker.getContainersReceived().get(dataID).getTimestamp();
         Container[] containers = worker.getContainersReceived().get(dataID).getContainers();
