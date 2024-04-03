@@ -1,6 +1,7 @@
 package Server.IndexStorageBarrel.Operations;
 
 import ReliableMulticast.Objects.CrawlData;
+import Server.IndexStorageBarrel.Tools.SyncData;
 
 import java.net.URL;
 import java.sql.*;
@@ -18,7 +19,107 @@ public class BarrelPopulate {
         this.barrelProcessing = new BarrelProcessing(conn);
     }
 
-    public void insertData(CrawlData crawlData) throws SQLException {
+    public void insertSyncData(SyncData syncData) {
+        for (String table : syncData.tableResults().keySet()) {
+            ResultSet rs = syncData.tableResults().get(table);
+            try {
+                while (rs.next()) {
+                    switch (table) {
+                        case "websites" -> {
+                            String url = rs.getString("url");
+                            String title = rs.getString("title");
+                            String description = rs.getString("description");
+                            insertWebsite(url, title, description);
+                        }
+                        case "keywords" -> {
+                            String keyword = rs.getString("keyword");
+                            int keywordId = rs.getInt("id");
+                            insertKeyword(keyword, keywordId);
+                        }
+                        case "urls" -> {
+                            String urlString = rs.getString("url");
+                            int urlId = rs.getInt("id");
+                            insertUrl(urlString, urlId);
+                        }
+                        case "website_keywords" -> {
+                            int websiteId = rs.getInt("website_id");
+                            int keywordId = rs.getInt("keyword_id");
+                            int count = rs.getInt("count");
+                            double tfIdf = rs.getDouble("tf_idf");
+                            insertWebsiteKeyword(websiteId, keywordId, count, tfIdf);
+                        }
+                        case "website_urls" -> {
+                            int websiteId = rs.getInt("website_id");
+                            int urlId = rs.getInt("url_id");
+                            insertWebsiteUrl(websiteId, urlId);
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            }
+        }
+    }
+
+    private void insertWebsite(String url, String title, String description) {
+        String sql = "INSERT INTO websites(url, title, description) VALUES(?,?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, url);
+            pstmt.setString(2, title);
+            pstmt.setString(3, description);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    private void insertKeyword(String keyword, int keywordId) {
+        String sql = "INSERT INTO keywords(keyword, id) VALUES(?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, keyword);
+            pstmt.setInt(2, keywordId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    private void insertUrl(String urlString, int urlId) {
+        String sql = "INSERT INTO urls(url, id) VALUES(?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, urlString);
+            pstmt.setInt(2, urlId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    private void insertWebsiteKeyword(int websiteId, int keywordId, int count, double tfIdf) {
+        String sql = "INSERT INTO website_keywords(website_id, keyword_id, count, tf_idf) VALUES(?,?,?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, websiteId);
+            pstmt.setInt(2, keywordId);
+            pstmt.setInt(3, count);
+            pstmt.setDouble(4, tfIdf);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    private void insertWebsiteUrl(int websiteId, int urlId) {
+        String sql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, websiteId);
+            pstmt.setInt(2, urlId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    public void insertCrawlData(CrawlData crawlData) throws SQLException {
         // Extract data from CrawlData object
         String url = String.valueOf(crawlData.getUrl());
         String title = crawlData.getTitle();

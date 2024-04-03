@@ -6,6 +6,7 @@ import Server.Controller.RMIGateway.RMIGatewayInterface;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Scanner;
 
 import Logger.LogUtil;
@@ -23,8 +24,14 @@ public class RMIClient {
 
     RMIClient() {
         try {
-            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(RMIGateway.PORT)
-                    .lookup(RMIGateway.REMOTE_REFERENCE_NAME);
+            Registry registry = LocateRegistry.getRegistry("172.28.0.1", RMIGateway.PORT);
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "Connected " + registry.toString());
+            String[] boundNames = registry.list();
+            for (String name : boundNames)
+                System.out.println(name);
+
+            rmiGateway = (RMIGatewayInterface) registry.lookup(RMIGateway.REMOTE_REFERENCE_NAME);
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "pixa");
             scanner = new Scanner(System.in);
             menu();
             scanner.close();

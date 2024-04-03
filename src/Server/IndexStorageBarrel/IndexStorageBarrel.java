@@ -46,20 +46,26 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     public IndexStorageBarrel(String[] args) throws RemoteException {
         super();
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Starting Index Storage Barrel...");
-        if (!processArgs(args)) {
+        if (!processArgs(args))
             return;
-        }
-        startRMI();
 
+        startRMI();
         try {
-            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel.db");
+            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel1.db");
             BarrelSetup.databaseIntegrity(conn); // Check database integrity
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
-            new BarrelPinger(barrelID);
-            Class<?>[] ignoredClasses = { IndexStorageBarrel.class };
+            // Barrel receiver
+            Class<?>[] receiverIgnoredClasses = { IndexStorageBarrel.class };
             new BarrelReceiver(barrelPopulate, new ReliableMulticast(downloaderMcastGroupAddress, downloaderMcastPort,
-                    IndexStorageBarrel.class, ignoredClasses));
+                    IndexStorageBarrel.class, receiverIgnoredClasses));
+            // Barrel sync
+            Class<?>[] syncIgnoredClasses = { DownloaderWorker.class };
+            new BarrelSync(barrelPopulate, barrelRetriever,
+                    new ReliableMulticast(syncMcastGroupAddress, syncMcastPort,
+                            IndexStorageBarrel.class, syncIgnoredClasses));
+
+            new BarrelPinger(barrelID);
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Index Storage Barrel ready.");
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, IndexStorageBarrel.class, e);
@@ -109,7 +115,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     }
 
     public void insertData(CrawlData crawlData) throws SQLException {
-        barrelPopulate.insertData(crawlData);
+        barrelPopulate.insertCrawlData(crawlData);
     }
 
     public List<CrawlData> retrieveObject() {

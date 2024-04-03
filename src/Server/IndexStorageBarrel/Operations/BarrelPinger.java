@@ -32,8 +32,8 @@ public class BarrelPinger implements Runnable {
     public void run() {
         try {
             while (running) {
-                pingGateway();
                 Thread.sleep(PING_INTERVAL);
+                pingGateway();
             }
         } catch (InterruptedException | RemoteException | NotBoundException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);

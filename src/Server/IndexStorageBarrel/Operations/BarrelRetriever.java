@@ -8,6 +8,8 @@ import java.net.URL;
 import java.sql.*;
 import java.util.*;
 
+import Logger.LogUtil;
+
 public class BarrelRetriever {
     private final Connection conn;
 
@@ -25,7 +27,7 @@ public class BarrelRetriever {
                 "JOIN urls u ON wu.url_id = u.id";
 
         try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 String url = rs.getString("url");
@@ -88,5 +90,70 @@ public class BarrelRetriever {
         searchDataList.sort((data1, data2) -> Double.compare(data2.tfIdf(), data1.tfIdf()));
 
         return searchDataList;
+    }
+
+    public HashMap<String, Integer> getLastIDs() {
+        HashMap<String, Integer> lastIDs = new HashMap<>();
+        String[] tables = { "websites", "keywords", "urls" };
+
+        for (String table : tables) {
+            String sql = "SELECT MAX(id) FROM " + table;
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next())
+                    lastIDs.put(table, rs.getInt(1));
+            } catch (SQLException e) {
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+            }
+        }
+
+        return lastIDs;
+    }
+
+    public ResultSet getTable(String table) {
+        String sql = "SELECT * FROM ?";
+        ResultSet rs = null;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, table);
+            rs = pstmt.executeQuery();
+
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        }
+        return rs;
+    }
+
+    public ResultSet getWeakTableWithStartID(String weakTable, int startID) {
+        String sql = "SELECT * FROM " + weakTable +
+                " WHERE website_id > ?";
+        ResultSet rs = null;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, startID);
+            rs = pstmt.executeQuery();
+
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        }
+        return rs;
+    }
+
+    public ResultSet getTableWithStartID(String table, int startID) {
+        // TODO: No need to fear SQL injection because these values can't be received
+        // from a user SERÁ???
+        String sql = "SELECT * FROM " + table +
+                " WHERE id > ?";
+        ResultSet rs = null;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, startID);
+            rs = pstmt.executeQuery();
+
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        }
+        return rs;
     }
 }

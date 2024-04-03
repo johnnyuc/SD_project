@@ -31,7 +31,7 @@ public class BarrelReceiver implements Runnable {
                 }
 
                 LogUtil.logInfo(LogUtil.ANSI_WHITE, BarrelReceiver.class, "Received data: " + crawlData.getUrl());
-                barrelPopulate.insertData(crawlData);
+                barrelPopulate.insertCrawlData(crawlData);
             } catch (SQLException e) {
                 LogUtil.logError(LogUtil.ANSI_RED, BarrelReceiver.class, e);
             }

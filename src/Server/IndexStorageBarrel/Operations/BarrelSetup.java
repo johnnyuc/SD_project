@@ -50,7 +50,8 @@ public class BarrelSetup {
     }
 
     public static void setupDatabase() {
-        String url = "jdbc:sqlite:data/testBarrel.db";
+        // TODO Change the url so that it is not hard coded
+        String url = "jdbc:sqlite:data/testBarrel1.db";
         try (Connection conn = DriverManager.getConnection(url)) {
 
             // SQL statement for creating websites table
@@ -60,7 +61,6 @@ public class BarrelSetup {
                         url TEXT,
                         title TEXT,
                         description TEXT,
-                        vector_clock INTEGER
                     );
                     """;
 
