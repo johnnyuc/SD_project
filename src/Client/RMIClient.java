@@ -14,13 +14,16 @@ import Logger.LogUtil;
 /**
  * Client.RMIClient
  */
-public class RMIClient {
+public class RMIClient implements RMIClientInterface {
     public static void main(String[] args) {
         new RMIClient();
     }
 
     private RMIGatewayInterface rmiGateway;
     private Scanner scanner;
+
+    private boolean onMostSearchedPage = false;
+    private boolean onBarrelStatusPage = false;
 
     RMIClient() {
         try {
@@ -43,7 +46,7 @@ public class RMIClient {
     /**
      * Display the menu
      * 
-     * @throws RemoteException
+     * @throws RemoteException if a remote exception occurs
      */
     private void menu() throws RemoteException {
         do {
@@ -56,7 +59,7 @@ public class RMIClient {
      * 
      * @param choice the choice
      * @return true if the user wants to continue, false otherwise
-     * @throws RemoteException
+     * @throws RemoteException if a remote exception occurs
      */
     private boolean treatChoice(int choice) throws RemoteException {
         switch (choice) {
@@ -68,7 +71,40 @@ public class RMIClient {
                     System.out.println("No results available.");
                 break;
             case 2:
+                // code to handle Admin console
+                System.out.println("Entering Admin console...");
+                adminMenu();
+                break;
+            case 3:
                 System.out.println("Quitting...");
+                return false;
+            default:
+                System.out.println("----------------------------------");
+                System.out.println("Bad input.");
+                break;
+        }
+        return true;
+    }
+
+    private boolean treatAdminChoice(int choice) throws RemoteException {
+        switch (choice) {
+            case 1:
+                rmiGateway.addObserver(this);
+                onMostSearchedPage = true;
+                String mostSearched = rmiGateway.mostSearched();
+                System.out.println(mostSearched);
+                break;
+            case 2:
+                rmiGateway.addObserver(this);
+                onBarrelStatusPage = true;
+                String barrelsStatus = rmiGateway.barrelsStatus();
+                System.out.println(barrelsStatus);
+                break;
+            case 3:
+                rmiGateway.removeObserver(this);
+                onMostSearchedPage = false;
+                onBarrelStatusPage = false;
+                System.out.println("Exiting Admin console...");
                 return false;
             default:
                 System.out.println("----------------------------------");
@@ -96,13 +132,53 @@ public class RMIClient {
         return Integer.parseInt(scanner.nextLine());
     }
 
+    private void adminMenu() throws RemoteException {
+        int adminChoice;
+        do {
+            printAdminMenu();
+            adminChoice = readChoice();
+        } while (treatAdminChoice(adminChoice));
+    }
+
     /**
      * Print the menu
      */
     private void printMenu() {
         System.out.println("----------------------------------");
         System.out.println("1. Search");
-        System.out.println("2. Quit");
+        System.out.println("2. Admin console");
+        System.out.println("3. Quit");
         System.out.println("----------------------------------");
+    }
+
+    private void printAdminMenu() {
+        System.out.println("----------------------------------");
+        System.out.println("1. Most searched");
+        System.out.println("2. Barrels status");
+        System.out.println("3. Back to main menu");
+        System.out.println("----------------------------------");
+    }
+
+
+    public void updateMostSearched() throws RemoteException {
+        if (onMostSearchedPage) {
+            String mostSearched = rmiGateway.mostSearched();
+            System.out.println(mostSearched);
+        }
+    }
+
+    public void updateBarrelStatus() throws RemoteException {
+        if (onBarrelStatusPage) {
+            String barrelsStatus = rmiGateway.barrelsStatus();
+            System.out.println(barrelsStatus);
+        }
+    }
+
+    public boolean isOnMostSearchedPage() throws RemoteException {
+        return onMostSearchedPage;
+    }
+
+    public boolean isOnBarrelStatusPage() throws RemoteException {
+        return onBarrelStatusPage;
     }
 }

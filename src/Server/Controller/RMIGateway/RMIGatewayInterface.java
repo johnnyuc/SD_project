@@ -1,12 +1,16 @@
 package Server.Controller.RMIGateway;
 
-import java.rmi.AccessException;
+import Client.RMIClientInterface;
+
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface RMIGatewayInterface extends Remote {
-    public boolean searchQuery(String query) throws RemoteException;
-
-    public void receivePing(int barrelID, long timestamp) throws AccessException, RemoteException, NotBoundException;
+    boolean searchQuery(String query) throws RemoteException;
+    void receivePing(int barrelID, long timestamp) throws RemoteException, NotBoundException;
+    String mostSearched() throws RemoteException;
+    String barrelsStatus() throws RemoteException;
+    void addObserver(RMIClientInterface observer) throws RemoteException;
+    void removeObserver(RMIClientInterface observer) throws RemoteException;
 }
