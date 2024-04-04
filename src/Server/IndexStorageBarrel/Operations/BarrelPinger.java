@@ -1,15 +1,12 @@
 package Server.IndexStorageBarrel.Operations;
 
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import Logger.LogUtil;
 
-import Server.Controller.RMIGateway.BarrelTimestamp;
 import Server.Controller.RMIGateway.RMIGateway;
 import Server.Controller.RMIGateway.RMIGatewayInterface;
 
@@ -51,7 +48,7 @@ public class BarrelPinger implements Runnable {
 
     private void pingGateway() throws RemoteException, NotBoundException, MalformedURLException, UnknownHostException {
         LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Pinging gateway.");
-        rmiGateway.receivePing(barrelID, System.currentTimeMillis(), barrelAddress);
+        rmiGateway.receivePing(barrelID, barrelAddress);
     }
 
     private void stop() {

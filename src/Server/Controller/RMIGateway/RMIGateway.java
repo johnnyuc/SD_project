@@ -166,24 +166,28 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return true;
     }
 
-    public void receivePing(int barrelID, long timestamp, String barrelIP)
+    public void receivePing(int barrelID, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException {
 
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class,
                 "Received ping from barrel " + barrelID + " with IP " + barrelIP);
 
-        for (BarrelTimestamp timedBarrel : timedBarrels)
-            if (barrelID == timedBarrel.getBarrelID()) {
-                timedBarrel.setTimestamp(timestamp);
+        for (int i = 0; i < timedBarrels.size(); i++) {
+            if (timedBarrels.get(i).getBarrelID() == barrelID) {
+                timedBarrels.get(i).setTimestamp(System.currentTimeMillis());
                 return;
             }
+        }
+
         IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) Naming
                 .lookup("rmi://" + barrelIP + ":"
                         + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
                         + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
 
+        System.out.println(remoteBarrel);
+
         if (remoteBarrel != null)
-            timedBarrels.add(new BarrelTimestamp(remoteBarrel, timestamp, barrelID));
+            timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
 
         // Check if the status of any barrel changes
         String oldBarrelsStatus = barrelsStatus();
@@ -201,8 +205,10 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     }
 
     private synchronized BarrelTimestamp getAvailableBarrel() {
-        timedBarrels.removeIf(timedBarrel -> timedBarrel.getTimestamp() < System.currentTimeMillis()
-                - BarrelPinger.PING_INTERVAL * 2L);
+        for (BarrelTimestamp timedBarrel : timedBarrels) {
+            if (timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2)
+                timedBarrels.remove(timedBarrel);
+        }
 
         if (timedBarrels.isEmpty()) {
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "No barrels available");
