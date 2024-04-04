@@ -1,5 +1,7 @@
 package Server.Controller.RMIGateway;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -90,18 +92,20 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return true;
     }
 
-    public void receivePing(int barrelID, long timestamp) throws RemoteException, NotBoundException {
+    public void receivePing(int barrelID, long timestamp)
+            throws RemoteException, NotBoundException, MalformedURLException {
+
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class,
                 "Received ping from barrel " + barrelID);
+
         for (BarrelTimestamp timedBarrel : timedBarrels)
             if (barrelID == timedBarrel.getBarrelID()) {
                 timedBarrel.setTimestamp(timestamp);
                 return;
             }
 
-        IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) LocateRegistry
-                .getRegistry(IndexStorageBarrel.STARTING_PORT + barrelID)
-                .lookup(IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID);
+        IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) Naming.lookup("rmi://localhost:"
+                + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/" + (RMIGateway.REMOTE_REFERENCE_NAME + barrelID));
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, timestamp, barrelID));

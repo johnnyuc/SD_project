@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Scanner;
@@ -25,8 +26,8 @@ public class AdminConsole {
 
     AdminConsole() {
         try {
-            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(RMIGateway.PORT)
-                    .lookup(RMIGateway.REMOTE_REFERENCE_NAME);
+            rmiGateway = (RMIGatewayInterface) Naming
+                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
             scanner = new Scanner(System.in);
             menu();
             scanner.close();

@@ -1,5 +1,7 @@
 package Server.IndexStorageBarrel.Operations;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -18,9 +20,10 @@ public class BarrelPinger implements Runnable {
     public BarrelPinger(int barrelID) {
         this.barrelID = barrelID;
         try {
-            rmiGateway = (RMIGatewayInterface) LocateRegistry.getRegistry(RMIGateway.PORT)
-                    .lookup(RMIGateway.REMOTE_REFERENCE_NAME);
-        } catch (RemoteException | NotBoundException e) {
+            // TODO Hardcoded ip aqui
+            rmiGateway = (RMIGatewayInterface) Naming
+                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+        } catch (RemoteException | NotBoundException | MalformedURLException e) {
             LogUtil.logError(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, e);
         }
         // Add ctrl+c shutdown hook

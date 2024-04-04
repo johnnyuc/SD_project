@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
@@ -56,8 +57,8 @@ public class DownloaderWorker implements Runnable {
     public void run() {
         try {
             // Connect to the Server.URLQueue
-            urlQueue = (URLQueueInterface) LocateRegistry.getRegistry(URLQueue.PORT)
-                    .lookup(URLQueue.REMOTE_REFERENCE_NAME);
+            urlQueue = (URLQueueInterface) Naming
+                    .lookup("rmi://" + queueIP + ":" + URLQueue.PORT + "/" + URLQueue.REMOTE_REFERENCE_NAME);
 
             reliableMulticast.startReceiving();
 

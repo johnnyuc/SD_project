@@ -3,6 +3,8 @@ package Client;
 import Server.Controller.RMIGateway.RMIGateway;
 import Server.Controller.RMIGateway.RMIGatewayInterface;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -27,18 +29,13 @@ public class RMIClient implements RMIClientInterface {
 
     RMIClient() {
         try {
-            Registry registry = LocateRegistry.getRegistry(RMIGateway.PORT);
-            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "Connected " + registry.toString());
-            String[] boundNames = registry.list();
-            for (String name : boundNames)
-                System.out.println(name);
-
-            rmiGateway = (RMIGatewayInterface) registry.lookup(RMIGateway.REMOTE_REFERENCE_NAME);
-            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "pixa");
+            rmiGateway = (RMIGatewayInterface) Naming
+                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "aaa");
             scanner = new Scanner(System.in);
             menu();
             scanner.close();
-        } catch (RemoteException | NotBoundException e) {
+        } catch (RemoteException | NotBoundException | MalformedURLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, RMIClient.class, e);
         }
     }

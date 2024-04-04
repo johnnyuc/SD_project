@@ -2,6 +2,7 @@ package Server.Controller.RMIGateway;
 
 import Client.RMIClientInterface;
 
+import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -9,7 +10,7 @@ import java.rmi.RemoteException;
 public interface RMIGatewayInterface extends Remote {
     boolean searchQuery(String query) throws RemoteException;
 
-    void receivePing(int barrelID, long timestamp) throws RemoteException, NotBoundException;
+    void receivePing(int barrelID, long timestamp) throws RemoteException, NotBoundException, MalformedURLException;
 
     String mostSearched() throws RemoteException;
 
