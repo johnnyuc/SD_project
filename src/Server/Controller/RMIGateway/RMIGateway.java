@@ -83,21 +83,22 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
-    public boolean searchQuery(String query) throws RemoteException, MalformedURLException {
+    public String searchQuery(String query) throws RemoteException, MalformedURLException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
-        BarrelTimestamp barrel = getAvailableBarrel();
-        if (barrel == null)
-            return false;
-
-        long startTime = System.currentTimeMillis();
 
         if (isValidURL(query)) {
             // The query is a search query so send it to the Barrel
             urlQueue.priorityEnqueueURL(URI.create(query).toURL());
-        } else {
-            // The query is a URL so send it to the URL Queue
-            barrel.getRemoteBarrel().sayHi("Search: " + query);
+            return "URL Indexed.";
         }
+
+        BarrelTimestamp barrel = getAvailableBarrel();
+        if (barrel == null)
+            return "No barrels available.";
+
+        long startTime = System.currentTimeMillis();
+        // The query is a URL so send it to the URL Queue
+        barrel.getRemoteBarrel().sayHi("Search: " + query);
 
         barrel.setAvgResponseTime(System.currentTimeMillis() - startTime);
 
@@ -113,8 +114,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             // Notify observers
             notifyObservers();
         }
-
-        return true;
+        // TODO obvio
+        return "Query results here!!";
     }
 
     public static boolean isValidURL(String url) {

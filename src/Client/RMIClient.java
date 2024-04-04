@@ -89,10 +89,7 @@ public class RMIClient implements RMIClientInterface, Serializable {
         switch (choice) {
             case 1:
                 System.out.println("Enter query:");
-                if (rmiGateway.searchQuery(readQuery()))
-                    System.out.println("Links will be displayed here.");
-                else
-                    System.out.println("No results available.");
+                System.out.println(rmiGateway.searchQuery(readQuery()));
                 break;
             case 2:
                 // code to handle Admin console
