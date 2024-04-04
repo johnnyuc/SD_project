@@ -17,8 +17,8 @@ public class ProtocolTester {
 
     // Main method
     public static void main(String[] args) {
-        ReliableMulticast reliableMulticast = new ReliableMulticast("224.0.0.1", 12345,
-                ProtocolTester.class, new Class<?>[0]);
+        ReliableMulticast reliableMulticast = new ReliableMulticast("172.23.173.134",
+                "224.0.0.1", 12345, ProtocolTester.class, new Class<?>[0]);
 
         // Add shutdown hook for CTRL+C [doesn't work in Intellij because it doesn't
         // like CTRL+C - use STOP button]

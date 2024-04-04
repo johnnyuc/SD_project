@@ -12,8 +12,9 @@ public class Downloader {
     private int minWaitTime = 2200;
     private int maxWaitTime = 5000;
 
-    private String multicastGroupAddress;
-    private int multicastPort;
+    private String mcastInterfaceAddress;
+    private String mcastGroupAddress;
+    private int mcastPort;
 
     // Main method
     public static void main(String[] args) {
@@ -27,15 +28,17 @@ public class Downloader {
 
         // Create the downloader workers (multi-threading)
         for (int i = 0; i < downloaderNum; i++)
-            new DownloaderWorker(i, queueIP, multicastGroupAddress, multicastPort, minWaitTime, maxWaitTime);
+            new DownloaderWorker(i, queueIP, mcastInterfaceAddress, mcastGroupAddress,
+                    mcastPort, minWaitTime, maxWaitTime);
     }
 
     // Argument processing method
     private boolean processArgs(String[] args) {
-        if (args.length != 8) {
+        if (args.length != 10) {
             LogUtil.logInfo(LogUtil.ANSI_RED, Downloader.class,
                     "Wrong number of arguments: expected -d <downloader number> -ip <queue IP>"
-                            + " -mcast <multicast group address> -mcastport <multicast port number>");
+                            + " -mcast <multicast group address> -mcastport <multicast port number>"
+                            + "-mcastinterface <multicast interface address>");
             return false;
         }
 
@@ -43,27 +46,16 @@ public class Downloader {
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
-                    case "-id":
-                        downloaderNum = Integer.parseInt(args[++i]);
-                        break;
-                    case "-ip":
-                        queueIP = args[++i];
-                        break;
-                    case "-mcast":
-                        multicastGroupAddress = args[++i];
-                        break;
-                    case "-mcastport":
-                        multicastPort = Integer.parseInt(args[++i]);
-                        break;
-                    case "-min":
-                        minWaitTime = Integer.parseInt(args[++i]);
-                        break;
-                    case "-max":
-                        maxWaitTime = Integer.parseInt(args[++i]);
-                        break;
-                    default:
-                        LogUtil.logInfo(LogUtil.ANSI_RED, Downloader.class, "Unexpected argument: " + args[i]);
+                    case "-id" -> downloaderNum = Integer.parseInt(args[++i]);
+                    case "-ip" -> queueIP = args[++i];
+                    case "-mcast" -> mcastGroupAddress = args[++i];
+                    case "-mcastport" -> mcastPort = Integer.parseInt(args[++i]);
+                    case "-mcastinterface" -> mcastInterfaceAddress = args[++i];
+                    default -> {
+                        LogUtil.logInfo(LogUtil.ANSI_RED, Downloader.class,
+                                "Unexpected argument: " + args[i]);
                         return false;
+                    }
                 }
             }
         } catch (NumberFormatException e) {

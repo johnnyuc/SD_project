@@ -25,6 +25,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     private final List<RMIClientInterface> observers = new ArrayList<>();
     private String mostSearched = "";
     private String barrelsStatus = "";
+    private String barrelAddress;
 
     public static void main(String[] args) {
         try {
@@ -92,20 +93,21 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return true;
     }
 
-    public void receivePing(int barrelID, long timestamp)
+    public void receivePing(int barrelID, long timestamp, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException {
 
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class,
-                "Received ping from barrel " + barrelID);
+                "Received ping from barrel " + barrelID + " with IP " + barrelIP);
 
         for (BarrelTimestamp timedBarrel : timedBarrels)
             if (barrelID == timedBarrel.getBarrelID()) {
                 timedBarrel.setTimestamp(timestamp);
                 return;
             }
-
+        // TODO foda aqui? O barrel tem de mandar o seu ip ns como fazer
         IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) Naming.lookup("rmi://localhost:"
-                + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/" + (RMIGateway.REMOTE_REFERENCE_NAME + barrelID));
+                + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
+                + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, timestamp, barrelID));

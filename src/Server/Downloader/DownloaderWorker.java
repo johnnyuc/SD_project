@@ -38,14 +38,14 @@ public class DownloaderWorker implements Runnable {
     private final ReliableMulticast reliableMulticast;
 
     // Default constructor
-    public DownloaderWorker(int id, String queueIP, String multicastGroupAddress,
+    public DownloaderWorker(int id, String queueIP, String interfaceAddress, String mcastGroupAddress,
             int multicastPort, int minWaitTime, int maxWaitTime) {
         this.id = id;
         this.queueIP = queueIP;
         this.minWaitTime = minWaitTime;
         this.maxWaitTime = maxWaitTime;
         Class<?>[] ignoredClasses = { DownloaderWorker.class };
-        this.reliableMulticast = new ReliableMulticast(multicastGroupAddress, multicastPort,
+        this.reliableMulticast = new ReliableMulticast(interfaceAddress, mcastGroupAddress, multicastPort,
                 DownloaderWorker.class, ignoredClasses);
 
         // Add ctrl+c shutdown hook

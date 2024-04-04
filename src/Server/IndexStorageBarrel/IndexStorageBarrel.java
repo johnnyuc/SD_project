@@ -23,6 +23,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     private BarrelPopulate barrelPopulate;
     private BarrelRetriever barrelRetriever;
     private BarrelSetup barrelSetup;
+    private String dbPath;
 
     private int barrelID;
 
@@ -31,6 +32,8 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
     private String syncMcastGroupAddress;
     private int syncMcastPort;
+
+    private String mcastInterfaceAddress;
 
     public static final int STARTING_PORT = 6000;
     public static final String REMOTE_REFERENCE_NAME = "indexstoragebarrel";
@@ -51,18 +54,19 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
         startRMI();
         try {
-            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel1.db");
+            this.conn = DriverManager.getConnection("jdbc:sqlite:data/" + dbPath + ".db");
             BarrelSetup.databaseIntegrity(conn); // Check database integrity
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
             // Barrel receiver
             Class<?>[] receiverIgnoredClasses = { BarrelSync.class };
-            new BarrelReceiver(barrelPopulate, new ReliableMulticast(downloaderMcastGroupAddress, downloaderMcastPort,
-                    BarrelReceiver.class, receiverIgnoredClasses));
+            new BarrelReceiver(barrelPopulate,
+                    new ReliableMulticast(mcastInterfaceAddress, downloaderMcastGroupAddress, downloaderMcastPort,
+                            BarrelReceiver.class, receiverIgnoredClasses));
             // Barrel sync
             Class<?>[] syncIgnoredClasses = { DownloaderWorker.class };
             new BarrelSync(barrelPopulate, barrelRetriever,
-                    new ReliableMulticast(syncMcastGroupAddress, syncMcastPort,
+                    new ReliableMulticast(mcastInterfaceAddress, syncMcastGroupAddress, syncMcastPort,
                             BarrelSync.class, syncIgnoredClasses));
 
             new BarrelPinger(barrelID);
@@ -73,11 +77,13 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     }
 
     private boolean processArgs(String[] args) {
-        if (args.length != 10) {
+        // TODO: Se este erro acontecer, as threads que o barrel criou nao vao abaixo
+        if (args.length != 14) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
-                    "Wrong number of arguments: expected -id <barrel id> "
+                    "Wrong number of arguments: expected -id <barrel id> -db <database path> "
                             + "-dmcast <downloader multicast group address> -dport <downloader port number> "
-                            + "-smcast <sync multicast group address> -sport <sync port number>");
+                            + "-smcast <sync multicast group address> -sport <sync port number> "
+                            + "-mcastInterface <multicast interface address>");
             return false;
         }
         // Parse the arguments
@@ -85,10 +91,12 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "-id" -> barrelID = Integer.parseInt(args[++i]);
+                    case "-db" -> dbPath = args[++i];
                     case "-dmcast" -> downloaderMcastGroupAddress = args[++i];
                     case "-dport" -> downloaderMcastPort = Integer.parseInt(args[++i]);
                     case "-smcast" -> syncMcastGroupAddress = args[++i];
                     case "-sport" -> syncMcastPort = Integer.parseInt(args[++i]);
+                    case "-mcastInterface" -> mcastInterfaceAddress = args[++i];
                     default -> {
                         LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                                 "Unexpected argument: " + args[i]);

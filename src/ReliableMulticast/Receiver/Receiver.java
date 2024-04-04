@@ -32,7 +32,8 @@ public class Receiver {
     private final Class<?>[] ignoredClasses;
 
     // Constructor
-    public Receiver(Sender sender, String multicastGroup, int port, Class<?>[] ignoredClasses, UUID multicastID)
+    public Receiver(Sender sender, String interfaceAddress, String multicastGroup,
+            int port, Class<?>[] ignoredClasses, UUID multicastID)
             throws IOException, InterruptedException {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
@@ -42,7 +43,7 @@ public class Receiver {
         // Join the multicast group using channel [non blocking]
         // NetworkInterface networkInterface =
         // NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName("172.23.173.134"));
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName(interfaceAddress));
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)

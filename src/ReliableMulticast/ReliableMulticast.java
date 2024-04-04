@@ -30,14 +30,15 @@ public class ReliableMulticast {
     private final UUID multicastID;
 
     // Constructor
-    public ReliableMulticast(String multicastGroup, int port, Class<?> senderClass, Class<?>[] ignoredClasses) {
+    public ReliableMulticast(String interfaceAddress, String multicastGroup, int port,
+            Class<?> senderClass, Class<?>[] ignoredClasses) {
         this.multicastID = UUID.randomUUID();
         try {
             // Gets machine IP
             String senderIP = InetAddress.getLocalHost().getHostAddress();
             // Creates sender and receiver
             this.sender = new Sender(multicastGroup, port, senderIP, senderClass, multicastID);
-            this.receiver = new Receiver(sender, multicastGroup, port, ignoredClasses, multicastID);
+            this.receiver = new Receiver(sender, interfaceAddress, multicastGroup, port, ignoredClasses, multicastID);
         } catch (IOException | InterruptedException e) {
             // TODO : mudar?
             throw new RuntimeException(e);

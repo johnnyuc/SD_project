@@ -18,7 +18,7 @@ import Logger.LogUtil;
  */
 public class RMIClient implements RMIClientInterface {
     public static void main(String[] args) {
-        new RMIClient();
+        new RMIClient(args);
     }
 
     private RMIGatewayInterface rmiGateway;
@@ -27,17 +27,43 @@ public class RMIClient implements RMIClientInterface {
     private boolean onMostSearchedPage = false;
     private boolean onBarrelStatusPage = false;
 
-    RMIClient() {
+    private String gatewayAddress;
+
+    RMIClient(String[] args) {
+        if (!processArgs(args))
+            return;
+
         try {
             rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
-            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "aaa");
+                    .lookup("rmi://" + gatewayAddress + ":" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
             scanner = new Scanner(System.in);
             menu();
             scanner.close();
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, RMIClient.class, e);
+            System.out.println("RMI Gateway unavailable. Shutting down...");
+            System.exit(-1);
         }
+    }
+
+    private boolean processArgs(String[] args) {
+        if (args.length != 2) {
+            LogUtil.logInfo(LogUtil.ANSI_RED, RMIClient.class,
+                    "Wrong number of arguments: expected -ip <gateway address>");
+            return false;
+        }
+        // Parse the arguments
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "-ip" -> gatewayAddress = args[++i];
+                default -> {
+                    LogUtil.logInfo(LogUtil.ANSI_RED, RMIClient.class,
+                            "Unexpected argument: " + args[i]);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
