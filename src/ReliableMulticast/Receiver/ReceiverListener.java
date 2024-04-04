@@ -1,15 +1,14 @@
 package ReliableMulticast.Receiver;
 
 // General imports
-import java.nio.ByteBuffer;
-import java.net.SocketAddress;
-import java.nio.channels.DatagramChannel;
+import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 // Error imports
 import java.io.IOException;
-
+import java.util.Arrays;
 // Stop imports
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
@@ -22,7 +21,7 @@ public class ReceiverListener implements Runnable {
     private static final int MAX_PACKET_SIZE = 1024;
 
     // Channel
-    private final DatagramChannel channel;
+    private final MulticastSocket socket;
 
     // Queue for worker to get data from
     private final BlockingQueue<Object> listenerQueue = new LinkedBlockingQueue<>();
@@ -30,12 +29,9 @@ public class ReceiverListener implements Runnable {
     // Running flag
     private volatile boolean running = true;
 
-    // Stopping the thread
-    private final Lock lock = new ReentrantLock();
-
     // Constructor
-    public ReceiverListener(DatagramChannel channel) {
-        this.channel = channel;
+    public ReceiverListener(MulticastSocket socket) {
+        this.socket = socket;
     }
 
     // Thread startup
@@ -54,32 +50,23 @@ public class ReceiverListener implements Runnable {
 
     // Method to receive a container
     private Optional<byte[]> receiveContainer() throws IOException {
-        lock.lock();
-        try {
-            if (!running) {
-                return Optional.empty();
-            }
+        if (!running) {
+            return Optional.empty();
+        }
 
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE * 2);
+        byte[] buffer = new byte[MAX_PACKET_SIZE * 2];
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+        socket.receive(packet);
 
-            // Non-blocking receive
-            SocketAddress senderAddress = channel.receive(buffer);
+        // Check if data was received
+        if (packet.getLength() > 0) {
+            // Trim the buffer to the actual size of the received data
+            byte[] receivedData = Arrays.copyOf(buffer, packet.getLength());
 
-            if (senderAddress != null) {
-                // Flip the buffer to prepare it for get operations
-                buffer.flip();
-
-                // Convert ByteBuffer to byte array
-                byte[] byteArray = new byte[buffer.remaining()];
-                buffer.get(byteArray);
-
-                return Optional.of(byteArray);
-            } else {
-                // No data was available to read, return Optional.empty
-                return Optional.empty();
-            }
-        } finally {
-            lock.unlock();
+            return Optional.of(receivedData);
+        } else {
+            // No data was available to read, return Optional.empty
+            return Optional.empty();
         }
     }
 
@@ -101,12 +88,7 @@ public class ReceiverListener implements Runnable {
 
     // Method to stop the listener
     public void stop() {
-        lock.lock();
-        try {
-            // Stop the listener
-            this.running = false;
-        } finally {
-            lock.unlock();
-        }
+        // Stop the listener
+        this.running = false;
     }
 }
