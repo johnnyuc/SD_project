@@ -146,7 +146,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         try {
             barrelTimestamp.getRemoteBarrel().receivePing();
             return true;
-        } catch (Exception e) {
+        } catch (RemoteException re) {
             return false;
         }
     }
