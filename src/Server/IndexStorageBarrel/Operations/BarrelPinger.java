@@ -18,13 +18,14 @@ public class BarrelPinger implements Runnable {
     private volatile boolean running = true;
     private RMIGatewayInterface rmiGateway;
     private final int barrelID;
+    private final String barrelAddress;
 
-    public BarrelPinger(int barrelID) {
+    public BarrelPinger(int barrelID, String barrelAddress, String gatewayAddress) {
         this.barrelID = barrelID;
+        this.barrelAddress = barrelAddress;
         try {
-            // TODO Hardcoded ip aqui
             rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + gatewayAddress + ":" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             LogUtil.logError(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, e);
         }
