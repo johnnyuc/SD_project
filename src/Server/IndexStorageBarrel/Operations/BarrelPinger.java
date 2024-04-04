@@ -24,7 +24,7 @@ public class BarrelPinger implements Runnable {
             LogUtil.logError(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, e);
         }
         // Add ctrl+c shutdown hook
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
         new Thread(this, "Barrel Pinger").start();
     }
 
@@ -45,5 +45,15 @@ public class BarrelPinger implements Runnable {
     private void pingGateway() throws RemoteException, NotBoundException {
         LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Pinging gateway.");
         rmiGateway.receivePing(barrelID, System.currentTimeMillis());
+    }
+
+    private void stop() {
+        running = false;
+        try {
+            rmiGateway.removeBarrel(barrelID);
+        } catch (RemoteException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
+        }
+        LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Barrel Pinger stopped.");
     }
 }

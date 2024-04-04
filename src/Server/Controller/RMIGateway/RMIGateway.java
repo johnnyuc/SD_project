@@ -17,13 +17,12 @@ import Client.RMIClientInterface;
 public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
     public static final int PORT = 5999;
     public static final String REMOTE_REFERENCE_NAME = "rmigateway";
-    public int currentBarrel = 0;
-    ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
+    private int currentBarrel = 0;
+    private ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
     private final Map<String, Integer> searchQueries = new HashMap<>();
     private final List<RMIClientInterface> observers = new ArrayList<>();
     private String mostSearched = "";
     private String barrelsStatus = "";
-
 
     public static void main(String[] args) {
         try {
@@ -118,16 +117,38 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
+    public void removeBarrel(int barrelID) throws RemoteException {
+        timedBarrels.removeIf(timedBarrel -> timedBarrel.getBarrelID() == barrelID);
+    }
+
     private synchronized BarrelTimestamp getAvailableBarrel() {
-        timedBarrels.removeIf(timedBarrel -> timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2L);
+        timedBarrels.removeIf(timedBarrel -> timedBarrel.getTimestamp() < System.currentTimeMillis()
+                - BarrelPinger.PING_INTERVAL * 2L);
 
         if (timedBarrels.isEmpty()) {
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "No barrels available");
             return null;
         }
 
-        currentBarrel = (currentBarrel + 1) % timedBarrels.size();
+        boolean isAlive = false;
+        while (!isAlive) {
+            currentBarrel = (currentBarrel + 1) % timedBarrels.size();
+            isAlive = isAlive(timedBarrels.get(currentBarrel));
+            if (!isAlive)
+                timedBarrels.remove(currentBarrel);
+            if (timedBarrels.size() == 0)
+                break;
+        }
         return timedBarrels.get(currentBarrel);
+    }
+
+    private boolean isAlive(BarrelTimestamp barrelTimestamp) {
+        try {
+            barrelTimestamp.getRemoteBarrel().receivePing();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void updateMostSearched() {
@@ -152,7 +173,9 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             status.append("Barrel ID: ")
                     .append(barrel.getBarrelID())
                     .append(", Status: ")
-                    .append(barrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2L ? "Down" : "Up")
+                    .append(barrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2L
+                            ? "Down"
+                            : "Up")
                     .append(", Response Time: ")
                     .append(barrel.getAvgResponseTime())
                     .append(" ms\n");

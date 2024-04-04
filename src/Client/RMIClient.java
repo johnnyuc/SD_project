@@ -27,7 +27,7 @@ public class RMIClient implements RMIClientInterface {
 
     RMIClient() {
         try {
-            Registry registry = LocateRegistry.getRegistry("172.28.0.1", RMIGateway.PORT);
+            Registry registry = LocateRegistry.getRegistry(RMIGateway.PORT);
             LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIClient.class, "Connected " + registry.toString());
             String[] boundNames = registry.list();
             for (String name : boundNames)
@@ -158,7 +158,6 @@ public class RMIClient implements RMIClientInterface {
         System.out.println("3. Back to main menu");
         System.out.println("----------------------------------");
     }
-
 
     public void updateMostSearched() throws RemoteException {
         if (onMostSearchedPage) {

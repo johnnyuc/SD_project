@@ -53,7 +53,7 @@ public class BarrelSetup {
 
     public static void setupDatabase() {
         // TODO Change the url so that it is not hard coded
-        String url = "jdbc:sqlite:data/testBarrel2.db";
+        String url = "jdbc:sqlite:data/testBarrel1.db";
         try (Connection conn = DriverManager.getConnection(url)) {
 
             // SQL statement for creating websites table

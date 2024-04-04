@@ -51,7 +51,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
         startRMI();
         try {
-            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel2.db");
+            this.conn = DriverManager.getConnection("jdbc:sqlite:data/testBarrel1.db");
             BarrelSetup.databaseIntegrity(conn); // Check database integrity
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
@@ -128,6 +128,10 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
     public void sayHi(String query) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Hi from client with query " + query);
+    }
+
+    public void receivePing() throws RemoteException {
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Received ping from RMI Gateway.");
     }
 
     public int getBarrelID() {
