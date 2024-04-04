@@ -3,6 +3,8 @@ package Server.IndexStorageBarrel.Operations;
 import java.sql.*;
 import java.util.*;
 
+import Logger.LogUtil;
+
 public class BarrelSetup {
 
     public static void databaseIntegrity(Connection conn) {
@@ -41,17 +43,17 @@ public class BarrelSetup {
                 }
 
                 // Set up the database again
-                System.err.println("Setting up database...");
+                LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSetup.class, "Setting up database...");
                 setupDatabase();
             }
         } catch (SQLException e) {
-            System.err.println("Error checking database integrity: " + e.getMessage());
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelSetup.class, e);
         }
     }
 
     public static void setupDatabase() {
         // TODO Change the url so that it is not hard coded
-        String url = "jdbc:sqlite:data/testBarrel1.db";
+        String url = "jdbc:sqlite:data/testBarrel2.db";
         try (Connection conn = DriverManager.getConnection(url)) {
 
             // SQL statement for creating websites table
@@ -60,7 +62,7 @@ public class BarrelSetup {
                         id INTEGER PRIMARY KEY,
                         url TEXT,
                         title TEXT,
-                        description TEXT,
+                        description TEXT
                     );
                     """;
 

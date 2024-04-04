@@ -2,6 +2,7 @@ package ReliableMulticast.Objects;
 
 // Imports
 import java.io.Serializable;
+import java.util.UUID;
 
 // Packet class
 public class Container implements Serializable {
@@ -10,18 +11,18 @@ public class Container implements Serializable {
     private final Class<?> dataType;
     private final Class<?> senderClass;
     private final String dataID;
-    private final String senderIP;
+    private final UUID multicastID;
     private final int packetNumber;
     private final int totalPackets;
 
     // Default Constructor
     public Container(byte[] data, Class<?> dataType, Class<?> senderClass,
-            String dataID, String senderIP, int packetNumber, int totalPackets) {
+            String dataID, UUID multicastID, int packetNumber, int totalPackets) {
         this.data = data;
         this.dataType = dataType;
         this.senderClass = senderClass;
         this.dataID = dataID;
-        this.senderIP = senderIP;
+        this.multicastID = multicastID;
         this.packetNumber = packetNumber;
         this.totalPackets = totalPackets;
     }
@@ -43,8 +44,8 @@ public class Container implements Serializable {
         return dataID;
     }
 
-    public String getSenderIP() {
-        return senderIP;
+    public UUID getMulticastID() {
+        return multicastID;
     }
 
     public int getPacketNumber() {

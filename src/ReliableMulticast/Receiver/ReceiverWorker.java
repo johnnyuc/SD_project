@@ -4,9 +4,11 @@ package ReliableMulticast.Receiver;
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.ContainersTimestamp;
+import ReliableMulticast.Objects.RetransmitRequest;
 
 // General imports
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
@@ -36,16 +38,19 @@ public class ReceiverWorker implements Runnable {
 
     private final Class<?>[] ignoredClasses;
 
+    private final UUID multicastID;
+
     // Stopping the thread
     public static final Object STOP_PILL = new Object();
 
     // Constructor
     ReceiverWorker(Sender sender, ReceiverListener listener,
-            BlockingQueue<Object> workerQueue, Class<?>[] ignoredSenderClasses) {
+            BlockingQueue<Object> workerQueue, Class<?>[] ignoredSenderClasses, UUID multicastID) {
         this.sender = sender;
         this.receiverListener = listener;
         this.workerQueue = workerQueue;
         this.ignoredClasses = ignoredSenderClasses;
+        this.multicastID = multicastID;
     }
 
     // Thread startup
@@ -74,21 +79,31 @@ public class ReceiverWorker implements Runnable {
         // Unpack the container
         Container container = unpackContainer((byte[]) data);
 
-        // Check if the data is to be ignored
-        for (Class<?> ignoredClass : ignoredClasses)
-            if (ignoredClass == container.getSenderClass()) {
-                LogUtil.logInfo(LogUtil.ANSI_WHITE, ReceiverWorker.class,
-                        "Ignoring data from " + container.getSenderClass().getName());
-                return;
-            }
+        if (ignoreContainer(container))
+            return;
 
+        LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class,
+                "Processing container with packet number: " + container.getPacketNumber());
         // Add the container to the map
         addContainerToMap(container);
 
-        if (previousContainerMissing(container))
+        if (container.getDataType() == RetransmitRequest.class && reconstructReady(container.getDataID()))
+            sender.sendRetransmit((RetransmitRequest) reconstructData(container.getDataID()));
+        else if (previousContainerMissing(container))
             sender.requestRetransmit(container.getPacketNumber() - 1, container.getDataID());
         else if (reconstructReady(container.getDataID()))
             workerQueue.add(reconstructData(container.getDataID()));
+    }
+
+    private boolean ignoreContainer(Container container) {
+        if (multicastID.equals(container.getMulticastID()))
+            return true;
+
+        for (Class<?> ignoredClass : ignoredClasses)
+            if (ignoredClass == container.getSenderClass())
+                return true;
+
+        return false;
     }
 
     // Method to unpack a container
@@ -122,6 +137,7 @@ public class ReceiverWorker implements Runnable {
 
     // Method to reconstruct the data
     private Object reconstructData(String dataID) throws IOException, ClassNotFoundException {
+        LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class, "Reconstructing data with ID: " + dataID);
         // Buffer to assemble the data
         ByteArrayOutputStream dataBuffer = new ByteArrayOutputStream();
 

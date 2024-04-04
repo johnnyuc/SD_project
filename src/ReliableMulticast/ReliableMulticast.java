@@ -11,6 +11,10 @@ import ReliableMulticast.Receiver.ReceiverWorker;
 
 // General imports
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 import Logger.LogUtil;
 
@@ -23,14 +27,17 @@ public class ReliableMulticast {
     private final Sender sender;
     private final Receiver receiver;
 
+    private final UUID multicastID;
+
     // Constructor
     public ReliableMulticast(String multicastGroup, int port, Class<?> senderClass, Class<?>[] ignoredClasses) {
+        this.multicastID = UUID.randomUUID();
         try {
             // Gets machine IP
             String senderIP = InetAddress.getLocalHost().getHostAddress();
             // Creates sender and receiver
-            this.sender = new Sender(multicastGroup, port, senderIP, senderClass);
-            this.receiver = new Receiver(sender, multicastGroup, port, ignoredClasses);
+            this.sender = new Sender(multicastGroup, port, senderIP, senderClass, multicastID);
+            this.receiver = new Receiver(sender, multicastGroup, port, ignoredClasses, multicastID);
         } catch (IOException | InterruptedException e) {
             // TODO : mudar?
             throw new RuntimeException(e);

@@ -5,6 +5,7 @@ import ReliableMulticast.Sender.*;
 // General imports
 import java.net.*;
 import java.nio.channels.*;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -23,17 +24,20 @@ public class Receiver {
     // Channel [DatagramChannel/Socket]
     private final DatagramChannel channel;
 
+    private final UUID multicastID;
+
     // Queue for clean final data
     private final BlockingQueue<Object> workerQueue;
 
     private final Class<?>[] ignoredClasses;
 
     // Constructor
-    public Receiver(Sender sender, String multicastGroup, int port, Class<?>[] ignoredClasses)
+    public Receiver(Sender sender, String multicastGroup, int port, Class<?>[] ignoredClasses, UUID multicastID)
             throws IOException, InterruptedException {
         this.workerQueue = new LinkedBlockingQueue<>();
         this.sender = sender;
         this.ignoredClasses = ignoredClasses;
+        this.multicastID = multicastID;
 
         // Join the multicast group using channel [non blocking]
         // NetworkInterface networkInterface =
@@ -56,7 +60,7 @@ public class Receiver {
         listenerThread.start();
 
         // Thread for ReceiverWorker
-        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue, ignoredClasses);
+        receiverWorker = new ReceiverWorker(sender, receiverListener, workerQueue, ignoredClasses, multicastID);
         Thread workerThread = new Thread(receiverWorker, "Multicast Worker Thread");
         workerThread.start();
     }

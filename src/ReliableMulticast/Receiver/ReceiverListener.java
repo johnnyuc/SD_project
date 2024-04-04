@@ -20,7 +20,6 @@ import Logger.LogUtil;
 public class ReceiverListener implements Runnable {
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
-    private static final int MAX_PACKET_OVERHEAD = 512;
 
     // Channel
     private final DatagramChannel channel;
@@ -61,7 +60,7 @@ public class ReceiverListener implements Runnable {
                 return Optional.empty();
             }
 
-            ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE + MAX_PACKET_OVERHEAD);
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_PACKET_SIZE * 2);
 
             // Non-blocking receive
             SocketAddress senderAddress = channel.receive(buffer);

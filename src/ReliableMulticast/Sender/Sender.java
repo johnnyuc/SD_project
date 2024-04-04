@@ -8,6 +8,7 @@ import ReliableMulticast.Objects.RetransmitRequest;
 import java.io.*;
 import java.net.*;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -48,13 +49,17 @@ public class Sender implements Runnable {
     private final BlockingDeque<Object> sendBuffer = new LinkedBlockingDeque<>();
     private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
+    private final UUID multicastID;
+
     // Constructor
-    public Sender(String multicastGroup, int port, String senderIP, Class<?> senderClass) throws IOException {
+    public Sender(String multicastGroup, int port, String senderIP, Class<?> senderClass, UUID multicastID)
+            throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
         this.port = port;
         this.socket = new MulticastSocket(port);
         this.senderIP = senderIP;
         this.senderClass = senderClass;
+        this.multicastID = multicastID;
 
         new Thread(this, "Multicast Sender Thread").start();
     }
@@ -79,9 +84,7 @@ public class Sender implements Runnable {
             // Check if the object is a stopping pill
             if (object == STOP_PILL)
                 running = false;
-            // Check if the object is a retransmit request or a container
-            else if (object instanceof RetransmitRequest)
-                sendRetransmit((RetransmitRequest) object);
+            // Check if the object is a container
             else if (object instanceof Container)
                 sendContainer((Container) object, -1, -1);
             else {
@@ -126,7 +129,7 @@ public class Sender implements Runnable {
 
         // Send each container
         for (int i = 0; i < numContainers; i++) {
-            Container container = sliceObject(i, data, objectHash, numContainers);
+            Container container = sliceObject(i, data, objectHash, object.getClass(), numContainers);
             if (!retransmissionBuffer.containsKey(objectHash))
                 retransmissionBuffer.put(objectHash, new Container[numContainers]);
             // Add containerData to retransmission buffer
@@ -155,8 +158,8 @@ public class Sender implements Runnable {
             DatagramPacket datagram = new DatagramPacket(serializedContainer, serializedContainer.length,
                     multicastGroup, port);
             socket.send(datagram);
-            // System.out.println("Sent container " + (i + 1) + " of "
-            // + numContainers + " with size: " + serializedContainer.length + " bytes");
+            System.out.println("Sent container " + (i + 1) + " of "
+                    + numContainers + " with size: " + serializedContainer.length + " bytes");
         } catch (IOException e) {
             LogUtil.logError(LogUtil.ANSI_WHITE, Sender.class, e);
         }
@@ -164,9 +167,17 @@ public class Sender implements Runnable {
 
     // Method to send a retransmission request for a missing packet
     public void sendRetransmit(RetransmitRequest retransmitRequest) {
+
         // Check if the retransmission buffer contains the dataID
-        if (!retransmissionBuffer.containsKey(retransmitRequest.dataID()))
+        if (!retransmissionBuffer.containsKey(retransmitRequest.dataID())) {
+            LogUtil.logInfo(LogUtil.ANSI_YELLOW, Sender.class,
+                    "DataID " + retransmitRequest.dataID() + " not found in retransmission buffer");
             return;
+        }
+
+        LogUtil.logInfo(LogUtil.ANSI_YELLOW, Sender.class,
+                "Retransmitting container " + retransmitRequest.missingContainer() + " with dataID: "
+                        + retransmitRequest.dataID());
 
         Container container = retransmissionBuffer.get(retransmitRequest.dataID())[retransmitRequest
                 .missingContainer()];
@@ -182,13 +193,13 @@ public class Sender implements Runnable {
     }
 
     // Slices the object and returns it in a container
-    private Container sliceObject(int i, byte[] objectData, String objectHash, int numPackets) {
+    private Container sliceObject(int i, byte[] objectData, String objectHash, Class<?> objectClass, int numPackets) {
         // Get the slice of the object data
         int offset = i * MAX_PACKET_SIZE;
         int length = Math.min(MAX_PACKET_SIZE, objectData.length - offset);
         byte[] objectSlice = Arrays.copyOfRange(objectData, offset, offset + length);
-
-        return new Container(objectSlice, objectData.getClass(), senderClass, objectHash, senderIP, i, numPackets);
+        return new Container(objectSlice, objectClass, senderClass, objectHash, multicastID, i,
+                numPackets);
     }
 
     // Hashing function to get the hash of an object

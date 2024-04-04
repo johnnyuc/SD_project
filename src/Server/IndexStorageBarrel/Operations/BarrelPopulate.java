@@ -7,6 +7,7 @@ import java.net.URL;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import Logger.LogUtil;
 
@@ -20,103 +21,150 @@ public class BarrelPopulate {
     }
 
     public void insertSyncData(SyncData syncData) {
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelPopulate.class, "Inserting sync data into database...");
+
+        // Start a transaction
+        try {
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return;
+        }
+
         for (String table : syncData.tableResults().keySet()) {
-            ResultSet rs = syncData.tableResults().get(table);
-            try {
-                while (rs.next()) {
-                    switch (table) {
-                        case "websites" -> {
-                            String url = rs.getString("url");
-                            String title = rs.getString("title");
-                            String description = rs.getString("description");
-                            insertWebsite(url, title, description);
-                        }
-                        case "keywords" -> {
-                            String keyword = rs.getString("keyword");
-                            int keywordId = rs.getInt("id");
-                            insertKeyword(keyword, keywordId);
-                        }
-                        case "urls" -> {
-                            String urlString = rs.getString("url");
-                            int urlId = rs.getInt("id");
-                            insertUrl(urlString, urlId);
-                        }
-                        case "website_keywords" -> {
-                            int websiteId = rs.getInt("website_id");
-                            int keywordId = rs.getInt("keyword_id");
-                            int count = rs.getInt("count");
-                            double tfIdf = rs.getDouble("tf_idf");
-                            insertWebsiteKeyword(websiteId, keywordId, count, tfIdf);
-                        }
-                        case "website_urls" -> {
-                            int websiteId = rs.getInt("website_id");
-                            int urlId = rs.getInt("url_id");
-                            insertWebsiteUrl(websiteId, urlId);
-                        }
+            List<Map<String, Object>> rows = syncData.tableResults().get(table);
+            switch (table) {
+                case "websites" -> {
+                    if (!insertWebsites(rows)) {
+                        stopTransaction();
+                        return;
                     }
                 }
-            } catch (SQLException e) {
-                LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+                case "keywords" -> {
+                    if (!insertKeywords(rows)) {
+                        stopTransaction();
+                        return;
+                    }
+                }
+                case "urls" -> {
+                    if (!insertUrls(rows)) {
+                        stopTransaction();
+                        return;
+                    }
+                }
+                case "website_keywords" -> {
+                    if (!insertWebsiteKeywords(rows)) {
+                        stopTransaction();
+                        return;
+                    }
+                }
+                case "website_urls" -> {
+                    if (!insertWebsiteUrl(rows)) {
+                        stopTransaction();
+                        return;
+                    }
+                }
             }
         }
+        // Commit the transaction
+        try {
+            conn.commit();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
     }
 
-    private void insertWebsite(String url, String title, String description) {
+    private void stopTransaction() {
+        try {
+            conn.rollback();
+            conn.setAutoCommit(true);
+        } catch (SQLException rollbackException) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, rollbackException);
+        }
+    }
+
+    private boolean insertWebsites(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO websites(url, title, description) VALUES(?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, url);
-            pstmt.setString(2, title);
-            pstmt.setString(3, description);
-            pstmt.executeUpdate();
+            for (Map<String, Object> row : rows) {
+                pstmt.setString(1, (String) row.get("url"));
+                pstmt.setString(2, (String) row.get("title"));
+                pstmt.setString(3, (String) row.get("description"));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return false;
         }
+        return true;
     }
 
-    private void insertKeyword(String keyword, int keywordId) {
+    private boolean insertKeywords(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO keywords(keyword, id) VALUES(?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, keyword);
-            pstmt.setInt(2, keywordId);
-            pstmt.executeUpdate();
+            for (Map<String, Object> row : rows) {
+                pstmt.setString(1, (String) row.get("keyword"));
+                pstmt.setInt(2, (int) row.get("id"));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return false;
         }
+        return true;
     }
 
-    private void insertUrl(String urlString, int urlId) {
+    private boolean insertUrls(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO urls(url, id) VALUES(?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, urlString);
-            pstmt.setInt(2, urlId);
-            pstmt.executeUpdate();
+            for (Map<String, Object> row : rows) {
+                pstmt.setString(1, (String) row.get("url"));
+                pstmt.setInt(2, (int) row.get("id"));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return false;
         }
+        return true;
     }
 
-    private void insertWebsiteKeyword(int websiteId, int keywordId, int count, double tfIdf) {
-        String sql = "INSERT INTO website_keywords(website_id, keyword_id, count, tf_idf) VALUES(?,?,?,?)";
+    // TODO Add count
+    private boolean insertWebsiteKeywords(List<Map<String, Object>> rows) {
+        String sql = "INSERT INTO website_keywords(website_id, keyword_id, tf_idf) VALUES(?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, websiteId);
-            pstmt.setInt(2, keywordId);
-            pstmt.setInt(3, count);
-            pstmt.setDouble(4, tfIdf);
-            pstmt.executeUpdate();
+            for (Map<String, Object> row : rows) {
+                pstmt.setInt(1, (int) row.get("website_id"));
+                pstmt.setInt(2, (int) row.get("keyword_id"));
+                pstmt.setDouble(3, (double) row.get("tf_idf"));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return false;
         }
+        return true;
     }
 
-    private void insertWebsiteUrl(int websiteId, int urlId) {
+    private boolean insertWebsiteUrl(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, websiteId);
-            pstmt.setInt(2, urlId);
-            pstmt.executeUpdate();
+            for (Map<String, Object> row : rows) {
+                pstmt.setInt(1, (int) row.get("website_id"));
+                pstmt.setInt(2, (int) row.get("url_id"));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return false;
         }
+        return true;
     }
 
     public void insertCrawlData(CrawlData crawlData) throws SQLException {

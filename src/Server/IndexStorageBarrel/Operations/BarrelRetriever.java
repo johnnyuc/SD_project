@@ -44,7 +44,7 @@ public class BarrelRetriever {
                 crawlDataList.add(crawlData);
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
         }
 
         return crawlDataList;
@@ -82,7 +82,7 @@ public class BarrelRetriever {
                     }
                 }
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
             }
         }
 
@@ -125,35 +125,58 @@ public class BarrelRetriever {
         return rs;
     }
 
-    public ResultSet getWeakTableWithStartID(String weakTable, int startID) {
+    public List<Map<String, Object>> getWeakTableWithStartID(String weakTable, int startID) {
         String sql = "SELECT * FROM " + weakTable +
                 " WHERE website_id > ?";
-        ResultSet rs = null;
-
+        List<Map<String, Object>> rows = null;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, startID);
-            rs = pstmt.executeQuery();
-
+            ResultSet rs = pstmt.executeQuery();
+            rows = resultSetToRowList(weakTable, rs);
+            rs.close();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
         }
-        return rs;
+        return rows;
     }
 
-    public ResultSet getTableWithStartID(String table, int startID) {
+    public List<Map<String, Object>> getTableWithStartID(String table, int startID) {
         // TODO: No need to fear SQL injection because these values can't be received
         // from a user SERÁ???
         String sql = "SELECT * FROM " + table +
                 " WHERE id > ?";
-        ResultSet rs = null;
-
+        List<Map<String, Object>> rows = null;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, startID);
-            rs = pstmt.executeQuery();
-
+            ResultSet rs = pstmt.executeQuery();
+            rows = resultSetToRowList(table, rs);
+            rs.close();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
         }
-        return rs;
+        return rows;
     }
+
+    private List<Map<String, Object>> resultSetToRowList(String table, ResultSet rs) {
+        // Create a list to hold the rows
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        try {
+            // Get the ResultSetMetaData. This will be used to get column names
+            ResultSetMetaData rsmd = rs.getMetaData();
+
+            while (rs.next()) {
+                // Create a map to hold the row data
+                Map<String, Object> row = new HashMap<>();
+                for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+                    row.put(rsmd.getColumnName(i), rs.getObject(i));
+                }
+                rows.add(row);
+            }
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelSync.class, e);
+        }
+        return rows;
+    }
+
 }
