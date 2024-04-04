@@ -8,7 +8,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface RMIGatewayInterface extends Remote {
-    boolean searchQuery(String query) throws RemoteException;
+    boolean searchQuery(String query) throws RemoteException, MalformedURLException;
 
     void receivePing(int barrelID, long timestamp, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException;

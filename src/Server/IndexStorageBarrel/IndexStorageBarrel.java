@@ -85,7 +85,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
                     "Wrong number of arguments: expected -id <barrel id> -db <database path> "
                             + "-dmcast <downloader multicast group address> -dport <downloader port number> "
                             + "-smcast <sync multicast group address> -sport <sync port number> "
-                            + "-mcastadd <multicast interface address> -badd <barrel interface address>"
+                            + "-mcastadd <multicast interface address> -badd <barrel interface address> "
                             + "-gadd <gateway interface address>");
             return false;
         }

@@ -1,6 +1,7 @@
 package Server.Controller.RMIGateway;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -8,6 +9,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import Logger.LogUtil;
@@ -15,22 +18,26 @@ import Server.IndexStorageBarrel.IndexStorageBarrel;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 import Server.IndexStorageBarrel.Operations.BarrelPinger;
 import Client.RMIClientInterface;
+import Server.URLQueue.URLQueue;
+import Server.URLQueue.URLQueueInterface;
 
 public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
     public static final int PORT = 5999;
     public static final String REMOTE_REFERENCE_NAME = "rmigateway";
     private int currentBarrel = 0;
-    private ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
+    private final ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
     private final Map<String, Integer> searchQueries = new HashMap<>();
     private final List<RMIClientInterface> observers = new ArrayList<>();
     private String mostSearched = "";
     private String barrelsStatus = "";
-    private String barrelAddress;
+    private URLQueueInterface urlQueue;
+    private String queueAddress;
 
     public static void main(String[] args) {
+
         try {
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Starting RMI Gateway...");
-            RMIGateway rmiGateway = new RMIGateway();
+            RMIGateway rmiGateway = new RMIGateway(args);
             Registry registry = LocateRegistry.createRegistry(PORT);
             registry.rebind(REMOTE_REFERENCE_NAME, rmiGateway);
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "RMI Gateway ready.");
@@ -39,8 +46,17 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
-    RMIGateway() throws RemoteException {
+    public RMIGateway(String[] args) throws RemoteException {
         super();
+        if (!processArgs(args))
+            return;
+        try {
+            urlQueue = (URLQueueInterface) Naming
+                    .lookup("rmi://" + queueAddress + ":" + URLQueue.PORT + "/" + URLQueue.REMOTE_REFERENCE_NAME);
+        } catch (MalformedURLException | RemoteException | NotBoundException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, e);
+        }
+
     }
 
     public void addObserver(RMIClientInterface observer) throws RemoteException {
@@ -67,14 +83,22 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
-    public boolean searchQuery(String query) throws RemoteException {
+    public boolean searchQuery(String query) throws RemoteException, MalformedURLException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
         BarrelTimestamp barrel = getAvailableBarrel();
         if (barrel == null)
             return false;
 
         long startTime = System.currentTimeMillis();
-        barrel.getRemoteBarrel().sayHi(query);
+
+        if (isValidURL(query)) {
+            // The query is a search query so send it to the Barrel
+            urlQueue.priorityEnqueueURL(URI.create(query).toURL());
+        } else {
+            // The query is a URL so send it to the URL Queue
+            barrel.getRemoteBarrel().sayHi("Search: " + query);
+        }
+
         barrel.setAvgResponseTime(System.currentTimeMillis() - startTime);
 
         // Update the count of the search query
@@ -93,6 +117,54 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return true;
     }
 
+    public static boolean isValidURL(String url) {
+        // Regex to check valid URL
+        String regex = "((http|https)://)(www.)?"
+                + "[a-zA-Z0-9@:%._+~#?&/=]"
+                + "{2,256}\\.[a-z]"
+                + "{2,6}\\b([-a-zA-Z0-9@:%"
+                + "._+~#?&/=]*)";
+
+        // Compile the ReGex
+        Pattern p = Pattern.compile(regex);
+
+        // If the string is empty return false
+        if (url == null)
+            return false;
+
+        // Find match between given string and regular expression using
+        // Pattern.matcher()
+        Matcher m = p.matcher(url);
+
+        // Return if the string matched the ReGex
+        return m.matches();
+    }
+
+    private boolean processArgs(String[] args) {
+        if (args.length != 2) {
+            LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+                    "Wrong number of arguments: expected -qadd <queue address>");
+            return false;
+        }
+        // Parse the arguments
+        try {
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-qadd")) {
+                    queueAddress = args[++i];
+                } else {
+                    LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+                            "Unexpected argument: " + args[i]);
+                    return false;
+                }
+            }
+        } catch (NumberFormatException e) {
+            LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+                    "Wrong type of argument: expected int for barrel id and port number");
+            return false;
+        }
+        return true;
+    }
+
     public void receivePing(int barrelID, long timestamp, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException {
 
@@ -104,10 +176,10 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
                 timedBarrel.setTimestamp(timestamp);
                 return;
             }
-        // TODO foda aqui? O barrel tem de mandar o seu ip ns como fazer
-        IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) Naming.lookup("rmi://localhost:"
-                + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
-                + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
+        IndexStorageBarrelInterface remoteBarrel = (IndexStorageBarrelInterface) Naming
+                .lookup("rmi://" + barrelIP + ":"
+                        + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
+                        + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, timestamp, barrelID));
@@ -142,7 +214,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             isAlive = isAlive(timedBarrels.get(currentBarrel));
             if (!isAlive)
                 timedBarrels.remove(currentBarrel);
-            if (timedBarrels.size() == 0)
+            if (timedBarrels.isEmpty())
                 break;
         }
         return timedBarrels.get(currentBarrel);

@@ -13,14 +13,16 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     public static final String REMOTE_REFERENCE_NAME = "urlqueue";
     public static final int PORT = 5998;
     private int debug = 0;
-    private final BlockingQueue<URL> urlQueue;
+    private final BlockingDeque<URL> urlQueue;
     // private final BloomFilter<CharSequence> bloomFilter;
     private final BloomFilter bloomFilter;
 
@@ -41,7 +43,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     // Constructor
     private URLQueue() throws RemoteException {
         super();
-        urlQueue = new LinkedBlockingQueue<>();
+        urlQueue = new LinkedBlockingDeque<>();
 
         /* GOOGLE GUAVA IMPLEMENTATION */
         // Bloom filter with 1M elements and 0.01 false positive probability
@@ -70,14 +72,14 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     }
 
     // Method to add a URL to the queue
-    public void enqueueURL(URL url, int downloaderID) {
+    public void enqueueURL(URL url, int downloaderID) throws RemoteException {
         String urlString = url.toString();
 
         // Check if the URL is already in the queue by checking the Bloom filter
         if (!bloomFilter.contains(urlString)) {
             System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
-            urlQueue.add(url);
+            urlQueue.addLast(url);
             debug++;
         }
 
@@ -93,11 +95,18 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
          */
     }
 
+    public void priorityEnqueueURL(URL url) throws RemoteException {
+        // Don't use the bloom filter for priority URLs
+        System.out.println("Priority Queueing URL " + url + ".");
+        urlQueue.addLast(url);
+        debug++;
+    }
+
     // Method to remove a URL from the queue
-    public URL dequeueURL(int downloaderID) {
+    public URL dequeueURL(int downloaderID) throws RemoteException {
         URL url = null;
         try {
-            url = urlQueue.take();
+            url = urlQueue.takeFirst();
             System.out.println("Dequeueing URL " + url + " to downloader " + downloaderID + ".");
         } catch (InterruptedException e) {
             System.out.println("Error in Server.URLQueue.dequeueURL: " + e);

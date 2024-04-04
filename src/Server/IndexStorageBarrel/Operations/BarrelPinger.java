@@ -51,7 +51,7 @@ public class BarrelPinger implements Runnable {
 
     private void pingGateway() throws RemoteException, NotBoundException, MalformedURLException, UnknownHostException {
         LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Pinging gateway.");
-        rmiGateway.receivePing(barrelID, System.currentTimeMillis(), InetAddress.getLocalHost().getHostAddress());
+        rmiGateway.receivePing(barrelID, System.currentTimeMillis(), barrelAddress);
     }
 
     private void stop() {

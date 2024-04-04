@@ -3,12 +3,11 @@ package Client;
 import Server.Controller.RMIGateway.RMIGateway;
 import Server.Controller.RMIGateway.RMIGatewayInterface;
 
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.Scanner;
 
 import Logger.LogUtil;
@@ -16,13 +15,13 @@ import Logger.LogUtil;
 /**
  * Client.RMIClient
  */
-public class RMIClient implements RMIClientInterface {
+public class RMIClient implements RMIClientInterface, Serializable {
     public static void main(String[] args) {
         new RMIClient(args);
     }
 
     private RMIGatewayInterface rmiGateway;
-    private Scanner scanner;
+    private transient Scanner scanner;
 
     private boolean onMostSearchedPage = false;
     private boolean onBarrelStatusPage = false;
@@ -69,9 +68,10 @@ public class RMIClient implements RMIClientInterface {
     /**
      * Display the menu
      * 
-     * @throws RemoteException if a remote exception occurs
+     * @throws RemoteException       if a remote exception occurs
+     * @throws MalformedURLException if a malformed URL exception occurs
      */
-    private void menu() throws RemoteException {
+    private void menu() throws RemoteException, MalformedURLException {
         do {
             printMenu();
         } while (treatChoice(readChoice()));
@@ -82,9 +82,10 @@ public class RMIClient implements RMIClientInterface {
      * 
      * @param choice the choice
      * @return true if the user wants to continue, false otherwise
-     * @throws RemoteException if a remote exception occurs
+     * @throws RemoteException       if a remote exception occurs
+     * @throws MalformedURLException
      */
-    private boolean treatChoice(int choice) throws RemoteException {
+    private boolean treatChoice(int choice) throws RemoteException, MalformedURLException {
         switch (choice) {
             case 1:
                 System.out.println("Enter query:");
