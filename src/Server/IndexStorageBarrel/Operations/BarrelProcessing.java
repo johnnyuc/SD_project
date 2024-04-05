@@ -31,11 +31,12 @@ public class BarrelProcessing {
         int termCount = Collections.frequency(subsetTerms, term);
         int totalSubsetTerms = subsetTerms.size();
 
-        // Print TF values
-        System.err.println("term: " + term);
-        System.err.println("subsetTerms: " + subsetTerms);
-        System.err.println("TF - termCount/totalSubsetTerms: "
-                + (double) Collections.frequency(subsetTerms, term) / subsetTerms.size());
+        /* Print TF values
+         * System.err.println("term: " + term);
+         * System.err.println("subsetTerms: " + subsetTerms);
+         * System.err.println("TF - termCount/totalSubsetTerms: "
+         * + (double) Collections.frequency(subsetTerms, term) / subsetTerms.size());
+         */
 
         return (double) termCount / totalSubsetTerms;
     }
@@ -52,10 +53,11 @@ public class BarrelProcessing {
     public double calcIDF(String term, List<String> subsetTerms, int docNr) throws SQLException {
         int tokenDocnr = getTokenDocnr(term, subsetTerms);
 
-        // Print IDF values
-        System.err.println("docNr: " + docNr);
-        System.err.println("tokenDocnr: " + tokenDocnr);
-        System.err.println("IDF - log(1 + docNr/tokenDocnr): " + Math.log(1 + (double) (docNr / tokenDocnr)));
+        /* Print IDF values
+         * System.err.println("docNr: " + docNr);
+         * System.err.println("tokenDocnr: " + tokenDocnr);
+         * System.err.println("IDF - log(1 + docNr/tokenDocnr): " + Math.log(1 + (double) (docNr / tokenDocnr)));
+         */
 
         return Math.log(1 + (double) (docNr / tokenDocnr));
     }
@@ -79,9 +81,10 @@ public class BarrelProcessing {
             System.err.println("Error calculating IDF: " + e.getMessage());
         }
 
-        // Print TF-IDF value
-        System.err.println("tf * idf: " + tf * idf);
-        System.err.println();
+        /* Print TF-IDF value
+         * System.err.println("tf * idf: " + tf * idf);
+         * System.err.println();
+         */
 
         return tf * idf;
     }
