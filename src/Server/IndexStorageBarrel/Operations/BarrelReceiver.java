@@ -38,8 +38,9 @@ public class BarrelReceiver implements Runnable {
     @Override
     public void run() {
         reliableMulticast.startReceiving();
-        try {
-            while (running) {
+        while (running) {
+            try {
+
                 CrawlData crawlData = (CrawlData) reliableMulticast.getData();
                 if (crawlData == null) {
                     running = false;
@@ -48,12 +49,12 @@ public class BarrelReceiver implements Runnable {
 
                 LogUtil.logInfo(LogUtil.ANSI_WHITE, BarrelReceiver.class, "Received data: " + crawlData.getUrl());
                 barrel.getBarrelPopulate().insertCrawlData(crawlData);
+
+            } catch (SQLException e) {
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelReceiver.class, e);
             }
-        } catch (SQLException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelReceiver.class, e);
-        } finally {
-            stop();
         }
+        stop();
     }
 
     /**

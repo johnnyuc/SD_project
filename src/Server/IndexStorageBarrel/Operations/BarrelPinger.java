@@ -49,16 +49,14 @@ public class BarrelPinger implements Runnable {
     @Override
     public void run() {
         thread = Thread.currentThread();
-        try {
-            while (running) {
+        while (running) {
+            try {
                 Thread.sleep(PING_INTERVAL);
                 pingGateway();
+            } catch (InterruptedException | RemoteException | NotBoundException
+                    | MalformedURLException | UnknownHostException e) {
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
             }
-        } catch (InterruptedException | RemoteException | NotBoundException
-                | MalformedURLException | UnknownHostException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
-        } finally {
-            LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Shutting down Barrel Pinger.");
         }
     }
 

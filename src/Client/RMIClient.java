@@ -43,9 +43,6 @@ public class RMIClient implements Serializable {
     private RMIGatewayInterface rmiGateway;
     private transient Scanner scanner;
 
-    private boolean onMostSearchedPage = false;
-    private boolean onBarrelStatusPage = false;
-
     private String gatewayAddress;
 
     /**
@@ -64,8 +61,7 @@ public class RMIClient implements Serializable {
             menu();
             scanner.close();
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, RMIClient.class, e);
-            System.out.println("RMI Gateway unavailable. Shutting down...");
+            System.out.println("Service unavailable. Try again later.");
             System.exit(-1);
         }
     }

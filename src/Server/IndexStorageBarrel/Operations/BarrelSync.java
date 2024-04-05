@@ -50,8 +50,8 @@ public class BarrelSync implements Runnable {
         // tirar os valores. Só tirar quando estiver sincronizado.
 
         // TODO Se o pedido de sincronização for perdido, a bd nunca se sincroniza
-        try {
-            while (running) {
+        while (running) {
+            try {
                 Object data = reliableMulticast.getData();
 
                 if (data == null)
@@ -63,9 +63,9 @@ public class BarrelSync implements Runnable {
                     barrel.getBarrelPopulate().insertSyncData((SyncData) data);
                     LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Finished synchronization");
                 }
+            } catch (Exception e) {
+                LogUtil.logError(LogUtil.ANSI_RED, BarrelSync.class, e);
             }
-        } catch (Exception e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelSync.class, e);
         }
     }
 
