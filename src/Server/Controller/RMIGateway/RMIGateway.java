@@ -17,7 +17,6 @@ import Logger.LogUtil;
 import Server.IndexStorageBarrel.IndexStorageBarrel;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 import Server.IndexStorageBarrel.Operations.BarrelPinger;
-import Client.RMIClientInterface;
 import Server.URLQueue.URLQueue;
 import Server.URLQueue.URLQueueInterface;
 
@@ -27,7 +26,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     private int currentBarrel = 0;
     private final ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
     private final Map<String, Integer> searchQueries = new HashMap<>();
-    private final List<RMIClientInterface> observers = new ArrayList<>();
     private String mostSearched = "";
     private String barrelsStatus = "";
     private URLQueueInterface urlQueue;
@@ -59,30 +57,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
     }
 
-    public void addObserver(RMIClientInterface observer) throws RemoteException {
-        // Check if the observer is already in the list
-        for (RMIClientInterface o : observers)
-            if (o.equals(observer))
-                return;
-        observers.add(observer);
-    }
-
-    public void removeObserver(RMIClientInterface observer) throws RemoteException {
-        // Check if the observer is in the list
-        for (RMIClientInterface o : observers)
-            if (o.equals(observer))
-                observers.remove(observer);
-    }
-
-    private void notifyObservers() throws RemoteException {
-        for (RMIClientInterface observer : observers) {
-            if (observer.isOnMostSearchedPage())
-                observer.updateMostSearched();
-            if (observer.isOnBarrelStatusPage())
-                observer.updateBarrelStatus();
-        }
-    }
-
     public List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
 
@@ -92,30 +66,34 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             return Collections.singletonList("URL Indexed.");
         }
 
-        BarrelTimestamp barrel = getAvailableBarrel();
-        if (barrel == null)
+        int barrel = getAvailableBarrel();
+        if (currentBarrel == -1)
             return Collections.singletonList("No barrels available.");
 
         long startTime = System.currentTimeMillis();
         // The query is a URL so send it to the URL Queue
-        List<String> results = barrel.getRemoteBarrel().searchQuery(query, pageNumber);
+        List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel().searchQuery(query, pageNumber);
 
-        barrel.setAvgResponseTime(System.currentTimeMillis() - startTime);
+        timedBarrels.get(barrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
 
         // Update the count of the search query
         searchQueries.put(query, searchQueries.getOrDefault(query, 0) + 1);
 
-        // Check if the new query changes the top 10 most searched queries
-        String oldMostSearched = mostSearched();
-        updateMostSearched();
-        String newMostSearched = mostSearched();
-
-        if (!oldMostSearched.equals(newMostSearched)) {
-            // Notify observers
-            notifyObservers();
-        }
-
         // Convert the SearchData objects to String and return the search results
+        return results;
+    }
+
+    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
+        int currentBarrel = getAvailableBarrel();
+        if (currentBarrel == -1)
+            return Collections.singletonList("No barrels available.");
+
+        long startTime = System.currentTimeMillis();
+        List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel()
+                .getWebsitesLinkingTo(targetUrl, pageNumber);
+
+        timedBarrels.get(currentBarrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
+
         return results;
     }
 
@@ -189,23 +167,13 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
-
-        // Check if the status of any barrel changes
-        String oldBarrelsStatus = barrelsStatus();
-        updateBarrelsStatus();
-        String newBarrelsStatus = barrelsStatus();
-
-        if (!oldBarrelsStatus.equals(newBarrelsStatus)) {
-            // Notify observers
-            notifyObservers();
-        }
     }
 
     public void removeBarrel(int barrelID) throws RemoteException {
         timedBarrels.removeIf(timedBarrel -> timedBarrel.getBarrelID() == barrelID);
     }
 
-    private synchronized BarrelTimestamp getAvailableBarrel() {
+    private synchronized int getAvailableBarrel() {
         for (BarrelTimestamp timedBarrel : timedBarrels) {
             if (timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2)
                 timedBarrels.remove(timedBarrel);
@@ -213,7 +181,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         if (timedBarrels.isEmpty()) {
             LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "No barrels available");
-            return null;
+            return -1;
         }
 
         boolean isAlive = false;
@@ -225,7 +193,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             if (timedBarrels.isEmpty())
                 break;
         }
-        return timedBarrels.get(currentBarrel);
+        return currentBarrel;
     }
 
     private boolean isAlive(BarrelTimestamp barrelTimestamp) {
@@ -237,45 +205,23 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
-    public void updateMostSearched() {
-        // Sort the searchQueries map by value in descending order
-        List<Map.Entry<String, Integer>> sortedSearchQueries = new ArrayList<>(searchQueries.entrySet());
-        sortedSearchQueries.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+    public List<String> mostSearched() throws RemoteException {
+        int currentBarrel = getAvailableBarrel();
+        if (currentBarrel == -1)
+            return Collections.singletonList("No barrels available.");
 
-        // Get the top 10 most searched queries
-        List<String> topQueries = sortedSearchQueries.stream()
-                .limit(10)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-
-        // Update the mostSearched variable
-        mostSearched = String.join(", ", topQueries);
+        long startTime = System.currentTimeMillis();
+        List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel().getTopSearches();
+        timedBarrels.get(currentBarrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Most searched queries: " + results);
+        return results;
     }
 
-    public void updateBarrelsStatus() {
-        // Iterate over the timedBarrels list and check the status of each barrel
-        StringBuilder status = new StringBuilder();
+    public String barrelsStatus() throws RemoteException {
+        String str = "";
         for (BarrelTimestamp barrel : timedBarrels) {
-            status.append("Barrel ID: ")
-                    .append(barrel.getBarrelID())
-                    .append(", Status: ")
-                    .append(barrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2L
-                            ? "Down"
-                            : "Up")
-                    .append(", Response Time: ")
-                    .append(barrel.getAvgResponseTime())
-                    .append(" ms\n");
+            str += "Barrel " + barrel.getBarrelID() + " : " + barrel.getAvgResponseTime() + "ms\n";
         }
-
-        // Update the barrelsStatus variable
-        barrelsStatus = status.toString();
-    }
-
-    public String mostSearched() {
-        return mostSearched;
-    }
-
-    public String barrelsStatus() {
-        return barrelsStatus;
+        return str;
     }
 }

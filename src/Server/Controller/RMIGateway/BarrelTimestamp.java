@@ -1,5 +1,6 @@
 package Server.Controller.RMIGateway;
 
+import Logger.LogUtil;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 
 public class BarrelTimestamp {
@@ -32,10 +33,15 @@ public class BarrelTimestamp {
     }
 
     public long getAvgResponseTime() {
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelTimestamp.class, "returning response time:" + avgResponseTime);
         return avgResponseTime;
     }
 
     public void setAvgResponseTime(long avgResponseTime) {
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelTimestamp.class, "response time:" + avgResponseTime);
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelTimestamp.class,
+                "setting response time:" + (this.avgResponseTime + avgResponseTime) / 2);
         this.avgResponseTime = (this.avgResponseTime + avgResponseTime) / 2;
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelTimestamp.class, "response time:" + this.avgResponseTime);
     }
 }

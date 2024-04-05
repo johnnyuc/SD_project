@@ -104,11 +104,12 @@ public class BarrelPopulate {
     }
 
     private boolean insertKeywords(List<Map<String, Object>> rows) {
-        String sql = "INSERT INTO keywords(keyword, id) VALUES(?,?)";
+        String sql = "INSERT INTO keywords(keyword, id, searches) VALUES(?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (Map<String, Object> row : rows) {
                 pstmt.setString(1, (String) row.get("keyword"));
                 pstmt.setInt(2, (int) row.get("id"));
+                pstmt.setInt(3, (int) row.get("searches"));
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
@@ -318,6 +319,31 @@ public class BarrelPopulate {
             }
             insertWebsiteUrlPstmt.executeBatch();
 
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    public void incrementSearches(String keyword) {
+        String selectSql = "SELECT * FROM keywords WHERE keyword = ?";
+        try (PreparedStatement selectPstmt = conn.prepareStatement(selectSql)) {
+            selectPstmt.setString(1, keyword);
+            ResultSet rs = selectPstmt.executeQuery();
+            if (rs.next()) {
+                // The keyword exists, increment the searches count
+                String updateSql = "UPDATE keywords SET searches = searches + 1 WHERE keyword = ?";
+                try (PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
+                    updatePstmt.setString(1, keyword);
+                    updatePstmt.executeUpdate();
+                }
+            } else {
+                // Add the keyword to the database with search count 1
+                String insertSql = "INSERT INTO keywords(keyword, searches) VALUES(?, 1)";
+                try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
+                    insertPstmt.setString(1, keyword);
+                    insertPstmt.executeUpdate();
+                }
+            }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }

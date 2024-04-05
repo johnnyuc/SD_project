@@ -16,7 +16,7 @@ import Logger.LogUtil;
 /**
  * Client.RMIClient
  */
-public class RMIClient implements RMIClientInterface, Serializable {
+public class RMIClient implements Serializable {
     public static void main(String[] args) {
         new RMIClient(args);
     }
@@ -102,11 +102,24 @@ public class RMIClient implements RMIClientInterface, Serializable {
                 }
                 break;
             case 2:
+                String url = readQuery().trim();
+                results = rmiGateway.getWebsitesLinkingTo(url, 1);
+                printList(results);
+                while (true) {
+                    System.out.println("Enter page number (or 0 to exit):");
+                    int pageNumber = readChoice();
+                    if (pageNumber == 0)
+                        break;
+                    results = rmiGateway.getWebsitesLinkingTo(url, pageNumber);
+                    printList(results);
+                }
+                break;
+            case 3:
                 // code to handle Admin console
                 System.out.println("Entering Admin console...");
                 adminMenu();
                 break;
-            case 3:
+            case 4:
                 System.out.println("Quitting...");
                 return false;
             default:
@@ -126,21 +139,13 @@ public class RMIClient implements RMIClientInterface, Serializable {
     private boolean treatAdminChoice(int choice) throws RemoteException {
         switch (choice) {
             case 1:
-                rmiGateway.addObserver(this);
-                onMostSearchedPage = true;
-                String mostSearched = rmiGateway.mostSearched();
-                System.out.println(mostSearched);
+                printList(rmiGateway.mostSearched());
                 break;
             case 2:
-                rmiGateway.addObserver(this);
-                onBarrelStatusPage = true;
                 String barrelsStatus = rmiGateway.barrelsStatus();
                 System.out.println(barrelsStatus);
                 break;
             case 3:
-                rmiGateway.removeObserver(this);
-                onMostSearchedPage = false;
-                onBarrelStatusPage = false;
                 System.out.println("Exiting Admin console...");
                 return false;
             default:
@@ -183,8 +188,9 @@ public class RMIClient implements RMIClientInterface, Serializable {
     private void printMenu() {
         System.out.println("----------------------------------");
         System.out.println("1. Search");
-        System.out.println("2. Admin console");
-        System.out.println("3. Quit");
+        System.out.println("2. Find linked URLS");
+        System.out.println("3. Admin console");
+        System.out.println("4. Quit");
         System.out.println("----------------------------------");
     }
 
@@ -194,13 +200,6 @@ public class RMIClient implements RMIClientInterface, Serializable {
         System.out.println("2. Barrels status");
         System.out.println("3. Back to main menu");
         System.out.println("----------------------------------");
-    }
-
-    public void updateMostSearched() throws RemoteException {
-        if (onMostSearchedPage) {
-            String mostSearched = rmiGateway.mostSearched();
-            System.out.println(mostSearched);
-        }
     }
 
     public void updateBarrelStatus() throws RemoteException {

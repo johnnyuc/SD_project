@@ -144,12 +144,28 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Received query:" + query);
         List<SearchData> searchData = retrieveAndRankData(query, pageNumber);
 
+        // Tokenize query and send each keyword to increment searches
+        String[] keywords = query.split(" ");
+        for (String keyword : keywords) {
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class,
+                    "Incrementing searches for keyword:" + keyword);
+            barrelPopulate.incrementSearches(keyword);
+        }
+
         List<String> results = new ArrayList<>();
         for (SearchData sD : searchData) {
             results.add(sD.title() + "\n" + sD.url() + "\nRef_count:" + sD.refCount() + "\n");
         }
 
         return results;
+    }
+
+    public List<String> getTopSearches() throws RemoteException {
+        return barrelRetriever.getTopSearches();
+    }
+
+    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
+        return barrelRetriever.getWebsitesLinkingTo(targetUrl, pageNumber);
     }
 
     public void receivePing() throws RemoteException {

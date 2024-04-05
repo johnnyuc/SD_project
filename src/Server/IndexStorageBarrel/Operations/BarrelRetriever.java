@@ -51,6 +51,52 @@ public class BarrelRetriever {
         return crawlDataList;
     }
 
+    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) {
+        List<String> websites = new ArrayList<>();
+
+        String sql = "SELECT w.url " +
+                "FROM websites w " +
+                "JOIN website_urls wu ON w.id = wu.website_id " +
+                "JOIN urls u ON wu.url_id = u.id " +
+                "WHERE u.url = ?" +
+                "LIMIT 10 OFFSET ?";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, targetUrl);
+            pstmt.setInt(2, pageNumber);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelRetriever.class, "Found website linking to target url");
+                websites.add(rs.getString("url"));
+            }
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        }
+
+        return websites;
+    }
+
+    public List<String> getTopSearches() {
+        List<String> topSearches = new ArrayList<>();
+        String sql = "SELECT keyword " +
+                "FROM keywords " +
+                "ORDER BY searches DESC " +
+                "LIMIT 10";
+
+        try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                topSearches.add(rs.getString("keyword"));
+            }
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        }
+        LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelRetriever.class, "top searches: " + topSearches.toString());
+        return topSearches;
+    }
+
     public List<SearchData> retrieveAndRankData(String query, int pageNumber) {
         Map<String, SearchData> searchDataMap = new HashMap<>();
         String[] keywords = query.split("\\s+");
@@ -60,14 +106,12 @@ public class BarrelRetriever {
                 "FROM websites w " +
                 "JOIN website_keywords wk ON w.id = wk.website_id " +
                 "JOIN keywords k ON wk.keyword_id = k.id " +
-                "WHERE k.keyword IN (" + keywordList.stream().map(token -> "?").collect(Collectors.joining(",")) + ")" +
-                "LIMIT 10 OFFSET ?";
+                "WHERE k.keyword IN (" + keywordList.stream().map(token -> "?").collect(Collectors.joining(",")) + ")";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < keywordList.size(); i++) {
                 pstmt.setString(i + 1, keywordList.get(i));
             }
-            pstmt.setInt(keywordList.size() + 1, (pageNumber - 1) * 10);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -98,7 +142,16 @@ public class BarrelRetriever {
         // sort search data by ref_count
         searchDataList.sort((data1, data2) -> Integer.compare(data2.refCount(), data1.refCount()));
 
-        return searchDataList;
+        // Calculate the start and end indices of the page
+        int start = (pageNumber - 1) * 10;
+        int end = Math.min(start + 10, searchDataList.size());
+
+        // If start exceed list, return empty list
+        if (start >= searchDataList.size())
+            return new ArrayList<>();
+
+        // Return the page of search results
+        return searchDataList.subList(start, end);
     }
 
     public HashMap<String, Integer> getLastIDs() {

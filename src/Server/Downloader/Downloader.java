@@ -36,7 +36,7 @@ public class Downloader {
     private boolean processArgs(String[] args) {
         if (args.length != 10) {
             LogUtil.logInfo(LogUtil.ANSI_RED, Downloader.class,
-                    "Wrong number of arguments: expected -id <downloader number> -ip <queue IP>"
+                    "Wrong number of arguments: expected -d <downloader number> -ip <queue IP>"
                             + " -mcast <multicast group address> -mcastport <multicast port number>"
                             + " -mcastinterface <multicast interface address>");
             return false;
@@ -46,7 +46,7 @@ public class Downloader {
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
-                    case "-id" -> downloaderNum = Integer.parseInt(args[++i]);
+                    case "-d" -> downloaderNum = Integer.parseInt(args[++i]);
                     case "-ip" -> queueIP = args[++i];
                     case "-mcast" -> mcastGroupAddress = args[++i];
                     case "-mcastport" -> mcastPort = Integer.parseInt(args[++i]);

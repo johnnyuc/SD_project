@@ -49,6 +49,7 @@ public class BarrelSync implements Runnable {
         while (running) {
             try {
                 Object data = reliableMulticast.getData();
+
                 if (data == null)
                     running = false;
                 else if (data.getClass() == SyncRequest.class)
