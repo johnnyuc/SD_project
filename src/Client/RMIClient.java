@@ -215,11 +215,20 @@ public class RMIClient implements Serializable {
      */
     private int readChoice() {
         String input = scanner.nextLine();
-        while (input.trim().isEmpty()) {
+        while (!isNumeric(input.trim())) {
             System.out.println("Invalid input. Please enter a number:");
             input = scanner.nextLine();
         }
         return Integer.parseInt(input);
+    }
+
+    private boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
     }
 
     /**
