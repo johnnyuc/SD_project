@@ -116,8 +116,22 @@ public class DownloaderWorker implements Runnable {
             List<String> tokenList = new ArrayList<>();
 
             // Store all tokens in the list
-            while (tokens.hasMoreElements())
-                tokenList.add(tokens.nextToken().toLowerCase());
+            while (tokens.hasMoreElements()) {
+                String token = tokens.nextToken().toLowerCase();
+                token = token.trim();
+                token = token.replaceAll("[\\[\\](){}?!,.:]", "");
+                // Remove single characters
+                if (token.length() > 1) {
+                    // If it's a number, it should contain a comma or a dot
+                    if (token.matches("\\d+")) {
+                        if (token.contains(".") || token.contains(",")) {
+                            tokenList.add(token);
+                        }
+                    } else {
+                        tokenList.add(token);
+                    }
+                }
+            }
 
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
