@@ -1,5 +1,6 @@
 package Server.IndexStorageBarrel.Operations;
 
+import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,34 +38,33 @@ public class BarrelSync implements Runnable {
 
     @Override
     public void run() {
-        reliableMulticast.startReceiving();
-        reliableMulticast.send(getSyncRequest());
         // TODO: This only works considering 2 barrels are used. If more barrels are
         // used, this will need to be changed.
         // It wont break, but alot of useless data will be added to the barrels
 
-        // TODO se recebe um valor enquanto está a sincronizar, ele vai ter id's
-        // diferentes nas duas bds, mas será que importa?
-        // O que importa é que depois eles vão estar no mesmo id no final e os dados
-        // estão todos lá dentro. Solução: Meter o receiver a encher a queue mas não a
-        // tirar os valores. Só tirar quando estiver sincronizado.
+        reliableMulticast.startReceiving();
+        try {
+            // The nr of active barrels will be zero since this one wont have pinged the
+            // gateway yet
+            if (barrel.getBarrelPinger().getActiveBarrels() == 0)
+                barrel.getLatch().countDown();
+            else
+                reliableMulticast.send(getSyncRequest());
+        } catch (RemoteException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelSync.class, e);
+        }
 
-        // TODO Se o pedido de sincronização for perdido, a bd nunca se sincroniza
         while (running) {
-            try {
-                Object data = reliableMulticast.getData();
-
-                if (data == null)
-                    running = false;
-                else if (data.getClass() == SyncRequest.class)
-                    reliableMulticast.send(getSyncData((SyncRequest) data));
-                else {
-                    LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Received Sync data...");
-                    barrel.getBarrelPopulate().insertSyncData((SyncData) data);
-                    LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Finished synchronization");
-                }
-            } catch (Exception e) {
-                LogUtil.logError(LogUtil.ANSI_RED, BarrelSync.class, e);
+            Object data = reliableMulticast.getData();
+            if (data == null)
+                running = false;
+            else if (data.getClass() == SyncRequest.class)
+                reliableMulticast.send(getSyncData((SyncRequest) data));
+            else {
+                LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Received Sync data...");
+                barrel.getBarrelPopulate().insertSyncData((SyncData) data);
+                LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Finished synchronization");
+                barrel.getLatch().countDown();
             }
         }
     }
@@ -86,7 +86,6 @@ public class BarrelSync implements Runnable {
      * @return SyncData object with the data to be synchronized
      */
     private SyncData getSyncData(SyncRequest syncRequest) {
-        // TODO Erro qualquer aqui a ir buscar os dados...
         LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Sending Sync data...");
         List<Map<String, Object>> rows = null;
         SyncData syncData = new SyncData(new HashMap<>());
@@ -96,9 +95,6 @@ public class BarrelSync implements Runnable {
 
             syncData.tableResults().put(table, rows);
         }
-
-        // TODO: Este codigo está muita feio, mas funciona. São cenas bué especificas, é
-        // fodido fazer uma funcao que funcione para tudo
 
         rows = barrel.getBarrelRetriever().getWeakTableWithStartID("website_urls",
                 syncRequest.lastIDs().get("websites"));

@@ -69,4 +69,6 @@ public interface RMIGatewayInterface extends Remote {
      * @throws RemoteException if a remote communication error occurs
      */
     public String barrelsStatus() throws RemoteException;
+
+    public int getActiveBarrels() throws RemoteException;
 }
