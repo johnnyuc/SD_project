@@ -1,0 +1,110 @@
+package Server.IndexStorageBarrel;
+
+// Import self-defined packages
+import Logger.LogUtil;
+import ReliableMulticast.Objects.CrawlData;
+import ReliableMulticast.ReliableMulticast;
+
+// Import general Java packages
+import java.net.URI;
+import java.util.List;
+import java.util.ArrayList;
+
+// Import Java packages for expeceptions
+import java.net.MalformedURLException;
+
+public class StorageTester {
+    private static ReliableMulticast multicast;
+
+    public static void main(String[] args) throws MalformedURLException {
+        if (args.length != 6) {
+            System.out.println("-i <interfaceAddress> -mcast <multicastGroup> -mport <port>");
+            System.exit(1);
+        }
+
+        String interfaceAddress = "";
+        String multicastGroup = "";
+        int port = 0;
+
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "-i":
+                    interfaceAddress = args[i + 1];
+                    i++;
+                    break;
+                case "-mcast":
+                    multicastGroup = args[i + 1];
+                    i++;
+                    break;
+                case "-mport":
+                    port = Integer.parseInt(args[i + 1]);
+                    i++;
+                    break;
+                default:
+                    System.out.println("Unexpected argument: " + args[i]);
+                    System.exit(1);
+            }
+        }
+
+        multicast = new ReliableMulticast(interfaceAddress, multicastGroup, port, StorageTester.class, null);
+
+        // Create dummy data
+        CrawlData data1 = new CrawlData(URI.create("https://google.com").toURL(), "Google" ,
+                "Google is a search engine",
+                new ArrayList<>(List.of("test1", "test2", "test3", "test4", "test5")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://facebook.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+        CrawlData data2 = new CrawlData(URI.create("https://facebook.com").toURL(), "Facebook" ,
+                "Facebook is a social media platform",
+                new ArrayList<>(List.of("test6", "test7", "test8", "test9", "test10")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://facebook.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+        CrawlData data3 = new CrawlData(URI.create("https://twitter.com").toURL(), "Twitter" ,
+                "Twitter is a social media platform",
+                new ArrayList<>(List.of("test11", "test12", "test13", "test14", "test15")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://facebook.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+        CrawlData data4 = new CrawlData(URI.create("https://youtube.com").toURL(), "YouTube" ,
+                "YouTube is a video sharing platform",
+                new ArrayList<>(List.of("test16", "test17", "test18", "test19", "test20")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://facebook.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+        CrawlData data5 = new CrawlData(URI.create("https://instagram.com").toURL(), "Instagram" ,
+                "Instagram is a photo sharing platform",
+                new ArrayList<>(List.of("test21", "test22", "test23", "test24", "test25")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://facebook.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+        CrawlData data6 = new CrawlData(URI.create("https://google.com").toURL(), "Google" ,
+                "Google is a search ______",
+                new ArrayList<>(List.of("_____", "test2", "test3", "test4", "test5")),
+                new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
+                        URI.create("https://________.com").toURL(),
+                        URI.create("https://twitter.com").toURL())));
+
+        // Send the dummy data
+        sendCrawlData(data1);
+        System.out.println("Sent data1");
+        sendCrawlData(data2);
+        System.out.println("Sent data2");
+        sendCrawlData(data3);
+        System.out.println("Sent data3");
+        sendCrawlData(data4);
+        System.out.println("Sent data4");
+        sendCrawlData(data5);
+        System.out.println("Sent data5");
+        sendCrawlData(data6);
+        System.out.println("Sent data6");
+
+        // Finish the program
+        System.exit(0);
+    }
+
+    public static void sendCrawlData(CrawlData data) {
+        multicast.send(data);
+    }
+}
