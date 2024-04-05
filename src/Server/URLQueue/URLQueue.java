@@ -98,7 +98,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     public void priorityEnqueueURL(URL url) throws RemoteException {
         // Don't use the bloom filter for priority URLs
         System.out.println("Priority Queueing URL " + url + ".");
-        urlQueue.addLast(url);
+        urlQueue.addFirst(url);
         debug++;
     }
 
