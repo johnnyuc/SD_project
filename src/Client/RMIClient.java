@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.Scanner;
 
 import Logger.LogUtil;
@@ -88,8 +89,17 @@ public class RMIClient implements RMIClientInterface, Serializable {
     private boolean treatChoice(int choice) throws RemoteException, MalformedURLException {
         switch (choice) {
             case 1:
-                System.out.println("Enter query:");
-                System.out.println(rmiGateway.searchQuery(readQuery()));
+                String query = readQuery();
+                List<String> results = rmiGateway.searchQuery(query, 1);
+                printList(results);
+                while (true) {
+                    System.out.println("Enter page number (or 0 to exit):");
+                    int pageNumber = readChoice();
+                    if (pageNumber == 0)
+                        break;
+                    results = rmiGateway.searchQuery(query, pageNumber);
+                    printList(results);
+                }
                 break;
             case 2:
                 // code to handle Admin console
@@ -105,6 +115,12 @@ public class RMIClient implements RMIClientInterface, Serializable {
                 break;
         }
         return true;
+    }
+
+    private void printList(List<String> results) {
+        for (String result : results) {
+            System.out.println(result);
+        }
     }
 
     private boolean treatAdminChoice(int choice) throws RemoteException {

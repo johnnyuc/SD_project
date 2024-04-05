@@ -6,9 +6,10 @@ import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public interface RMIGatewayInterface extends Remote {
-    String searchQuery(String query) throws RemoteException, MalformedURLException;
+    List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException;
 
     void receivePing(int barrelID, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException;

@@ -14,6 +14,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import Logger.LogUtil;
@@ -57,7 +58,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         startRMI();
         try {
             this.conn = DriverManager.getConnection("jdbc:sqlite:data/" + dbPath + ".db");
-            BarrelSetup.databaseIntegrity(conn); // Check database integrity
+            BarrelSetup.databaseIntegrity(conn, dbPath); // Check database integrity
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
             // Barrel receiver
@@ -135,12 +136,20 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         return barrelRetriever.retrieveObject();
     }
 
-    public List<SearchData> retrieveAndRankData(String query) {
-        return barrelRetriever.retrieveAndRankData(query);
+    private List<SearchData> retrieveAndRankData(String query, int pageNumber) {
+        return barrelRetriever.retrieveAndRankData(query, pageNumber);
     }
 
-    public void sayHi(String query) throws RemoteException {
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Hi from client with query " + query);
+    public List<String> searchQuery(String query, int pageNumber) throws RemoteException {
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Received query:" + query);
+        List<SearchData> searchData = retrieveAndRankData(query, pageNumber);
+
+        List<String> results = new ArrayList<>();
+        for (SearchData sD : searchData) {
+            results.add(sD.title() + "\n" + sD.url() + "\nRef_count:" + sD.refCount() + "\n");
+        }
+
+        return results;
     }
 
     public void receivePing() throws RemoteException {

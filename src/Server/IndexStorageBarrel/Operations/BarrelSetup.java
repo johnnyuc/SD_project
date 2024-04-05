@@ -7,7 +7,7 @@ import Logger.LogUtil;
 
 public class BarrelSetup {
 
-    public static void databaseIntegrity(Connection conn) {
+    public static void databaseIntegrity(Connection conn, String dbPath) {
         try {
             // Define the expected table names and the expected number of tables
             List<String> expectedTableNames = Arrays.asList("websites", "keywords", "urls", "website_keywords",
@@ -44,16 +44,15 @@ public class BarrelSetup {
 
                 // Set up the database again
                 LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSetup.class, "Setting up database...");
-                setupDatabase();
+                setupDatabase(dbPath);
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelSetup.class, e);
         }
     }
 
-    public static void setupDatabase() {
-        // TODO Change the url so that it is not hard coded
-        String url = "jdbc:sqlite:data/testBarrel1.db";
+    public static void setupDatabase(String dbPath) {
+        String url = "jdbc:sqlite:data/" + dbPath + ".db";
         try (Connection conn = DriverManager.getConnection(url)) {
 
             // SQL statement for creating websites table
@@ -62,7 +61,8 @@ public class BarrelSetup {
                         id INTEGER PRIMARY KEY,
                         url TEXT,
                         title TEXT,
-                        description TEXT
+                        description TEXT,
+                        ref_count INTEGER DEFAULT 0
                     );
                     """;
 

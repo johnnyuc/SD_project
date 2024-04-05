@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URL;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import Logger.LogUtil;
 
@@ -50,44 +51,52 @@ public class BarrelRetriever {
         return crawlDataList;
     }
 
-    public List<SearchData> retrieveAndRankData(String query) {
+    public List<SearchData> retrieveAndRankData(String query, int pageNumber) {
         Map<String, SearchData> searchDataMap = new HashMap<>();
         String[] keywords = query.split("\\s+");
 
-        for (String keyword : keywords) {
-            String sql = "SELECT w.url, w.title, w.description, wk.tf_idf " +
-                    "FROM websites w " +
-                    "JOIN website_keywords wk ON w.id = wk.website_id " +
-                    "JOIN keywords k ON wk.keyword_id = k.id " +
-                    "WHERE k.keyword = ?";
+        List<String> keywordList = Arrays.asList(keywords);
+        String sql = "SELECT w.url, w.title, w.description, wk.tf_idf, w.ref_count " +
+                "FROM websites w " +
+                "JOIN website_keywords wk ON w.id = wk.website_id " +
+                "JOIN keywords k ON wk.keyword_id = k.id " +
+                "WHERE k.keyword IN (" + keywordList.stream().map(token -> "?").collect(Collectors.joining(",")) + ")" +
+                "LIMIT 10 OFFSET ?";
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, keyword);
-                ResultSet rs = pstmt.executeQuery();
-
-                while (rs.next()) {
-                    String url = rs.getString("url");
-                    String title = rs.getString("title");
-                    String description = rs.getString("description");
-                    double tfIdf = rs.getDouble("tf_idf");
-
-                    if (searchDataMap.containsKey(url)) {
-                        SearchData existingData = searchDataMap.get(url);
-                        double newTfIdf = existingData.tfIdf() + tfIdf;
-                        SearchData newData = new SearchData(url, title, description, newTfIdf);
-                        searchDataMap.put(url, newData);
-                    } else {
-                        SearchData searchData = new SearchData(url, title, description, tfIdf);
-                        searchDataMap.put(url, searchData);
-                    }
-                }
-            } catch (SQLException e) {
-                LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < keywordList.size(); i++) {
+                pstmt.setString(i + 1, keywordList.get(i));
             }
+            pstmt.setInt(keywordList.size() + 1, (pageNumber - 1) * 10);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String url = rs.getString("url");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+                double tfIdf = rs.getDouble("tf_idf");
+                int refCount = rs.getInt("ref_count");
+
+                if (searchDataMap.containsKey(url)) {
+                    SearchData existingData = searchDataMap.get(url);
+                    double newTfIdf = existingData.tfIdf() + tfIdf;
+                    SearchData newData = new SearchData(url, title, description, newTfIdf, refCount);
+                    searchDataMap.put(url, newData);
+                } else {
+                    SearchData searchData = new SearchData(url, title, description, tfIdf, refCount);
+                    searchDataMap.put(url, searchData);
+                }
+            }
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
         }
 
         List<SearchData> searchDataList = new ArrayList<>(searchDataMap.values());
-        searchDataList.sort((data1, data2) -> Double.compare(data2.tfIdf(), data1.tfIdf()));
+        // searchDataList.sort((data1, data2) -> Double.compare(data2.tfIdf(),
+        // data1.tfIdf()));
+
+        // sort search data by ref_count
+        searchDataList.sort((data1, data2) -> Integer.compare(data2.refCount(), data1.refCount()));
 
         return searchDataList;
     }

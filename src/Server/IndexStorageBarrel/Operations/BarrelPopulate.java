@@ -5,9 +5,10 @@ import Server.IndexStorageBarrel.Tools.SyncData;
 
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import Logger.LogUtil;
 
@@ -85,12 +86,13 @@ public class BarrelPopulate {
     }
 
     private boolean insertWebsites(List<Map<String, Object>> rows) {
-        String sql = "INSERT INTO websites(url, title, description) VALUES(?,?,?)";
+        String sql = "INSERT INTO websites(url, title, description, ref_count) VALUES(?,?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (Map<String, Object> row : rows) {
                 pstmt.setString(1, (String) row.get("url"));
                 pstmt.setString(2, (String) row.get("title"));
                 pstmt.setString(3, (String) row.get("description"));
+                pstmt.setInt(4, (int) row.get("ref_count"));
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
@@ -169,16 +171,22 @@ public class BarrelPopulate {
 
     public void insertCrawlData(CrawlData crawlData) throws SQLException {
         // Extract data from CrawlData object
-        String url = String.valueOf(crawlData.getUrl());
+        String url = crawlData.getUrl().toString();
         String title = crawlData.getTitle();
         String description = crawlData.getDescription();
         List<String> tokens = crawlData.getTokens();
         List<URL> urls = crawlData.getUrlStrings();
 
-        // Update BarrelProcessing with new term counts and total terms
         barrelProcessing = new BarrelProcessing(conn);
 
-        // Check if URL already exists in websites table
+        // Assuming barrelProcessing is properly initialized
+        int websiteId = handleWebsiteInsertOrUpdate(url, title, description);
+        Map<String, Integer> keywordIdMap = handleKeywordBatchInsertion(tokens);
+        handleWebsiteKeywordBatchInsertion(websiteId, keywordIdMap, tokens);
+        handleUrlBatchInsertion(websiteId, urls);
+    }
+
+    private int handleWebsiteInsertOrUpdate(String url, String title, String description) {
         String sql = "SELECT id FROM websites WHERE url = ?";
         int websiteId = 0;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -211,105 +219,107 @@ public class BarrelPopulate {
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }
+        return websiteId;
+    }
 
-        // Insert each token into keywords table, link it to the website in
-        // website_keywords table, and calculate TF-IDF
-        int docNr = barrelProcessing.getDocnr();
-        if (!barrelProcessing.docContainsToken(websiteId, String.valueOf(tokens)))
-            docNr++;
-        for (String token : tokens) {
-            int keywordId = 0;
-            sql = "SELECT id FROM keywords WHERE keyword = ?";
-            try (PreparedStatement pstmt1 = conn.prepareStatement(sql)) {
-                pstmt1.setString(1, token);
-                ResultSet rs3 = pstmt1.executeQuery();
-                if (rs3.next()) {
-                    keywordId = rs3.getInt("id");
-                } else {
-                    sql = "INSERT INTO keywords(keyword) VALUES(?)";
-                    try (PreparedStatement pstmt2 = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                        pstmt2.setString(1, token);
-                        pstmt2.executeUpdate();
-                        ResultSet rs4 = pstmt2.getGeneratedKeys();
-                        if (rs4.next()) {
-                            keywordId = rs4.getInt(1);
-                        }
-                    }
-                }
+    private Map<String, Integer> handleKeywordBatchInsertion(List<String> tokens) throws SQLException {
+        Map<String, Integer> keywordIdMap = new HashMap<>();
+        String insertSql = "INSERT OR IGNORE INTO keywords (keyword) VALUES (?)";
 
-                // Calculate TF-IDF by multiplying TF and IDF
-                double tfIdf = barrelProcessing.calcTFIDF(token, new ArrayList<>(tokens), docNr);
-
-                // Check if the combination of website_id and keyword_id already exists in the
-                // website_keywords table
-                sql = "SELECT 1 FROM website_keywords WHERE website_id = ? AND keyword_id = ?";
-                try (PreparedStatement pstmt3 = conn.prepareStatement(sql)) {
-                    pstmt3.setInt(1, websiteId);
-                    pstmt3.setInt(2, keywordId);
-                    ResultSet rs5 = pstmt3.executeQuery();
-                    if (!rs5.next()) {
-                        // Link the keyword to the website in the website_keywords table and store the
-                        // TF-IDF score
-                        sql = "INSERT INTO website_keywords(website_id, keyword_id, tf_idf) VALUES(?,?,?)";
-                        try (PreparedStatement pstmt4 = conn.prepareStatement(sql)) {
-                            pstmt4.setInt(1, websiteId);
-                            pstmt4.setInt(2, keywordId);
-                            pstmt4.setDouble(3, tfIdf);
-                            pstmt4.executeUpdate();
-                        }
-                    }
-                } catch (SQLException e) {
-                    System.out.println(e.getMessage());
-                }
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
+        try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+            for (String token : tokens) {
+                pstmt.setString(1, token);
+                pstmt.addBatch();
             }
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+        // Select every inserted keyword from the database
+        String selectSql = "SELECT id, keyword FROM keywords WHERE keyword IN ("
+                + tokens.stream().map(token -> "?").collect(Collectors.joining(",")) + ")";
+        try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+            for (int i = 0; i < tokens.size(); i++) {
+                pstmt.setString(i + 1, tokens.get(i));
+            }
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String keyword = rs.getString("keyword");
+                    keywordIdMap.put(keyword, id);
+                }
+            }
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }
 
-        // Insert each URL into urls table and link it to the website in website_urls
-        // table
-        for (URL urlItem : urls) {
-            int urlId = 0;
-            sql = "SELECT id FROM urls WHERE url = ?";
-            try (PreparedStatement pstmt4 = conn.prepareStatement(sql)) {
-                pstmt4.setString(1, String.valueOf(urlItem));
-                ResultSet rs6 = pstmt4.executeQuery();
-                if (rs6.next()) {
-                    urlId = rs6.getInt("id");
-                } else {
-                    sql = "INSERT INTO urls(url) VALUES(?)";
-                    try (PreparedStatement pstmt5 = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                        pstmt5.setString(1, String.valueOf(urlItem));
-                        pstmt5.executeUpdate();
-                        ResultSet rs7 = pstmt5.getGeneratedKeys();
-                        if (rs7.next()) {
-                            urlId = rs7.getInt(1);
-                        }
-                    }
-                }
+        return keywordIdMap;
+    }
 
-                // Check if the combination of website_id and url_id already exists in the
-                // website_urls table
-                sql = "SELECT 1 FROM website_urls WHERE website_id = ? AND url_id = ?";
-                try (PreparedStatement pstmt5 = conn.prepareStatement(sql)) {
-                    pstmt5.setInt(1, websiteId);
-                    pstmt5.setInt(2, urlId);
-                    ResultSet rs8 = pstmt5.executeQuery();
-                    if (!rs8.next()) {
-                        // Link the URL to the website in the website_urls table
-                        sql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
-                        try (PreparedStatement pstmt6 = conn.prepareStatement(sql)) {
-                            pstmt6.setInt(1, websiteId);
-                            pstmt6.setInt(2, urlId);
-                            pstmt6.executeUpdate();
+    private void handleWebsiteKeywordBatchInsertion(int websiteId, Map<String, Integer> keywordIdMap,
+            List<String> tokens) {
+        // Prepare SQL for batch insert
+        String sql = "INSERT OR IGNORE INTO website_keywords (website_id, keyword_id, tf_idf) VALUES (?, ?, ?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (String token : tokens) {
+                Integer keywordId = keywordIdMap.get(token);
+                if (keywordId == null) {
+                    continue;
+                }
+                double tfIdf = barrelProcessing.calcTFIDF(token, tokens, barrelProcessing.getDocnr());
+
+                pstmt.setInt(1, websiteId);
+                pstmt.setInt(2, keywordId);
+                pstmt.setDouble(3, tfIdf);
+                pstmt.addBatch();
+            }
+
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
+    }
+
+    private void handleUrlBatchInsertion(int websiteId, List<URL> urls) {
+        String insertUrlSql = "INSERT OR IGNORE INTO urls(url) VALUES(?)";
+        String selectUrlIdSql = "SELECT id FROM urls WHERE url = ?";
+        String insertWebsiteUrlSql = "INSERT OR IGNORE INTO website_urls(website_id, url_id) VALUES(?, ?)";
+
+        try (PreparedStatement insertUrlPstmt = conn.prepareStatement(insertUrlSql);
+                PreparedStatement selectUrlIdPstmt = conn.prepareStatement(selectUrlIdSql);
+                PreparedStatement insertWebsiteUrlPstmt = conn.prepareStatement(insertWebsiteUrlSql)) {
+
+            // Batch insert URLs
+            for (URL url : urls) {
+                insertUrlPstmt.setString(1, url.toString());
+                insertUrlPstmt.addBatch();
+            }
+            insertUrlPstmt.executeBatch();
+
+            // For each URL, get its ID and batch insert the website-url relationship
+            for (URL url : urls) {
+                selectUrlIdPstmt.setString(1, url.toString());
+                try (ResultSet rs = selectUrlIdPstmt.executeQuery()) {
+                    if (rs.next()) {
+                        int urlId = rs.getInt(1);
+                        insertWebsiteUrlPstmt.setInt(1, websiteId);
+                        insertWebsiteUrlPstmt.setInt(2, urlId);
+                        insertWebsiteUrlPstmt.addBatch();
+
+                        // Update references count for the referenced website
+                        String updateSql = "UPDATE websites SET ref_count = ref_count + 1 WHERE id = ?";
+                        try (PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
+                            updatePstmt.setInt(1, urlId);
+                            updatePstmt.executeUpdate();
                         }
                     }
-                } catch (SQLException e) {
-                    System.out.println(e.getMessage());
                 }
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
             }
+            insertWebsiteUrlPstmt.executeBatch();
+
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }
     }
 }
