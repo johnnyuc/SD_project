@@ -3,6 +3,7 @@ package Server.Downloader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.util.ArrayList;
@@ -85,9 +86,22 @@ public class DownloaderWorker implements Runnable {
      */
     private void visitURL(URL url) {
         try {
-            // TODO: Account for some malformed URLs (e.g., missing protocol, special
-            // characters, etc.)
+            String urlString = url.toString();
+            urlString = getString(urlString);
 
+            HttpURLConnection connection = (HttpURLConnection) URI.create(urlString).toURL().openConnection();
+            connection.setRequestMethod("HEAD");
+            int responseCode = connection.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                System.out.println("URL not reachable or does not exist: " + url);
+                return;
+            }
+        } catch (IOException e) {
+            System.out.println("Error checking URL: " + url);
+            return;
+        }
+
+        try {
             // Start the timer
             long startTime = System.currentTimeMillis();
 
@@ -112,7 +126,7 @@ public class DownloaderWorker implements Runnable {
                 String href = link.attr("abs:href");
                 if (href.startsWith("http://") || href.startsWith("https://")) {
                     try {
-                        // TODO Fix the encoding
+                        href = getString(href);
                         URL urlObject = URI.create(href).toURL();
                         URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(),
                                 urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
@@ -141,26 +155,17 @@ public class DownloaderWorker implements Runnable {
         }
     }
 
-    /**
-     * Encodes the href part of a URL.
-     *
-     * @param href the href to encode
-     * @return the encoded href
-     * @throws UnsupportedEncodingException if the encoding is not supported
-     */
-    private String encodeHref(String href) throws UnsupportedEncodingException {
-        String[] tokens = href.split("//", 2);
-        String encoded = URLEncoder.encode(tokens[1], "UTF-8");
-
-        encoded.replaceAll("\\+", "%20")
-                .replaceAll("%21", "!")
-                .replaceAll("%27", "'")
-                .replaceAll("%28", "(")
-                .replaceAll("%29", ")")
-                .replaceAll("%2F", "/")
-                .replaceAll("%7E", "~");
-
-        return tokens[0] + "//" + encoded;
+    private String getString(String href) throws UnsupportedEncodingException {
+        int hashIndex = href.indexOf('#');
+        if (hashIndex > -1) {
+            // The URL contains a fragment, so encode it
+            String fragment = href.substring(hashIndex + 1);
+            String encodedFragment = URLEncoder.encode(fragment, StandardCharsets.UTF_8);
+            // Replace < and > characters
+            encodedFragment = encodedFragment.replace("<", "%3C").replace(">", "%3E");
+            href = href.substring(0, hashIndex) + '#' + encodedFragment;
+        }
+        return href;
     }
 
     /**
