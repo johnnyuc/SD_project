@@ -22,7 +22,8 @@ public class Receiver {
     private ReceiverWorker receiverWorker;
 
     // Channel [DatagramChannel/Socket]
-    private final MulticastSocket socket;
+    private final DatagramChannel channel;
+
     private final UUID multicastID;
 
     // Queue for clean final data
@@ -39,29 +40,23 @@ public class Receiver {
         this.ignoredClasses = ignoredClasses;
         this.multicastID = multicastID;
 
-        socket = new MulticastSocket(port); // create socket and bind it
-        InetAddress mcastaddr = InetAddress.getByName(multicastGroup);
-        socket.joinGroup(new InetSocketAddress(mcastaddr, 0), NetworkInterface.getByIndex(0));
-
         // Join the multicast group using channel [non blocking]
         // NetworkInterface networkInterface =
         // NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-        // // // NetworkInterface networkInterface =
-        // NetworkInterface.getByInetAddress(InetAddress.getByName(interfaceAddress));
-        // // // InetAddress groupAddress = InetAddress.getByName(multicastGroup);
-        // // // this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
-        // // // .setOption(StandardSocketOptions.SO_REUSEADDR, true)
-        // // // .bind(new InetSocketAddress(port))
-        // // // .setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
-        // // // this.channel.configureBlocking(false);
-        // // // this.channel.join(groupAddress, networkInterface);
-
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName(interfaceAddress));
+        InetAddress groupAddress = InetAddress.getByName(multicastGroup);
+        this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
+                .setOption(StandardSocketOptions.SO_REUSEADDR, true)
+                .bind(new InetSocketAddress(port))
+                .setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
+        this.channel.configureBlocking(false);
+        this.channel.join(groupAddress, networkInterface);
     }
 
     // Method to start receiving data
     public void receive() throws InterruptedException, IOException {
         // Thread for ReceiverListener
-        receiverListener = new ReceiverListener(socket);
+        receiverListener = new ReceiverListener(channel);
         Thread listenerThread = new Thread(receiverListener, "Multicast Listener Thread");
         listenerThread.start();
 
@@ -79,10 +74,15 @@ public class Receiver {
 
     // Method to stop receiving data
     public void stop() {
-        // Kill sub-threads
-        receiverListener.stop();
-        receiverWorker.stop();
-        // Close the channel/socket
-        socket.close();
+        try {
+            // Kill sub-threads
+            receiverListener.stop();
+            receiverWorker.stop();
+
+            // Close the channel/socket
+            channel.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
