@@ -1,7 +1,14 @@
 package Server.Controller.RMIGateway;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URI;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -30,10 +37,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     private int currentBarrel = 0;
     private final ArrayList<BarrelTimestamp> timedBarrels = new ArrayList<>();
     private final Map<String, Integer> searchQueries = new HashMap<>();
-    private String mostSearched = "";
-    private String barrelsStatus = "";
-    private URLQueueInterface urlQueue;
     private String queueAddress;
+    DatagramSocket socketUDP = null;
 
     /**
      * The main method that starts the RMI gateway.
@@ -63,13 +68,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         super();
         if (!processArgs(args))
             return;
-        try {
-            urlQueue = (URLQueueInterface) Naming
-                    .lookup("rmi://" + queueAddress + ":" + URLQueue.PORT + "/" + URLQueue.REMOTE_REFERENCE_NAME);
-        } catch (MalformedURLException | RemoteException | NotBoundException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, e);
-        }
-
     }
 
     /**
@@ -86,13 +84,15 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         if (isValidURL(query)) {
             // The query is a URL so send it to the Barrel
-            urlQueue.priorityEnqueueURL(URI.create(query).toURL());
+            priorityEnqueueURL(query);
             return Collections.singletonList("URL Indexed.");
         }
 
         int barrel = getAvailableBarrel();
-        if (currentBarrel == -1)
+        if (barrel == -1)
             return Collections.singletonList("No barrels available.");
+
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got barrel: " + barrel);
 
         long startTime = System.currentTimeMillis();
         // The query is a URL so send it to the URL Queue
@@ -305,5 +305,19 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             str += "Barrel " + barrel.getBarrelID() + " : " + barrel.getAvgResponseTime() + "ms\n";
         }
         return str;
+    }
+
+    private void priorityEnqueueURL(String url) {
+        try (DatagramSocket aSocket = new DatagramSocket()) {
+            byte[] url_bytes = url.getBytes();
+
+            InetAddress aHost = InetAddress.getByName(queueAddress);
+            DatagramPacket request = new DatagramPacket(url_bytes, url_bytes.length, aHost, URLQueue.UDP_PORT);
+
+            aSocket.send(request);
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Sent priority URL: " + url);
+        } catch (IOException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, e);
+        }
     }
 }

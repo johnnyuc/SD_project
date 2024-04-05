@@ -118,7 +118,7 @@ public class RMIClient implements Serializable {
                 String query = readQuery();
                 List<String> results = rmiGateway.searchQuery(query, 1);
                 printList(results);
-                while (true) {
+                while (pagedResults(results)) {
                     System.out.println("Enter page number (or 0 to exit):");
                     int pageNumber = readChoice();
                     if (pageNumber == 0)
@@ -154,6 +154,11 @@ public class RMIClient implements Serializable {
                 break;
         }
         return true;
+    }
+
+    private boolean pagedResults(List<String> results) {
+        return !(results.size() == 1
+                && ("No barrels available.".equals(results.get(0)) || "URL Indexed.".equals(results.get(0))));
     }
 
     /**
