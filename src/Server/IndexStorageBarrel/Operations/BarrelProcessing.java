@@ -28,13 +28,15 @@ public class BarrelProcessing {
      * @return the TF value of the term
      */
     public double calcTF(String term, List<String> subsetTerms) {
+        int termCount = Collections.frequency(subsetTerms, term);
+        int totalSubsetTerms = subsetTerms.size();
+
         // Print TF values
         System.err.println("term: " + term);
         System.err.println("subsetTerms: " + subsetTerms);
         System.err.println("TF - termCount/totalSubsetTerms: "
                 + (double) Collections.frequency(subsetTerms, term) / subsetTerms.size());
-        int termCount = Collections.frequency(subsetTerms, term);
-        int totalSubsetTerms = subsetTerms.size();
+
         return (double) termCount / totalSubsetTerms;
     }
 
@@ -53,10 +55,9 @@ public class BarrelProcessing {
         // Print IDF values
         System.err.println("docNr: " + docNr);
         System.err.println("tokenDocnr: " + tokenDocnr);
-        System.err.println(
-                "IDF - log(docNr/tokenDocnr): " + Math.log((double) (docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr))));
+        System.err.println("IDF - log(1 + docNr/tokenDocnr): " + Math.log(1 + (double) (docNr/tokenDocnr)));
 
-        return Math.log((double) docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr));
+        return Math.log(1 + (double) (docNr/tokenDocnr));
     }
 
     /**
@@ -64,12 +65,14 @@ public class BarrelProcessing {
      *
      * @param term        the term to calculate the TF-IDF value for
      * @param subsetTerms the list of terms in the document
-     * @param docNr       the total number of documents
      * @return the TF-IDF value of the term
      */
-    public double calcTFIDF(String term, List<String> subsetTerms, int docNr) {
+    public double calcTFIDF(String term, List<String> subsetTerms, boolean newUrl) throws SQLException {
         double tf = calcTF(term, subsetTerms);
         double idf = 0;
+
+        int docNr = newUrl ? getDocnr() + 1 : getDocnr();
+
         try {
             idf = calcIDF(term, subsetTerms, docNr);
         } catch (SQLException e) {
@@ -78,6 +81,7 @@ public class BarrelProcessing {
 
         // Print TF-IDF value
         System.err.println("tf * idf: " + tf * idf);
+        System.err.println();
 
         return tf * idf;
     }
@@ -98,24 +102,6 @@ public class BarrelProcessing {
             }
         }
         return totalDocs;
-    }
-
-    /**
-     * Checks if a document contains a specific term.
-     *
-     * @param websiteId the ID of the website/document
-     * @param term      the term to check for
-     * @return true if the document contains the term, false otherwise
-     * @throws SQLException if an error occurs while accessing the database
-     */
-    boolean docContainsToken(int websiteId, String term) throws SQLException {
-        String sql = "SELECT 1 FROM website_keywords WHERE website_id = ? AND keyword_id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, websiteId);
-            pstmt.setInt(2, getTokenId(term));
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next();
-        }
     }
 
     /**

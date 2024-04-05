@@ -111,7 +111,6 @@ public class BarrelSetup {
                     CREATE TABLE IF NOT EXISTS website_keywords (
                         website_id INTEGER,
                         keyword_id INTEGER,
-                        count INTEGER,
                         tf_idf REAL,
                         PRIMARY KEY(website_id, keyword_id),
                         FOREIGN KEY(website_id) REFERENCES websites(id),

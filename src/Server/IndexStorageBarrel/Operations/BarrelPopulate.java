@@ -1,6 +1,7 @@
 package Server.IndexStorageBarrel.Operations;
 
 import ReliableMulticast.Objects.CrawlData;
+import Server.IndexStorageBarrel.Tools.QueryResult;
 import Server.IndexStorageBarrel.Tools.SyncData;
 
 import java.net.URL;
@@ -243,7 +244,7 @@ public class BarrelPopulate {
         barrelProcessing = new BarrelProcessing(conn);
 
         // Assuming barrelProcessing is properly initialized
-        int websiteId = handleWebsiteInsertOrUpdate(url, title, description);
+        QueryResult websiteId = handleWebsiteInsertOrUpdate(url, title, description);
         Map<String, Integer> keywordIdMap = handleKeywordBatchInsertion(tokens);
         handleWebsiteKeywordBatchInsertion(websiteId, keywordIdMap, tokens);
         handleUrlBatchInsertion(websiteId, urls);
@@ -261,9 +262,10 @@ public class BarrelPopulate {
      * @param description the description of the website
      * @return the ID of the inserted or updated website record
      */
-    private int handleWebsiteInsertOrUpdate(String url, String title, String description) {
+    private QueryResult handleWebsiteInsertOrUpdate(String url, String title, String description) {
         String sql = "SELECT id FROM websites WHERE url = ?";
         int websiteId = 0;
+        boolean newUrl = false;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, url);
             ResultSet rs1 = pstmt.executeQuery();
@@ -290,11 +292,12 @@ public class BarrelPopulate {
                         websiteId = rs2.getInt(1);
                     }
                 }
+                newUrl = true;
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
         }
-        return websiteId;
+        return new QueryResult(websiteId, newUrl);
     }
 
     /**
@@ -302,11 +305,9 @@ public class BarrelPopulate {
      * corresponding IDs.
      * 
      * @param tokens the list of keywords to be inserted
-     * @return a map containing the keywords as keys and their corresponding IDs as
-     *         values
-     * @throws SQLException if an error occurs while executing the SQL statements
+     * @return a map containing the keywords as keys and their corresponding IDs as values
      */
-    private Map<String, Integer> handleKeywordBatchInsertion(List<String> tokens) throws SQLException {
+    private Map<String, Integer> handleKeywordBatchInsertion(List<String> tokens) {
         Map<String, Integer> keywordIdMap = new HashMap<>();
         String insertSql = "INSERT OR IGNORE INTO keywords (keyword) VALUES (?)";
 
@@ -343,11 +344,11 @@ public class BarrelPopulate {
     /**
      * Inserts a batch of website keywords into the database.
      *
-     * @param websiteId    the ID of the website
+     * @param website      ID and new URL flag for the website.
      * @param keywordIdMap a map containing the keyword IDs
      * @param tokens       a list of tokens to be inserted
      */
-    private void handleWebsiteKeywordBatchInsertion(int websiteId, Map<String, Integer> keywordIdMap,
+    private void handleWebsiteKeywordBatchInsertion(QueryResult website, Map<String, Integer> keywordIdMap,
             List<String> tokens) {
         // Prepare SQL for batch insert
         String sql = "INSERT OR IGNORE INTO website_keywords (website_id, keyword_id, tf_idf) VALUES (?, ?, ?)";
@@ -358,9 +359,9 @@ public class BarrelPopulate {
                 if (keywordId == null) {
                     continue;
                 }
-                double tfIdf = barrelProcessing.calcTFIDF(token, tokens, barrelProcessing.getDocnr());
-
-                pstmt.setInt(1, websiteId);
+                System.out.println("New URL? " + website.newUrl());
+                double tfIdf = barrelProcessing.calcTFIDF(token, tokens, website.newUrl());
+                pstmt.setInt(1, website.websiteId());
                 pstmt.setInt(2, keywordId);
                 pstmt.setDouble(3, tfIdf);
                 pstmt.addBatch();
@@ -375,10 +376,10 @@ public class BarrelPopulate {
     /**
      * Handles the batch insertion of URLs for a given website.
      *
-     * @param websiteId The ID of the website.
+     * @param website   ID and new URL flag for the website.
      * @param urls      The list of URLs to be inserted.
      */
-    private void handleUrlBatchInsertion(int websiteId, List<URL> urls) {
+    private void handleUrlBatchInsertion(QueryResult website, List<URL> urls) {
         String insertUrlSql = "INSERT OR IGNORE INTO urls(url) VALUES(?)";
         String selectUrlIdSql = "SELECT id FROM urls WHERE url = ?";
         String insertWebsiteUrlSql = "INSERT OR IGNORE INTO website_urls(website_id, url_id) VALUES(?, ?)";
@@ -400,7 +401,7 @@ public class BarrelPopulate {
                 try (ResultSet rs = selectUrlIdPstmt.executeQuery()) {
                     if (rs.next()) {
                         int urlId = rs.getInt(1);
-                        insertWebsiteUrlPstmt.setInt(1, websiteId);
+                        insertWebsiteUrlPstmt.setInt(1, website.websiteId());
                         insertWebsiteUrlPstmt.setInt(2, urlId);
                         insertWebsiteUrlPstmt.addBatch();
 

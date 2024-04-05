@@ -81,30 +81,25 @@ public class StorageTester {
                         URI.create("https://twitter.com").toURL())));
         CrawlData data6 = new CrawlData(URI.create("https://google.com").toURL(), "Google" ,
                 "Google is a search ______",
-                new ArrayList<>(List.of("_____", "test2", "test3", "test4", "test5")),
+                new ArrayList<>(List.of("_____", "test25", "test3", "test4", "test5")),
                 new ArrayList<>(List.of(URI.create("https://google.com").toURL(),
                         URI.create("https://________.com").toURL(),
                         URI.create("https://twitter.com").toURL())));
 
         // Send the dummy data
         sendCrawlData(data1);
-        System.out.println("Sent data1");
         sendCrawlData(data2);
-        System.out.println("Sent data2");
         sendCrawlData(data3);
-        System.out.println("Sent data3");
         sendCrawlData(data4);
-        System.out.println("Sent data4");
         sendCrawlData(data5);
-        System.out.println("Sent data5");
         sendCrawlData(data6);
-        System.out.println("Sent data6");
-
-        // Finish the program
-        System.exit(0);
     }
 
-    public static void sendCrawlData(CrawlData data) {
-        multicast.send(data);
+    public static void sendCrawlData(CrawlData crawlData) {
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, StorageTester.class,
+                "Sending data to barrel: " + crawlData.getUrl());
+
+        // Send the crawling data via reliable multicast
+        multicast.send(crawlData);
     }
 }
