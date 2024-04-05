@@ -47,7 +47,6 @@ public class Sender implements Runnable {
     private final InetAddress multicastGroup;
 
     // Sender info
-    private final String senderIP;
     private final int port;
     private final Class<?> senderClass;
 
@@ -67,12 +66,11 @@ public class Sender implements Runnable {
      * @param multicastID    the multicast ID
      * @throws IOException if an I/O error occurs
      */
-    public Sender(String multicastGroup, int port, String senderIP, Class<?> senderClass, UUID multicastID)
+    public Sender(String multicastGroup, int port, Class<?> senderClass, UUID multicastID)
             throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
         this.port = port;
         this.socket = new MulticastSocket(port);
-        this.senderIP = senderIP;
         this.senderClass = senderClass;
         this.multicastID = multicastID;
 

@@ -4,10 +4,6 @@ package ReliableMulticast.Objects;
 import java.io.Serializable;
 import java.util.UUID;
 
-// Packet class
-import java.io.Serializable;
-import java.util.UUID;
-
 /**
  * Represents a container object that holds data for reliable multicast
  * communication.

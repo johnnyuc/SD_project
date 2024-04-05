@@ -25,7 +25,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     public static final int UDP_PORT = 5997;
     public static final int UDP_BUFFER_SIZE = 1024;
 
-    private int debug = 0;
     private volatile boolean running = true;
     private final BlockingDeque<URL> urlQueue;
     private final BloomFilter bloomFilter;
@@ -99,7 +98,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
                     "Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
             urlQueue.addLast(url);
-            debug++;
         }
     }
 
@@ -134,7 +132,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         // Don't use the bloom filter for priority URLs
         LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Priority Queueing URL " + url + ".");
         urlQueue.addFirst(url);
-        debug++;
     }
 
     /**

@@ -21,7 +21,6 @@ public class BarrelPinger implements Runnable {
     private volatile boolean running = true;
     private RMIGatewayInterface rmiGateway;
     private final IndexStorageBarrel barrel;
-    private Thread thread;
 
     /**
      * Constructs a BarrelPinger object with the specified IndexStorageBarrel.
@@ -48,7 +47,6 @@ public class BarrelPinger implements Runnable {
      */
     @Override
     public void run() {
-        thread = Thread.currentThread();
         while (running) {
             try {
                 Thread.sleep(PING_INTERVAL);

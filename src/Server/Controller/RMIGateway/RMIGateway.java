@@ -5,10 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.SocketException;
-import java.net.URI;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -18,14 +14,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import Logger.LogUtil;
 import Server.IndexStorageBarrel.IndexStorageBarrel;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
 import Server.IndexStorageBarrel.Operations.BarrelPinger;
 import Server.URLQueue.URLQueue;
-import Server.URLQueue.URLQueueInterface;
 
 /**
  * The RMIGateway class represents the RMI gateway for the search engine system.

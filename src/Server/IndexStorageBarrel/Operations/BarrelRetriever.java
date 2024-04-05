@@ -267,8 +267,6 @@ public class BarrelRetriever {
      * @return a list of rows from the table
      */
     public List<Map<String, Object>> getTableWithStartID(String table, int startID) {
-        // TODO: No need to fear SQL injection because these values can't be received
-        // from a user SERÁ???
         String sql = "SELECT * FROM " + table +
                 " WHERE id > ?";
         List<Map<String, Object>> rows = null;

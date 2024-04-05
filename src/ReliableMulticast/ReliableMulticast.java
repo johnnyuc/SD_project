@@ -1,5 +1,4 @@
 // TODO: REMOVE ALL THE TODO COMMENTS
-// TODO: REMOVE ALL SYSTEM.OUT.PRINTLN LINES UNLESS STRICTLY NECESSARY FOR THE CODE
 // TODO: FIX LOGS NOT APPEARING SOMETIMES WHEN SHUTTING DOWN
 
 package ReliableMulticast;
@@ -10,7 +9,6 @@ import ReliableMulticast.Receiver.Receiver;
 import ReliableMulticast.Receiver.ReceiverWorker;
 
 // General imports
-import java.net.InetAddress;
 import java.util.UUID;
 
 import Logger.LogUtil;
@@ -27,8 +25,8 @@ import java.io.IOException;
 public class ReliableMulticast {
 
     // Variables
-    private final Sender sender;
-    private final Receiver receiver;
+    private Sender sender;
+    private Receiver receiver;
 
     private final UUID multicastID;
 
@@ -45,14 +43,11 @@ public class ReliableMulticast {
             Class<?> senderClass, Class<?>[] ignoredClasses) {
         this.multicastID = UUID.randomUUID();
         try {
-            // Gets machine IP
-            String senderIP = InetAddress.getLocalHost().getHostAddress();
             // Creates sender and receiver
-            this.sender = new Sender(multicastGroup, port, senderIP, senderClass, multicastID);
+            this.sender = new Sender(multicastGroup, port, senderClass, multicastID);
             this.receiver = new Receiver(sender, interfaceAddress, multicastGroup, port, ignoredClasses, multicastID);
         } catch (IOException | InterruptedException e) {
-            // TODO : mudar?
-            throw new RuntimeException(e);
+            LogUtil.logError(LogUtil.ANSI_RED, ReliableMulticast.class, e);
         }
     }
 
