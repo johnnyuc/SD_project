@@ -1,5 +1,8 @@
 package Server.URLQueue;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -10,14 +13,20 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import Logger.LogUtil;
+
 /**
  * Represents a URL queue that stores URLs and provides methods to enqueue and
  * dequeue URLs.
  */
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     public static final String REMOTE_REFERENCE_NAME = "urlqueue";
-    public static final int PORT = 5998;
+    public static final int RMI_PORT = 5998;
+    public static final int UDP_PORT = 5997;
+    public static final int UDP_BUFFER_SIZE = 1024;
+
     private int debug = 0;
+    private volatile boolean running = true;
     private final BlockingDeque<URL> urlQueue;
     private final BloomFilter bloomFilter;
 
@@ -28,13 +37,13 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
      */
     public static void main(String[] args) {
         try {
-            System.out.println("Starting URL Queue...");
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, URLQueue.class, "Starting URL Queue...");
             URLQueue urlQueue = new URLQueue();
-            Registry registry = LocateRegistry.createRegistry(PORT);
+            Registry registry = LocateRegistry.createRegistry(RMI_PORT);
             registry.rebind(REMOTE_REFERENCE_NAME, urlQueue);
-            System.out.println("URL Queue ready.");
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, URLQueue.class, "URL Queue ready.");
         } catch (RemoteException e) {
-            System.out.println("Error in Server.URLQueue.main: " + e);
+            LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
             System.exit(1);
         }
     }
@@ -46,6 +55,14 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
      */
     private URLQueue() throws RemoteException {
         super();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            running = false;
+        }));
+
+        // Create new thread to run listenIndexURLRequest
+        new Thread(() -> listenIndexURLRequest(), "UDPListener").start();
+
         urlQueue = new LinkedBlockingDeque<>();
 
         // Number of elements and false positive probability
@@ -62,7 +79,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         try {
             enqueueURL(URI.create("https://books.toscrape.com/").toURL(), -1);
         } catch (MalformedURLException e) {
-            System.out.println("Error in Server.URLQueue.Server.URLQueue: " + e);
+            LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
         }
     }
 
@@ -78,10 +95,32 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
 
         // Check if the URL is already in the queue by checking the Bloom filter
         if (!bloomFilter.contains(urlString)) {
-            System.out.println("Queueing URL " + url + " from downloader " + downloaderID + ".");
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class,
+                    "Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
             urlQueue.addLast(url);
             debug++;
+        }
+    }
+
+    /**
+     * Listens for incoming index URL requests and enqueues them for processing.
+     * This method runs in a loop until the server is stopped.
+     */
+    public void listenIndexURLRequest() {
+        while (running) {
+            try (DatagramSocket socketUDP = new DatagramSocket(UDP_PORT)) {
+                byte[] buffer = new byte[UDP_BUFFER_SIZE];
+                DatagramPacket request = new DatagramPacket(buffer, buffer.length);
+                socketUDP.receive(request);
+
+                // Transform the received data into a URL
+                String url = new String(request.getData(), 0, request.getLength());
+                LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Received priority URL: " + url);
+                priorityEnqueueURL(new URL(url));
+            } catch (IOException e) {
+                LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
+            }
         }
     }
 
@@ -93,7 +132,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
      */
     public void priorityEnqueueURL(URL url) throws RemoteException {
         // Don't use the bloom filter for priority URLs
-        System.out.println("Priority Queueing URL " + url + ".");
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Priority Queueing URL " + url + ".");
         urlQueue.addFirst(url);
         debug++;
     }
@@ -109,9 +148,10 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         URL url = null;
         try {
             url = urlQueue.takeFirst();
-            System.out.println("Dequeueing URL " + url + " to downloader " + downloaderID + ".");
+            LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class,
+                    "URL " + url + " dequeued by downloader " + downloaderID + ".");
         } catch (InterruptedException e) {
-            System.out.println("Error in Server.URLQueue.dequeueURL: " + e);
+            LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
         }
         showQueue();
         return url;

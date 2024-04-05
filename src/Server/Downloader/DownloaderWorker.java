@@ -66,7 +66,7 @@ public class DownloaderWorker implements Runnable {
         try {
             // Connect to the Server.URLQueue
             urlQueue = (URLQueueInterface) Naming
-                    .lookup("rmi://" + queueIP + ":" + URLQueue.PORT + "/" + URLQueue.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + queueIP + ":" + URLQueue.RMI_PORT + "/" + URLQueue.REMOTE_REFERENCE_NAME);
 
             reliableMulticast.startReceiving();
 
