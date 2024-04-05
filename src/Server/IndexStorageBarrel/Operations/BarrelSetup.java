@@ -45,8 +45,8 @@ public class BarrelSetup {
             // not present
             if (tableNames.size() != expectedTableCount || !new HashSet<>(tableNames).containsAll(expectedTableNames)) {
                 // Print the inconsistency message
-                System.err
-                        .println("Inconsistent tables found in database. Dropping " + tableNames.size() + " tables...");
+                LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSetup.class,
+                        "Inconsistent tables found in database. Dropping " + tableNames.size() + " tables...");
 
                 // Drop each table
                 for (String tableName : tableNames) {
@@ -56,7 +56,7 @@ public class BarrelSetup {
                         // Execute the SQL statement to drop the table
                         stmt.execute(dropTableSQL);
                     } catch (SQLException e) {
-                        System.err.println("Error dropping table " + tableName + ": " + e.getMessage());
+                        LogUtil.logError(LogUtil.ANSI_RED, BarrelSetup.class, e);
                     }
                 }
 
@@ -138,9 +138,9 @@ public class BarrelSetup {
                 stmt.execute(website_urls);
             }
 
-            System.out.println("Tables created successfully");
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelSetup.class, "Tables created successfully");
         } catch (SQLException e) {
-            System.err.println(e.getMessage());
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelSetup.class, e);
         }
     }
 

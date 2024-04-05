@@ -305,7 +305,8 @@ public class BarrelPopulate {
      * corresponding IDs.
      * 
      * @param tokens the list of keywords to be inserted
-     * @return a map containing the keywords as keys and their corresponding IDs as values
+     * @return a map containing the keywords as keys and their corresponding IDs as
+     *         values
      */
     private Map<String, Integer> handleKeywordBatchInsertion(List<String> tokens) {
         Map<String, Integer> keywordIdMap = new HashMap<>();
@@ -359,7 +360,6 @@ public class BarrelPopulate {
                 if (keywordId == null) {
                     continue;
                 }
-                System.out.println("New URL? " + website.newUrl());
                 double tfIdf = barrelProcessing.calcTFIDF(token, tokens, website.newUrl());
                 pstmt.setInt(1, website.websiteId());
                 pstmt.setInt(2, keywordId);
@@ -376,8 +376,8 @@ public class BarrelPopulate {
     /**
      * Handles the batch insertion of URLs for a given website.
      *
-     * @param website   ID and new URL flag for the website.
-     * @param urls      The list of URLs to be inserted.
+     * @param website ID and new URL flag for the website.
+     * @param urls    The list of URLs to be inserted.
      */
     private void handleUrlBatchInsertion(QueryResult website, List<URL> urls) {
         String insertUrlSql = "INSERT OR IGNORE INTO urls(url) VALUES(?)";

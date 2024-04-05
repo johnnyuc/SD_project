@@ -114,7 +114,6 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      *         otherwise
      */
     private boolean processArgs(String[] args) {
-        // TODO: Se este erro acontecer, as threads que o barrel criou nao vao abaixo
         if (args.length < 18) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                     "Wrong number of arguments: expected -id <barrel id> -db <database path> "

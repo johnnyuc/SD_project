@@ -137,8 +137,7 @@ public class DownloaderWorker implements Runnable {
             int waitTime = (int) Math.min(maxWaitTime, Math.max(minWaitTime, responseTime * 1.5));
             Thread.sleep(waitTime);
         } catch (IOException | InterruptedException e) {
-            System.out.println("Error in Server.Downloader.Server.Downloader.visitURL: " + e);
-            System.out.println("URL: " + url);
+            LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
         }
     }
 

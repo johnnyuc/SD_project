@@ -55,9 +55,9 @@ public class BarrelProcessing {
         // Print IDF values
         System.err.println("docNr: " + docNr);
         System.err.println("tokenDocnr: " + tokenDocnr);
-        System.err.println("IDF - log(1 + docNr/tokenDocnr): " + Math.log(1 + (double) (docNr/tokenDocnr)));
+        System.err.println("IDF - log(1 + docNr/tokenDocnr): " + Math.log(1 + (double) (docNr / tokenDocnr)));
 
-        return Math.log(1 + (double) (docNr/tokenDocnr));
+        return Math.log(1 + (double) (docNr / tokenDocnr));
     }
 
     /**

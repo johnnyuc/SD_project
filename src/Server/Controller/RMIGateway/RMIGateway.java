@@ -216,8 +216,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
                         + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
                         + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
 
-        System.out.println(remoteBarrel);
-
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
     }

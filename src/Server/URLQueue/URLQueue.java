@@ -72,7 +72,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         // Calculate the optimal size based on the number of elements and false positive
         // probability
         int optimalSize = (int) Math.ceil(-n * Math.log(p) / (Math.log(2) * Math.log(2)));
-        System.out.println("Optimal size for Bloom Filter set at: " + optimalSize);
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Optimal size for Bloom Filter set at: " + optimalSize);
 
         bloomFilter = new BloomFilter(optimalSize);
 
@@ -166,7 +166,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             if (url != null)
                 count++;
         }
-        System.out.println("Queue has " + count + " URLs.");
-        System.out.println("Counter: " + debug);
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Queue has " + count + " URLs.");
     }
 }
