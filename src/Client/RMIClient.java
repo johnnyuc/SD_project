@@ -110,7 +110,7 @@ public class RMIClient implements Serializable {
      * @param choice the choice
      * @return true if the user wants to continue, false otherwise
      * @throws RemoteException       if a remote exception occurs
-     * @throws MalformedURLException
+     * @throws MalformedURLException if a malformed URL exception occurs
      */
     private boolean treatChoice(int choice) throws RemoteException, MalformedURLException {
         switch (choice) {
@@ -158,7 +158,7 @@ public class RMIClient implements Serializable {
 
     private boolean pagedResults(List<String> results) {
         return !(results.size() == 1
-                && ("No barrels available.".equals(results.get(0)) || "URL Indexed.".equals(results.get(0))));
+                && ("No barrels available.".equals(results.getFirst()) || "URL Indexed.".equals(results.getFirst())));
     }
 
     /**
@@ -214,7 +214,12 @@ public class RMIClient implements Serializable {
      * @return the choice
      */
     private int readChoice() {
-        return Integer.parseInt(scanner.nextLine());
+        String input = scanner.nextLine();
+        while (input.trim().isEmpty()) {
+            System.out.println("Invalid input. Please enter a number:");
+            input = scanner.nextLine();
+        }
+        return Integer.parseInt(input);
     }
 
     /**

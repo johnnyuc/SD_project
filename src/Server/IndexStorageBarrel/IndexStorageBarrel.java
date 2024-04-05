@@ -115,13 +115,14 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      */
     private boolean processArgs(String[] args) {
         // TODO: Se este erro acontecer, as threads que o barrel criou nao vao abaixo
-        if (args.length != 18) {
+        if (args.length < 18) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                     "Wrong number of arguments: expected -id <barrel id> -db <database path> "
                             + "-dmcast <downloader multicast group address> -dport <downloader port number> "
                             + "-smcast <sync multicast group address> -sport <sync port number> "
                             + "-mcastadd <multicast interface address> -badd <barrel interface address> "
-                            + "-gadd <gateway interface address>");
+                            + "-gadd <gateway interface address>"
+                            + "-s <optional for TF-IDF sort>");
             stop();
             return false;
         }
@@ -223,7 +224,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
         List<String> results = new ArrayList<>();
         for (SearchData sD : searchData) {
-            results.add(sD.title() + "\n" + sD.url() + "\nRef_count:" + sD.refCount() + "\n");
+            results.add(sD.title() + "\n" + sD.url() + "\nRef_count: " + sD.refCount() + " TF_IDF: " + sD.tfIdf());
         }
 
         return results;
