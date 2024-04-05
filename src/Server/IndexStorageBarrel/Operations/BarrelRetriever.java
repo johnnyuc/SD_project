@@ -119,7 +119,7 @@ public class BarrelRetriever {
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
         }
-        LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelRetriever.class, "top searches: " + topSearches.toString());
+        LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelRetriever.class, "top searches: " + topSearches);
         return topSearches;
     }
 
@@ -131,7 +131,7 @@ public class BarrelRetriever {
      * @param pageNumber the page number
      * @return a list of search data objects
      */
-    public List<SearchData> retrieveAndRankData(String query, int pageNumber) {
+    public List<SearchData> retrieveAndRankData(String query, int pageNumber, boolean tfIdfSort) {
         Map<String, SearchData> searchDataMap = new HashMap<>();
         String[] keywords = query.split("\\s+");
 
@@ -170,11 +170,14 @@ public class BarrelRetriever {
         }
 
         List<SearchData> searchDataList = new ArrayList<>(searchDataMap.values());
-        // searchDataList.sort((data1, data2) -> Double.compare(data2.tfIdf(),
-        // data1.tfIdf()));
 
-        // sort search data by ref_count
-        searchDataList.sort((data1, data2) -> Integer.compare(data2.refCount(), data1.refCount()));
+        if (tfIdfSort) {
+            // sort search data by tf_idf
+            searchDataList.sort((data1, data2) -> Double.compare(data2.tfIdf(), data1.tfIdf()));
+        } else {
+            // sort search data by ref_count
+            searchDataList.sort((data1, data2) -> Integer.compare(data2.refCount(), data1.refCount()));
+        }
 
         // Calculate the start and end indices of the page
         int start = (pageNumber - 1) * 10;

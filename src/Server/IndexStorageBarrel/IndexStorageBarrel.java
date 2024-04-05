@@ -56,6 +56,8 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
     private String gatewayAddress;
 
+    private boolean tfIdfSort = false;
+
     public static final int STARTING_PORT = 6000;
     public static final String REMOTE_REFERENCE_NAME = "indexstoragebarrel";
 
@@ -136,6 +138,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
                     case "-mcastadd" -> mcastAddress = args[++i];
                     case "-badd" -> barrelAddress = args[++i];
                     case "-gadd" -> gatewayAddress = args[++i];
+                    case "-s" -> tfIdfSort = true;
                     default -> {
                         LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                                 "Unexpected argument: " + args[i]);
@@ -193,8 +196,9 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      * @param pageNumber the page number of the search results
      * @return a list of SearchData objects representing the ranked search results
      */
-    private List<SearchData> retrieveAndRankData(String query, int pageNumber) {
-        return barrelRetriever.retrieveAndRankData(query, pageNumber);
+    private List<SearchData> retrieveAndRankData(String query, int pageNumber, boolean tfIdfSort) {
+        return tfIdfSort ? barrelRetriever.retrieveAndRankData(query, pageNumber, true)
+                : barrelRetriever.retrieveAndRankData(query, pageNumber, false);
     }
 
     /**
@@ -207,7 +211,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      */
     public List<String> searchQuery(String query, int pageNumber) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Received query:" + query);
-        List<SearchData> searchData = retrieveAndRankData(query, pageNumber);
+        List<SearchData> searchData = retrieveAndRankData(query, pageNumber, tfIdfSort);
 
         // Tokenize query and send each keyword to increment searches
         String[] keywords = query.split(" ");
