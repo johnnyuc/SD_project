@@ -4,39 +4,69 @@ import java.sql.*;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * The BarrelProcessing class provides methods for calculating TF, IDF, and
+ * TF-IDF values of terms in documents.
+ */
 public class BarrelProcessing {
     private final Connection conn;
 
+    /**
+     * Constructs a BarrelProcessing object with the given database connection.
+     *
+     * @param conn the database connection
+     */
     public BarrelProcessing(Connection conn) {
         this.conn = conn;
     }
 
-    // Method to calculate the TF value of a term in a document
+    /**
+     * Calculates the Term Frequency (TF) value of a term in a document.
+     *
+     * @param term        the term to calculate the TF value for
+     * @param subsetTerms the list of terms in the document
+     * @return the TF value of the term
+     */
     public double calcTF(String term, List<String> subsetTerms) {
         // Print TF values
-        // System.err.println("term: " + term);
-        // System.err.println("subsetTerms: " + subsetTerms);
-        // System.err.println("TF - termCount/totalSubsetTerms: " + (double)
-        // Collections.frequency(subsetTerms, term) / subsetTerms.size());
+        System.err.println("term: " + term);
+        System.err.println("subsetTerms: " + subsetTerms);
+        System.err.println("TF - termCount/totalSubsetTerms: "
+                + (double) Collections.frequency(subsetTerms, term) / subsetTerms.size());
         int termCount = Collections.frequency(subsetTerms, term);
         int totalSubsetTerms = subsetTerms.size();
         return (double) termCount / totalSubsetTerms;
     }
 
-    // Method to calculate the IDF value of a term
+    /**
+     * Calculates the Inverse Document Frequency (IDF) value of a term.
+     *
+     * @param term        the term to calculate the IDF value for
+     * @param subsetTerms the list of terms in the document
+     * @param docNr       the total number of documents
+     * @return the IDF value of the term
+     * @throws SQLException if an error occurs while accessing the database
+     */
     public double calcIDF(String term, List<String> subsetTerms, int docNr) throws SQLException {
         int tokenDocnr = getTokenDocnr(term, subsetTerms);
 
         // Print IDF values
-        // System.err.println("docNr: " + docNr);
-        // System.err.println("tokenDocnr: " + tokenDocnr);
-        // System.err.println("IDF - log(docNr/tokenDocnr): " + Math.log((double) docNr
-        // / ((tokenDocnr == 0) ? 1 : tokenDocnr)));
+        System.err.println("docNr: " + docNr);
+        System.err.println("tokenDocnr: " + tokenDocnr);
+        System.err.println(
+                "IDF - log(docNr/tokenDocnr): " + Math.log((double) (docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr))));
 
         return Math.log((double) docNr / ((tokenDocnr == 0) ? 1 : tokenDocnr));
     }
 
-    // Method to calculate the TF-IDF value of a term in a document
+    /**
+     * Calculates the TF-IDF value of a term in a document.
+     *
+     * @param term        the term to calculate the TF-IDF value for
+     * @param subsetTerms the list of terms in the document
+     * @param docNr       the total number of documents
+     * @return the TF-IDF value of the term
+     */
     public double calcTFIDF(String term, List<String> subsetTerms, int docNr) {
         double tf = calcTF(term, subsetTerms);
         double idf = 0;
@@ -47,12 +77,17 @@ public class BarrelProcessing {
         }
 
         // Print TF-IDF value
-        // System.err.println("tf * idf: " + tf * idf);
+        System.err.println("tf * idf: " + tf * idf);
 
         return tf * idf;
     }
 
-    // Method to get the total number of documents
+    /**
+     * Gets the total number of documents.
+     *
+     * @return the total number of documents
+     * @throws SQLException if an error occurs while accessing the database
+     */
     int getDocnr() throws SQLException {
         String sql = "SELECT COUNT(DISTINCT website_id) FROM website_keywords";
         int totalDocs = 0;
@@ -65,7 +100,14 @@ public class BarrelProcessing {
         return totalDocs;
     }
 
-    // Method to check if a document contains a specific term
+    /**
+     * Checks if a document contains a specific term.
+     *
+     * @param websiteId the ID of the website/document
+     * @param term      the term to check for
+     * @return true if the document contains the term, false otherwise
+     * @throws SQLException if an error occurs while accessing the database
+     */
     boolean docContainsToken(int websiteId, String term) throws SQLException {
         String sql = "SELECT 1 FROM website_keywords WHERE website_id = ? AND keyword_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -76,7 +118,14 @@ public class BarrelProcessing {
         }
     }
 
-    // Method to get the number of documents containing a specific term
+    /**
+     * Gets the number of documents containing a specific term.
+     *
+     * @param term        the term to count documents for
+     * @param subsetTerms the list of terms in the document
+     * @return the number of documents containing the term
+     * @throws SQLException if an error occurs while accessing the database
+     */
     private int getTokenDocnr(String term, List<String> subsetTerms) throws SQLException {
         String sql = "SELECT COUNT(DISTINCT website_id) FROM website_keywords WHERE keyword_id = ?";
         int docsWithTerm = 0;
@@ -94,6 +143,14 @@ public class BarrelProcessing {
         return docsWithTerm;
     }
 
+    /**
+     * Gets the ID of a token (term) from the database.
+     * If the token is not found, it is inserted into the database.
+     *
+     * @param term the term to get the ID for
+     * @return the ID of the token
+     * @throws SQLException if an error occurs while accessing the database
+     */
     public int getTokenId(String term) throws SQLException {
         String sql = "SELECT id FROM keywords WHERE keyword = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {

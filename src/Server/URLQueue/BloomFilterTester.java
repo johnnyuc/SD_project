@@ -1,5 +1,8 @@
 package Server.URLQueue;
 
+/**
+ * This class is used to test the functionality of the BloomFilter class.
+ */
 public class BloomFilterTester {
     public static void main(String[] args) {
         BloomFilter bloomFilter = new BloomFilter(9585058);

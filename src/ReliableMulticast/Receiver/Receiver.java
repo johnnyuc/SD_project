@@ -12,6 +12,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 // Error imports
 import java.io.IOException;
 
+/**
+ * The Receiver class represents a receiver in a reliable multicast system.
+ * It receives data from a multicast group and processes it using a worker
+ * thread.
+ */
 public class Receiver {
     // Multicast main objects
     // Sender
@@ -31,7 +36,21 @@ public class Receiver {
 
     private final Class<?>[] ignoredClasses;
 
-    // Constructor
+    /**
+     * Constructs a Receiver object.
+     *
+     * @param sender           the sender object used to send retransmission
+     *                         requests
+     * @param interfaceAddress the IP address of the network interface to use for
+     *                         multicast
+     * @param multicastGroup   the IP address of the multicast group
+     * @param port             the port number to bind the receiver to
+     * @param ignoredClasses   an array of classes to ignore when processing
+     *                         received data
+     * @param multicastID      the unique identifier for the multicast session
+     * @throws IOException          if an I/O error occurs
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
     public Receiver(Sender sender, String interfaceAddress, String multicastGroup,
             int port, Class<?>[] ignoredClasses, UUID multicastID)
             throws IOException, InterruptedException {
@@ -41,8 +60,6 @@ public class Receiver {
         this.multicastID = multicastID;
 
         // Join the multicast group using channel [non blocking]
-        // NetworkInterface networkInterface =
-        // NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
         NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getByName(interfaceAddress));
         InetAddress groupAddress = InetAddress.getByName(multicastGroup);
         this.channel = DatagramChannel.open(StandardProtocolFamily.INET)
@@ -53,7 +70,12 @@ public class Receiver {
         this.channel.join(groupAddress, networkInterface);
     }
 
-    // Method to start receiving data
+    /**
+     * Starts receiving data from the multicast group.
+     *
+     * @throws InterruptedException if the thread is interrupted while waiting
+     * @throws IOException          if an I/O error occurs
+     */
     public void receive() throws InterruptedException, IOException {
         // Thread for ReceiverListener
         receiverListener = new ReceiverListener(channel);
@@ -66,13 +88,18 @@ public class Receiver {
         workerThread.start();
     }
 
-    // Getter for the workerQueue to the ReliableMulticast class
-    // Used to store final received objects
+    /**
+     * Gets the workerQueue used to store final received objects.
+     *
+     * @return the workerQueue
+     */
     public BlockingQueue<Object> getWorkerQueue() {
         return workerQueue;
     }
 
-    // Method to stop receiving data
+    /**
+     * Stops receiving data and cleans up resources.
+     */
     public void stop() {
         try {
             // Kill sub-threads

@@ -9,20 +9,31 @@ import Logger.LogUtil;
 
 import Server.Controller.RMIGateway.RMIGateway;
 import Server.Controller.RMIGateway.RMIGatewayInterface;
+import Server.IndexStorageBarrel.IndexStorageBarrel;
 
+/**
+ * The BarrelPinger class is responsible for periodically pinging the RMIGateway
+ * to indicate that the
+ * IndexStorageBarrel is still active and available.
+ */
 public class BarrelPinger implements Runnable {
     public static int PING_INTERVAL = 5000;
     private volatile boolean running = true;
     private RMIGatewayInterface rmiGateway;
-    private final int barrelID;
-    private final String barrelAddress;
+    private final IndexStorageBarrel barrel;
+    private Thread thread;
 
-    public BarrelPinger(int barrelID, String barrelAddress, String gatewayAddress) {
-        this.barrelID = barrelID;
-        this.barrelAddress = barrelAddress;
+    /**
+     * Constructs a BarrelPinger object with the specified IndexStorageBarrel.
+     * 
+     * @param barrel the IndexStorageBarrel to ping the RMIGateway for
+     */
+    public BarrelPinger(IndexStorageBarrel barrel) {
+        this.barrel = barrel;
         try {
             rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://" + gatewayAddress + ":" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + barrel.getGatewayAddress() + ":" + RMIGateway.PORT + "/"
+                            + RMIGateway.REMOTE_REFERENCE_NAME);
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             LogUtil.logError(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, e);
         }
@@ -31,8 +42,13 @@ public class BarrelPinger implements Runnable {
         new Thread(this, "Barrel Pinger").start();
     }
 
+    /**
+     * Runs the BarrelPinger thread. Periodically pings the RMIGateway and handles
+     * any exceptions that may occur.
+     */
     @Override
     public void run() {
+        thread = Thread.currentThread();
         try {
             while (running) {
                 Thread.sleep(PING_INTERVAL);
@@ -46,18 +62,39 @@ public class BarrelPinger implements Runnable {
         }
     }
 
+    /**
+     * Pings the RMIGateway to indicate that the IndexStorageBarrel is still active
+     * and available.
+     * 
+     * @throws RemoteException       if a remote exception occurs
+     * @throws NotBoundException     if the RMIGateway is not bound
+     * @throws MalformedURLException if the URL is malformed
+     * @throws UnknownHostException  if the host is unknown
+     */
     private void pingGateway() throws RemoteException, NotBoundException, MalformedURLException, UnknownHostException {
         LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Pinging gateway.");
-        rmiGateway.receivePing(barrelID, barrelAddress);
+        rmiGateway.receivePing(barrel.getBarrelID(), barrel.getBarrelAddress());
     }
 
+    /**
+     * Stops the BarrelPinger thread and removes the IndexStorageBarrel from the
+     * RMIGateway.
+     */
     private void stop() {
         running = false;
         try {
-            rmiGateway.removeBarrel(barrelID);
+            rmiGateway.removeBarrel(barrel.getBarrelID());
         } catch (RemoteException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
         }
-        LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Barrel Pinger stopped.");
+    }
+
+    /**
+     * Sets the running state of the BarrelPinger thread.
+     * 
+     * @param running the running state to set
+     */
+    public void setRunning(boolean running) {
+        this.running = running;
     }
 }

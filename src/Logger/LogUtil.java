@@ -6,6 +6,11 @@ import org.apache.logging.log4j.Logger;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+/**
+ * The LogUtil class provides utility methods for logging error and
+ * informational messages.
+ * It also defines ANSI escape codes for applying colors to log messages.
+ */
 public class LogUtil {
 
     // ANSI escape codes
@@ -25,6 +30,13 @@ public class LogUtil {
         }
     }
 
+    /**
+     * Logs an error message with the provided color, class, and throwable.
+     *
+     * @param color     The color to be applied to the error message.
+     * @param clazz     The class from which the error occurred.
+     * @param throwable The throwable object representing the error.
+     */
     public static void logError(String color, Class<?> clazz, Throwable throwable) {
         Logger logger = LogUtil.logging.getLogger(clazz);
         StackTraceElement element = throwable.getStackTrace()[0];
@@ -43,6 +55,13 @@ public class LogUtil {
                         + ". Stack trace: " + stackTrace + ANSI_RESET);
     }
 
+    /**
+     * Logs an informational message with the specified color, class, and message.
+     *
+     * @param color   the color to apply to the message
+     * @param clazz   the class from which the log message originates
+     * @param message the log message to be logged
+     */
     public static void logInfo(String color, Class<?> clazz, String message) {
         Logger logger = LogUtil.logging.getLogger(clazz);
         logger.info(color + message + ANSI_RESET);

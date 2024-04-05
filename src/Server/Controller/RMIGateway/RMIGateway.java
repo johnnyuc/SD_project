@@ -20,6 +20,10 @@ import Server.IndexStorageBarrel.Operations.BarrelPinger;
 import Server.URLQueue.URLQueue;
 import Server.URLQueue.URLQueueInterface;
 
+/**
+ * The RMIGateway class represents the RMI gateway for the search engine system.
+ * It handles the communication between the client and the server.
+ */
 public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterface {
     public static final int PORT = 5999;
     public static final String REMOTE_REFERENCE_NAME = "rmigateway";
@@ -31,6 +35,11 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     private URLQueueInterface urlQueue;
     private String queueAddress;
 
+    /**
+     * The main method that starts the RMI gateway.
+     * 
+     * @param args The command line arguments.
+     */
     public static void main(String[] args) {
 
         try {
@@ -44,6 +53,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
+    /**
+     * Constructs a new RMIGateway object.
+     * 
+     * @param args The command line arguments.
+     * @throws RemoteException if a remote error occurs.
+     */
     public RMIGateway(String[] args) throws RemoteException {
         super();
         if (!processArgs(args))
@@ -57,6 +72,15 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
     }
 
+    /**
+     * Searches for the given query and returns the search results.
+     * 
+     * @param query      The search query.
+     * @param pageNumber The page number of the search results.
+     * @return The search results.
+     * @throws RemoteException       if a remote error occurs.
+     * @throws MalformedURLException if the URL is malformed.
+     */
     public List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
 
@@ -83,6 +107,14 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return results;
     }
 
+    /**
+     * Retrieves the websites that are linking to the target URL.
+     * 
+     * @param targetUrl  The target URL.
+     * @param pageNumber The page number of the search results.
+     * @return The websites linking to the target URL.
+     * @throws RemoteException if a remote error occurs.
+     */
     public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
         int currentBarrel = getAvailableBarrel();
         if (currentBarrel == -1)
@@ -97,6 +129,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return results;
     }
 
+    /**
+     * Checks if the given URL is valid.
+     * 
+     * @param url The URL to check.
+     * @return true if the URL is valid, false otherwise.
+     */
     public static boolean isValidURL(String url) {
         // Regex to check valid URL
         String regex = "((http|https)://)(www.)?"
@@ -120,6 +158,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return m.matches();
     }
 
+    /**
+     * Processes the command line arguments.
+     * 
+     * @param args The command line arguments.
+     * @return true if the arguments are valid, false otherwise.
+     */
     private boolean processArgs(String[] args) {
         if (args.length != 2) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
@@ -145,6 +189,15 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return true;
     }
 
+    /**
+     * Receives a ping from a barrel.
+     * 
+     * @param barrelID The ID of the barrel.
+     * @param barrelIP The IP address of the barrel.
+     * @throws RemoteException       if a remote error occurs.
+     * @throws NotBoundException     if the barrel is not bound.
+     * @throws MalformedURLException if the URL is malformed.
+     */
     public void receivePing(int barrelID, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException {
 
@@ -169,10 +222,21 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
     }
 
+    /**
+     * Removes a barrel from the list of timed barrels.
+     * 
+     * @param barrelID The ID of the barrel to remove.
+     * @throws RemoteException if a remote error occurs.
+     */
     public void removeBarrel(int barrelID) throws RemoteException {
         timedBarrels.removeIf(timedBarrel -> timedBarrel.getBarrelID() == barrelID);
     }
 
+    /**
+     * Gets an available barrel for processing.
+     * 
+     * @return The index of the available barrel, or -1 if no barrels are available.
+     */
     private synchronized int getAvailableBarrel() {
         for (BarrelTimestamp timedBarrel : timedBarrels) {
             if (timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2)
@@ -196,6 +260,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return currentBarrel;
     }
 
+    /**
+     * Checks if a barrel is alive.
+     * 
+     * @param barrelTimestamp The barrel to check.
+     * @return true if the barrel is alive, false otherwise.
+     */
     private boolean isAlive(BarrelTimestamp barrelTimestamp) {
         try {
             barrelTimestamp.getRemoteBarrel().receivePing();
@@ -205,6 +275,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
+    /**
+     * Retrieves the most searched queries.
+     * 
+     * @return The most searched queries.
+     * @throws RemoteException if a remote error occurs.
+     */
     public List<String> mostSearched() throws RemoteException {
         int currentBarrel = getAvailableBarrel();
         if (currentBarrel == -1)
@@ -217,6 +293,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return results;
     }
 
+    /**
+     * Retrieves the status of the barrels.
+     * 
+     * @return The status of the barrels.
+     * @throws RemoteException if a remote error occurs.
+     */
     public String barrelsStatus() throws RemoteException {
         String str = "";
         for (BarrelTimestamp barrel : timedBarrels) {

@@ -2,6 +2,11 @@ package Server.Downloader;
 
 import Logger.LogUtil;
 
+/**
+ * The Downloader class represents a downloader application that creates
+ * multiple downloader workers
+ * to download files from a queue server using multicast communication.
+ */
 public class Downloader {
     // Number of downloader workers
     private int downloaderNum;
@@ -16,12 +21,20 @@ public class Downloader {
     private String mcastGroupAddress;
     private int mcastPort;
 
-    // Main method
+    /**
+     * The main method of the Downloader application.
+     * 
+     * @param args The command line arguments passed to the application.
+     */
     public static void main(String[] args) {
         new Downloader(args);
     }
 
-    // Constructor
+    /**
+     * Constructs a new Downloader object with the specified command line arguments.
+     * 
+     * @param args The command line arguments passed to the application.
+     */
     public Downloader(String[] args) {
         if (!processArgs(args))
             return;
@@ -32,7 +45,14 @@ public class Downloader {
                     mcastPort, minWaitTime, maxWaitTime);
     }
 
-    // Argument processing method
+    /**
+     * Processes the command line arguments and initializes the downloader
+     * properties.
+     * 
+     * @param args The command line arguments passed to the application.
+     * @return true if the arguments are valid and the properties are initialized
+     *         successfully, false otherwise.
+     */
     private boolean processArgs(String[] args) {
         if (args.length != 10) {
             LogUtil.logInfo(LogUtil.ANSI_RED, Downloader.class,

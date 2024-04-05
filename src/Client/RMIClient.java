@@ -14,7 +14,26 @@ import java.util.Scanner;
 import Logger.LogUtil;
 
 /**
- * Client.RMIClient
+ * The RMIClient class represents a client for the RMI (Remote Method
+ * Invocation) system.
+ * It allows the user to interact with the RMI gateway and perform various
+ * operations.
+ * The client can search for queries, find linked URLs, and access the admin
+ * console.
+ * The client communicates with the RMI gateway using remote method calls.
+ * 
+ * The RMIClient class implements the Serializable interface to support
+ * serialization.
+ * 
+ * To use the RMIClient, provide the gateway address as a command-line argument
+ * using the "-ip" flag.
+ * 
+ * Example usage:
+ * java RMIClient -ip 192.168.0.1
+ * 
+ * Note: This class requires the RMI gateway to be running and accessible at the
+ * specified address.
+ * 
  */
 public class RMIClient implements Serializable {
     public static void main(String[] args) {
@@ -29,6 +48,11 @@ public class RMIClient implements Serializable {
 
     private String gatewayAddress;
 
+    /**
+     * Constructs a new RMIClient object.
+     *
+     * @param args the command line arguments passed to the program
+     */
     RMIClient(String[] args) {
         if (!processArgs(args))
             return;
@@ -46,6 +70,12 @@ public class RMIClient implements Serializable {
         }
     }
 
+    /**
+     * Processes the command line arguments.
+     *
+     * @param args the command line arguments
+     * @return true if the arguments are valid, false otherwise
+     */
     private boolean processArgs(String[] args) {
         if (args.length != 2) {
             LogUtil.logInfo(LogUtil.ANSI_RED, RMIClient.class,
@@ -130,12 +160,24 @@ public class RMIClient implements Serializable {
         return true;
     }
 
+    /**
+     * Prints the elements of the given list.
+     *
+     * @param results the list of strings to be printed
+     */
     private void printList(List<String> results) {
         for (String result : results) {
             System.out.println(result);
         }
     }
 
+    /**
+     * Treat the choice of the admin
+     * 
+     * @param choice the choice
+     * @return true if the user wants to continue, false otherwise
+     * @throws RemoteException if a remote exception occurs
+     */
     private boolean treatAdminChoice(int choice) throws RemoteException {
         switch (choice) {
             case 1:
@@ -174,6 +216,14 @@ public class RMIClient implements Serializable {
         return Integer.parseInt(scanner.nextLine());
     }
 
+    /**
+     * Displays the admin menu and handles the user's choice.
+     * This method continuously prompts the user with the admin menu options
+     * until the user chooses to exit.
+     *
+     * @throws RemoteException if there is a remote exception while executing the
+     *                         method.
+     */
     private void adminMenu() throws RemoteException {
         int adminChoice;
         do {
@@ -183,7 +233,7 @@ public class RMIClient implements Serializable {
     }
 
     /**
-     * Print the menu
+     * Prints the menu options for the client application.
      */
     private void printMenu() {
         System.out.println("----------------------------------");
@@ -194,26 +244,14 @@ public class RMIClient implements Serializable {
         System.out.println("----------------------------------");
     }
 
+    /**
+     * Prints the admin menu options.
+     */
     private void printAdminMenu() {
         System.out.println("----------------------------------");
         System.out.println("1. Most searched");
         System.out.println("2. Barrels status");
         System.out.println("3. Back to main menu");
         System.out.println("----------------------------------");
-    }
-
-    public void updateBarrelStatus() throws RemoteException {
-        if (onBarrelStatusPage) {
-            String barrelsStatus = rmiGateway.barrelsStatus();
-            System.out.println(barrelsStatus);
-        }
-    }
-
-    public boolean isOnMostSearchedPage() throws RemoteException {
-        return onMostSearchedPage;
-    }
-
-    public boolean isOnBarrelStatusPage() throws RemoteException {
-        return onBarrelStatusPage;
     }
 }

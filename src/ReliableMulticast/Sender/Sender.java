@@ -25,6 +25,12 @@ import java.util.zip.GZIPOutputStream;
 
 import Logger.LogUtil;
 
+/**
+ * The Sender class is responsible for sending data over a multicast network.
+ * It serializes and compresses the data before sending it in separate
+ * containers.
+ * It also handles retransmission requests for missing packets.
+ */
 public class Sender implements Runnable {
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
@@ -51,7 +57,16 @@ public class Sender implements Runnable {
 
     private final UUID multicastID;
 
-    // Constructor
+    /**
+     * Constructs a new Sender object with the specified parameters.
+     *
+     * @param multicastGroup the multicast group address
+     * @param port           the port number
+     * @param senderIP       the IP address of the sender
+     * @param senderClass    the class of the sender
+     * @param multicastID    the multicast ID
+     * @throws IOException if an I/O error occurs
+     */
     public Sender(String multicastGroup, int port, String senderIP, Class<?> senderClass, UUID multicastID)
             throws IOException {
         this.multicastGroup = InetAddress.getByName(multicastGroup);
@@ -76,7 +91,13 @@ public class Sender implements Runnable {
         LogUtil.logInfo(LogUtil.ANSI_CYAN, Sender.class, "Sender thread stopped");
     }
 
-    // Method to send all the data contained in the sendBuffer
+    /**
+     * Starts the sender process.
+     * 
+     * @throws InterruptedException if the thread is interrupted while waiting for
+     *                              the next object to send.
+     * @throws IOException          if an I/O error occurs while sending the object.
+     */
     public void startSender() throws InterruptedException, IOException {
         while (running) {
             Object object = sendBuffer.take();
@@ -86,7 +107,7 @@ public class Sender implements Runnable {
                 running = false;
             // Check if the object is a container
             else if (object instanceof Container)
-                sendContainer((Container) object, -1, -1);
+                sendContainer((Container) object, -1);
             else {
                 // Serialize and compress the object
                 byte[] objectData = serializeObject(object);
@@ -96,7 +117,13 @@ public class Sender implements Runnable {
         }
     }
 
-    // Method to serialize an object
+    /**
+     * Serializes an object into a byte array.
+     *
+     * @param object the object to be serialized
+     * @return the byte array representation of the serialized object
+     * @throws IOException if an I/O error occurs while serializing the object
+     */
     private byte[] serializeObject(Object object) throws IOException {
         ByteArrayOutputStream objectByteStream = new ByteArrayOutputStream();
         ObjectOutputStream objectStream;
@@ -107,7 +134,13 @@ public class Sender implements Runnable {
         return objectByteStream.toByteArray();
     }
 
-    // Method to compress data using GZIP
+    /**
+     * Compresses the given byte array using GZIP compression.
+     *
+     * @param data The byte array to be compressed.
+     * @return The compressed byte array.
+     * @throws IOException If an I/O error occurs while compressing the data.
+     */
     private byte[] compressData(byte[] data) throws IOException {
         ByteArrayOutputStream compressedByteStream = new ByteArrayOutputStream();
         GZIPOutputStream gzipStream;
@@ -118,8 +151,12 @@ public class Sender implements Runnable {
         return compressedByteStream.toByteArray();
     }
 
-    // Method to send the data in separate 1024 byte containers
-    // Used for a full object slicing or retransmission
+    /**
+     * Sends the data in containers.
+     * 
+     * @param data   the byte array containing the data to be sent
+     * @param object the object associated with the data
+     */
     private void sendContainers(byte[] data, Object object) {
         // Calculate the number of containers needed
         int numContainers = (int) Math.ceil((double) data.length / MAX_PACKET_SIZE);
@@ -134,38 +171,41 @@ public class Sender implements Runnable {
                 retransmissionBuffer.put(objectHash, new Container[numContainers]);
             // Add containerData to retransmission buffer
             retransmissionBuffer.get(objectHash)[i] = container;
-
-            // TODO: REMOVE THIS, ONLY USED TO SET A SENDING FAILURE RATE
-            // ----------------------------------------------
-            // Fail sending packets with a probability of 5% to check recovery from errors
-            if (Math.random() < 0.05) {
-                LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class,
-                        new IOException("Failed to send packet " + (i + 1)));
-                continue;
-            }
-            // TODO
             // ----------------------------------------------------------------------------------------------------
-            sendContainer(container, numContainers, i);
+            // Fail sending packets with a probability of 5% to check recovery from errors
+            // if (Math.random() < 0.05) {
+            // LogUtil.logError(LogUtil.ANSI_YELLOW, Sender.class,
+            // new IOException("Failed to send packet " + (i + 1)));
+            // continue;
+            // }
+            // ----------------------------------------------------------------------------------------------------
+            sendContainer(container, i);
         }
     }
 
-    // Method to send a single container
-    // Used by sendContainers method
-    // TODO: REMOVE NUMCONTAINERS, ONLY USED FOR PRINTING
-    private void sendContainer(Container container, int numContainers, int i) {
+    /**
+     * Sends a container over a multicast network.
+     *
+     * @param container The container to be sent.
+     * @param i         The index of the container.
+     */
+    private void sendContainer(Container container, int i) {
         try {
             byte[] serializedContainer = serializeObject(container);
             DatagramPacket datagram = new DatagramPacket(serializedContainer, serializedContainer.length,
                     multicastGroup, port);
             socket.send(datagram);
-            System.out.println("Sent container " + (i + 1) + " of "
-                    + numContainers + " with size: " + serializedContainer.length + " bytes");
         } catch (IOException e) {
             LogUtil.logError(LogUtil.ANSI_WHITE, Sender.class, e);
         }
     }
 
-    // Method to send a retransmission request for a missing packet
+    /**
+     * Sends a retransmission request for a specific container.
+     * 
+     * @param retransmitRequest the retransmission request containing the dataID and
+     *                          the index of the missing container
+     */
     public void sendRetransmit(RetransmitRequest retransmitRequest) {
 
         // Check if the retransmission buffer contains the dataID
@@ -185,14 +225,29 @@ public class Sender implements Runnable {
         sendBuffer.addFirst(container);
     }
 
-    // Method to request a retransmission of a missing packet
+    /**
+     * Requests a retransmission of a missing container for a specific data ID.
+     *
+     * @param missingContainer the missing container number
+     * @param dataID           the ID of the data for which retransmission is
+     *                         requested
+     */
     public void requestRetransmit(int missingContainer, String dataID) {
         RetransmitRequest retransmitRequest = new RetransmitRequest(missingContainer, dataID);
         // Add the request to the start of the buffer so it has priority
         sendBuffer.addFirst(retransmitRequest);
     }
 
-    // Slices the object and returns it in a container
+    /**
+     * Slices a byte array of data into smaller parts to add into containers.
+     * 
+     * @param i           the index of the slice
+     * @param objectData  the byte array containing the object data
+     * @param objectHash  the hash of the object
+     * @param objectClass the class of the object
+     * @param numPackets  the total number of packets
+     * @return the container containing the sliced object data
+     */
     private Container sliceObject(int i, byte[] objectData, String objectHash, Class<?> objectClass, int numPackets) {
         // Get the slice of the object data
         int offset = i * MAX_PACKET_SIZE;
@@ -202,7 +257,13 @@ public class Sender implements Runnable {
                 numPackets);
     }
 
-    // Hashing function to get the hash of an object
+    /**
+     * Calculates the SHA-256 hash value of an object and returns it as a string.
+     *
+     * @param object the object to calculate the hash value for
+     * @return the SHA-256 hash value of the object as a string
+     * @throws RuntimeException if the SHA-256 algorithm is not available
+     */
     private static String getHash(Object object) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -214,7 +275,15 @@ public class Sender implements Runnable {
         }
     }
 
-    // CircularHashMap class to store the retransmission buffer
+    /**
+     * A custom implementation of a circular hash map that extends the LinkedHashMap
+     * class.
+     * This class ensures that the map has a maximum size and removes the eldest
+     * entry when the size exceeds the maximum.
+     *
+     * @param <K> the type of keys maintained by this map
+     * @param <V> the type of mapped values
+     */
     public static class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
         private final int maxSize;
 
@@ -228,13 +297,10 @@ public class Sender implements Runnable {
         }
     }
 
-    // Getter for the sendBuffer to the ReliableMulticast class
-    // Used to store sent objects
     public BlockingDeque<Object> getSendBuffer() {
         return sendBuffer;
     }
 
-    // Method to stop the sender thread
     public void stop() {
         sendBuffer.add(STOP_PILL);
     }

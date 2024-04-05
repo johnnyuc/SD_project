@@ -17,6 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import Logger.LogUtil;
 
+/**
+ * The ReceiverListener class is responsible for receiving data from a
+ * DatagramChannel and providing it to a worker thread.
+ */
 public class ReceiverListener implements Runnable {
     // ! Macros for the protocol
     private static final int MAX_PACKET_SIZE = 1024;
@@ -33,12 +37,19 @@ public class ReceiverListener implements Runnable {
     // Stopping the thread
     private final Lock lock = new ReentrantLock();
 
-    // Constructor
+    /**
+     * Constructs a ReceiverListener object with the specified DatagramChannel.
+     *
+     * @param channel the DatagramChannel to receive data from
+     */
     public ReceiverListener(DatagramChannel channel) {
         this.channel = channel;
     }
 
-    // Thread startup
+    /**
+     * Starts the ReceiverListener thread and continuously receives data until
+     * stopped.
+     */
     @Override
     public void run() {
         try {
@@ -52,7 +63,13 @@ public class ReceiverListener implements Runnable {
         LogUtil.logInfo(LogUtil.ANSI_CYAN, ReceiverListener.class, "ReceiverListener thread stopped");
     }
 
-    // Method to receive a container
+    /**
+     * Receives a container from the DatagramChannel.
+     *
+     * @return an Optional containing the received byte array, or an empty Optional
+     *         if no data was available
+     * @throws IOException if an I/O error occurs while receiving the container
+     */
     private Optional<byte[]> receiveContainer() throws IOException {
         lock.lock();
         try {
@@ -83,7 +100,11 @@ public class ReceiverListener implements Runnable {
         }
     }
 
-    // Method to retreive data to the worker
+    /**
+     * Retrieves data from the listenerQueue.
+     *
+     * @return the retrieved data
+     */
     public Object getData() {
         try {
             return listenerQueue.take();
@@ -93,13 +114,18 @@ public class ReceiverListener implements Runnable {
         }
     }
 
-    // Method to put data into the listenerQueue
-    // The only purpose it serves is for the worker to put a STOP_PILL
+    /**
+     * Puts data into the listenerQueue.
+     *
+     * @param obj the data to be put into the listenerQueue
+     */
     public void putData(Object obj) {
         listenerQueue.add(obj);
     }
 
-    // Method to stop the listener
+    /**
+     * Stops the ReceiverListener thread.
+     */
     public void stop() {
         lock.lock();
         try {

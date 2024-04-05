@@ -13,9 +13,20 @@ import java.util.ArrayList;
 // Error imports
 import java.net.MalformedURLException;
 
+/**
+ * This class represents a protocol tester for the ReliableMulticast system.
+ * It demonstrates how to use the ReliableMulticast class to send and receive
+ * data over a multicast group.
+ */
 public class ProtocolTester {
 
-    // Main method
+    /**
+     * The main method of the protocol tester.
+     * It creates an instance of ReliableMulticast, sends and receives data, and
+     * stops the sending and receiving threads.
+     * 
+     * @param args The command line arguments.
+     */
     public static void main(String[] args) {
         ReliableMulticast reliableMulticast = new ReliableMulticast("172.23.173.134",
                 "224.0.0.1", 12345, ProtocolTester.class, new Class<?>[0]);
@@ -68,7 +79,12 @@ public class ProtocolTester {
         System.out.println("Closing the program");
     }
 
-    // Method to create a large Message object
+    /**
+     * Creates a large CrawlData object with random tokens and URLs.
+     * 
+     * @param iteration The iteration number.
+     * @return The created CrawlData object.
+     */
     private static CrawlData createLargeMessage(String iteration) {
 
         // Generate random number between 1 and 10000

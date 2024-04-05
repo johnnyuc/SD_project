@@ -5,8 +5,26 @@ import java.util.*;
 
 import Logger.LogUtil;
 
+/**
+ * The BarrelSetup class provides methods for setting up and maintaining the
+ * integrity of the database tables.
+ * It includes methods for checking the consistency of the tables and dropping
+ * them if necessary, as well as
+ * methods for creating the necessary tables in the database.
+ */
+
 public class BarrelSetup {
 
+    /**
+     * Checks the integrity of the database by comparing the existing tables with
+     * the expected tables.
+     * If the number of tables is inconsistent or certain table names are not
+     * present, the method drops
+     * the existing tables and sets up the database again.
+     *
+     * @param conn   the database connection
+     * @param dbPath the path to the database
+     */
     public static void databaseIntegrity(Connection conn, String dbPath) {
         try {
             // Define the expected table names and the expected number of tables
@@ -51,6 +69,11 @@ public class BarrelSetup {
         }
     }
 
+    /**
+     * Sets up the database with the required tables for website indexing.
+     *
+     * @param dbPath the path of the database file
+     */
     public static void setupDatabase(String dbPath) {
         String url = "jdbc:sqlite:data/" + dbPath + ".db";
         try (Connection conn = DriverManager.getConnection(url)) {

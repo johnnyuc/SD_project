@@ -20,6 +20,12 @@ import Logger.LogUtil;
 // Error imports
 import java.io.IOException;
 
+/**
+ * The ReceiverWorker class is responsible for processing received containers in
+ * a separate thread.
+ * It unpacks the containers, adds them to a map, and reconstructs the data when
+ * all containers for a specific data ID are received.
+ */
 public class ReceiverWorker implements Runnable {
     // Multicast main objects
     // Sender
@@ -43,7 +49,19 @@ public class ReceiverWorker implements Runnable {
     // Stopping the thread
     public static final Object STOP_PILL = new Object();
 
-    // Constructor
+    /**
+     * Constructs a ReceiverWorker object.
+     *
+     * @param sender               The Sender object used for sending retransmit
+     *                             requests.
+     * @param listener             The ReceiverListener object used for receiving
+     *                             data.
+     * @param workerQueue          The BlockingQueue used for storing clean final
+     *                             data.
+     * @param ignoredSenderClasses An array of classes to be ignored when processing
+     *                             containers.
+     * @param multicastID          The UUID of the multicast group.
+     */
     ReceiverWorker(Sender sender, ReceiverListener listener,
             BlockingQueue<Object> workerQueue, Class<?>[] ignoredSenderClasses, UUID multicastID) {
         this.sender = sender;
@@ -67,7 +85,14 @@ public class ReceiverWorker implements Runnable {
         LogUtil.logInfo(LogUtil.ANSI_CYAN, ReceiverWorker.class, "ReceiverWorker thread stopped");
     }
 
-    // Method to process a container
+    /**
+     * Processes a container received from the ReceiverListener.
+     *
+     * @throws IOException            If an I/O error occurs while unpacking the
+     *                                container.
+     * @throws ClassNotFoundException If the class of a serialized object cannot be
+     *                                found.
+     */
     private void processContainer() throws IOException, ClassNotFoundException {
         Object data = receiverListener.getData();
         // Check if the data is a stopping pill
@@ -95,6 +120,13 @@ public class ReceiverWorker implements Runnable {
             workerQueue.add(reconstructData(container.getDataID()));
     }
 
+    /**
+     * Checks if a container should be ignored based on the multicast ID and ignored
+     * sender classes.
+     *
+     * @param container The container to check.
+     * @return true if the container should be ignored, false otherwise.
+     */
     private boolean ignoreContainer(Container container) {
         if (multicastID.equals(container.getMulticastID()))
             return true;
@@ -106,14 +138,27 @@ public class ReceiverWorker implements Runnable {
         return false;
     }
 
-    // Method to unpack a container
+    /**
+     * Unpacks a serialized container.
+     *
+     * @param serializedContainer The serialized container to unpack.
+     * @return The unpacked Container object.
+     * @throws IOException            If an I/O error occurs while unpacking the
+     *                                container.
+     * @throws ClassNotFoundException If the class of the serialized container
+     *                                cannot be found.
+     */
     private Container unpackContainer(byte[] serializedContainer) throws IOException, ClassNotFoundException {
         ByteArrayInputStream bis = new ByteArrayInputStream(serializedContainer);
         ObjectInputStream ois = new ObjectInputStream(bis);
         return (Container) ois.readObject();
     }
 
-    // Method to add a container to the map
+    /**
+     * Adds a container to the map of received containers.
+     *
+     * @param container The container to add.
+     */
     private void addContainerToMap(Container container) {
         // If the dataID of the container is new
         if (!containersReceived.containsKey(container.getDataID()))
@@ -128,6 +173,12 @@ public class ReceiverWorker implements Runnable {
         containersTimestamp.setTimestamp(System.currentTimeMillis());
     }
 
+    /**
+     * Checks if the previous container is missing for a given container.
+     *
+     * @param container The container to check.
+     * @return true if the previous container is missing, false otherwise.
+     */
     private boolean previousContainerMissing(Container container) {
         Container[] containers = containersReceived.get(container.getDataID()).getContainers();
         // If the container is not the first one and the previous container is not
@@ -135,7 +186,16 @@ public class ReceiverWorker implements Runnable {
         return container.getPacketNumber() != 0 && containers[container.getPacketNumber() - 1] == null;
     }
 
-    // Method to reconstruct the data
+    /**
+     * Reconstructs the data for a given data ID.
+     *
+     * @param dataID The data ID to reconstruct.
+     * @return The reconstructed data object.
+     * @throws IOException            If an I/O error occurs while reconstructing
+     *                                the data.
+     * @throws ClassNotFoundException If the class of the reconstructed data cannot
+     *                                be found.
+     */
     private Object reconstructData(String dataID) throws IOException, ClassNotFoundException {
         LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class, "Reconstructing data with ID: " + dataID);
         // Buffer to assemble the data
@@ -156,7 +216,17 @@ public class ReceiverWorker implements Runnable {
         return deserializeData(compressedDataBis);
     }
 
-    // Method to deserialize the data
+    /**
+     * Deserializes the compressed data.
+     *
+     * @param compressedMessageBis The ByteArrayInputStream containing the
+     *                             compressed data.
+     * @return The deserialized object.
+     * @throws IOException            If an I/O error occurs while deserializing the
+     *                                data.
+     * @throws ClassNotFoundException If the class of the deserialized data cannot
+     *                                be found.
+     */
     private static Object deserializeData(ByteArrayInputStream compressedMessageBis)
             throws IOException, ClassNotFoundException {
         // Decompress the object
@@ -177,7 +247,13 @@ public class ReceiverWorker implements Runnable {
         return objectOis.readObject();
     }
 
-    // Checks if the dataID is ready to reconstruct
+    /**
+     * Checks if all containers for a given data ID are received and ready to be
+     * reconstructed.
+     *
+     * @param dataID The data ID to check.
+     * @return true if all containers are received and ready, false otherwise.
+     */
     private boolean reconstructReady(String dataID) {
         for (Container container : containersReceived.get(dataID).getContainers())
             if (container == null)
@@ -185,19 +261,36 @@ public class ReceiverWorker implements Runnable {
         return true;
     }
 
+    /**
+     * Returns the map of received containers.
+     *
+     * @return The map of received containers.
+     */
     public HashMap<String, ContainersTimestamp> getContainersReceived() {
         return containersReceived;
     }
 
+    /**
+     * Returns the Sender object associated with this ReceiverWorker.
+     *
+     * @return The Sender object.
+     */
     public Sender getSender() {
         return sender;
     }
 
+    /**
+     * Checks if the ReceiverWorker thread is running.
+     *
+     * @return true if the thread is running, false otherwise.
+     */
     public boolean isRunning() {
         return running;
     }
 
-    // Method to stop the thread
+    /**
+     * Stops the ReceiverWorker thread.
+     */
     public void stop() {
         // Adding stopping pills to the queues
         receiverListener.putData(STOP_PILL);

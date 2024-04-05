@@ -12,15 +12,35 @@ import java.util.stream.Collectors;
 
 import Logger.LogUtil;
 
+/**
+ * This class represents the BarrelPopulate class, which is responsible for
+ * populating the database with data from SyncData and CrawlData objects.
+ * It provides methods to insert sync data into the database and handle the
+ * insertion of crawl data.
+ * The class uses a connection to the database and an instance of
+ * BarrelProcessing for processing the data.
+ */
+
 public class BarrelPopulate {
     private final Connection conn;
     private BarrelProcessing barrelProcessing;
 
+    /**
+     * Constructs a new BarrelPopulate object with the specified database
+     * connection.
+     *
+     * @param conn the database connection to be used by the BarrelPopulate object
+     */
     public BarrelPopulate(Connection conn) {
         this.conn = conn;
         this.barrelProcessing = new BarrelProcessing(conn);
     }
 
+    /**
+     * Inserts the sync data into the database.
+     *
+     * @param syncData The sync data to be inserted.
+     */
     public void insertSyncData(SyncData syncData) {
         LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelPopulate.class, "Inserting sync data into database...");
 
@@ -76,6 +96,11 @@ public class BarrelPopulate {
         }
     }
 
+    /**
+     * Stops the current transaction by rolling back any changes made and setting
+     * auto-commit to true.
+     * If an SQLException occurs during the rollback, it is logged as an error.
+     */
     private void stopTransaction() {
         try {
             conn.rollback();
@@ -85,6 +110,12 @@ public class BarrelPopulate {
         }
     }
 
+    /**
+     * Inserts a list of websites into the database.
+     *
+     * @param rows the list of websites to insert
+     * @return true if the websites were successfully inserted, false otherwise
+     */
     private boolean insertWebsites(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO websites(url, title, description, ref_count) VALUES(?,?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -103,6 +134,13 @@ public class BarrelPopulate {
         return true;
     }
 
+    /**
+     * Inserts a list of keywords into the "keywords" table in the database.
+     * 
+     * @param rows a list of maps containing the keyword, id, and searches values to
+     *             be inserted
+     * @return true if the keywords were successfully inserted, false otherwise
+     */
     private boolean insertKeywords(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO keywords(keyword, id, searches) VALUES(?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -120,6 +158,12 @@ public class BarrelPopulate {
         return true;
     }
 
+    /**
+     * Inserts a list of URLs into the database.
+     *
+     * @param rows the list of rows containing the URLs and their corresponding IDs
+     * @return true if the URLs were successfully inserted, false otherwise
+     */
     private boolean insertUrls(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO urls(url, id) VALUES(?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -136,7 +180,13 @@ public class BarrelPopulate {
         return true;
     }
 
-    // TODO Add count
+    /**
+     * Inserts website keywords into the database.
+     *
+     * @param rows a list of maps containing the website ID, keyword ID, and TF-IDF
+     *             values
+     * @return true if the insertion is successful, false otherwise
+     */
     private boolean insertWebsiteKeywords(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO website_keywords(website_id, keyword_id, tf_idf) VALUES(?,?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -154,6 +204,12 @@ public class BarrelPopulate {
         return true;
     }
 
+    /**
+     * Inserts website URLs into the database.
+     * 
+     * @param rows a list of maps containing website_id and url_id values
+     * @return true if the insertion is successful, false otherwise
+     */
     private boolean insertWebsiteUrl(List<Map<String, Object>> rows) {
         String sql = "INSERT INTO website_urls(website_id, url_id) VALUES(?,?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -170,6 +226,12 @@ public class BarrelPopulate {
         return true;
     }
 
+    /**
+     * Inserts crawl data into the database.
+     *
+     * @param crawlData The crawl data to be inserted.
+     * @throws SQLException If an error occurs while inserting the crawl data.
+     */
     public void insertCrawlData(CrawlData crawlData) throws SQLException {
         // Extract data from CrawlData object
         String url = crawlData.getUrl().toString();
@@ -187,6 +249,18 @@ public class BarrelPopulate {
         handleUrlBatchInsertion(websiteId, urls);
     }
 
+    /**
+     * Handles the insertion or update of a website record in the database.
+     * If the URL already exists in the database, the existing record is updated
+     * with the provided title and description.
+     * If the URL does not exist, a new record is inserted with the provided URL,
+     * title, and description.
+     *
+     * @param url         the URL of the website
+     * @param title       the title of the website
+     * @param description the description of the website
+     * @return the ID of the inserted or updated website record
+     */
     private int handleWebsiteInsertOrUpdate(String url, String title, String description) {
         String sql = "SELECT id FROM websites WHERE url = ?";
         int websiteId = 0;
@@ -223,6 +297,15 @@ public class BarrelPopulate {
         return websiteId;
     }
 
+    /**
+     * Inserts a batch of keywords into the database and retrieves their
+     * corresponding IDs.
+     * 
+     * @param tokens the list of keywords to be inserted
+     * @return a map containing the keywords as keys and their corresponding IDs as
+     *         values
+     * @throws SQLException if an error occurs while executing the SQL statements
+     */
     private Map<String, Integer> handleKeywordBatchInsertion(List<String> tokens) throws SQLException {
         Map<String, Integer> keywordIdMap = new HashMap<>();
         String insertSql = "INSERT OR IGNORE INTO keywords (keyword) VALUES (?)";
@@ -257,6 +340,13 @@ public class BarrelPopulate {
         return keywordIdMap;
     }
 
+    /**
+     * Inserts a batch of website keywords into the database.
+     *
+     * @param websiteId    the ID of the website
+     * @param keywordIdMap a map containing the keyword IDs
+     * @param tokens       a list of tokens to be inserted
+     */
     private void handleWebsiteKeywordBatchInsertion(int websiteId, Map<String, Integer> keywordIdMap,
             List<String> tokens) {
         // Prepare SQL for batch insert
@@ -282,6 +372,12 @@ public class BarrelPopulate {
         }
     }
 
+    /**
+     * Handles the batch insertion of URLs for a given website.
+     *
+     * @param websiteId The ID of the website.
+     * @param urls      The list of URLs to be inserted.
+     */
     private void handleUrlBatchInsertion(int websiteId, List<URL> urls) {
         String insertUrlSql = "INSERT OR IGNORE INTO urls(url) VALUES(?)";
         String selectUrlIdSql = "SELECT id FROM urls WHERE url = ?";
@@ -324,6 +420,14 @@ public class BarrelPopulate {
         }
     }
 
+    /**
+     * Increments the search count for a given keyword in the database.
+     * If the keyword already exists, the search count is incremented by 1.
+     * If the keyword does not exist, it is added to the database with a search
+     * count of 1.
+     *
+     * @param keyword the keyword to increment the search count for
+     */
     public void incrementSearches(String keyword) {
         String selectSql = "SELECT * FROM keywords WHERE keyword = ?";
         try (PreparedStatement selectPstmt = conn.prepareStatement(selectSql)) {

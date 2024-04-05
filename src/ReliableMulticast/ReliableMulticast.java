@@ -11,9 +11,6 @@ import ReliableMulticast.Receiver.ReceiverWorker;
 
 // General imports
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 import Logger.LogUtil;
@@ -21,6 +18,12 @@ import Logger.LogUtil;
 // Error imports
 import java.io.IOException;
 
+/**
+ * The ReliableMulticast class provides a reliable multicast communication
+ * mechanism.
+ * It allows sending and receiving data over a multicast group using a sender
+ * and receiver.
+ */
 public class ReliableMulticast {
 
     // Variables
@@ -29,7 +32,15 @@ public class ReliableMulticast {
 
     private final UUID multicastID;
 
-    // Constructor
+    /**
+     * Constructs a ReliableMulticast object with the specified parameters.
+     *
+     * @param interfaceAddress the interface address to bind the receiver to
+     * @param multicastGroup   the multicast group to join
+     * @param port             the port number to use for communication
+     * @param senderClass      the class of the sender
+     * @param ignoredClasses   an array of classes to ignore when receiving data
+     */
     public ReliableMulticast(String interfaceAddress, String multicastGroup, int port,
             Class<?> senderClass, Class<?>[] ignoredClasses) {
         this.multicastID = UUID.randomUUID();
@@ -45,17 +56,25 @@ public class ReliableMulticast {
         }
     }
 
-    // Method to start sending data
+    /**
+     * Sends the specified object over the multicast group.
+     *
+     * @param object the object to send
+     */
     public void send(Object object) {
         sender.getSendBuffer().add(object);
     }
 
-    // Method to stop sending data
+    /**
+     * Stops sending data.
+     */
     public void stopSending() {
         sender.stop();
     }
 
-    // Method to start receiving data
+    /**
+     * Starts receiving data.
+     */
     public void startReceiving() {
         try {
             receiver.receive();
@@ -66,12 +85,18 @@ public class ReliableMulticast {
         }
     }
 
-    // Method to stop receiving data
+    /**
+     * Stops receiving data.
+     */
     public void stopReceiving() {
         receiver.stop();
     }
 
-    // Method to retrieve workable objects
+    /**
+     * Retrieves the next available data object.
+     *
+     * @return the next available data object, or null if protocol is shutting down
+     */
     public Object getData() {
         try {
             Object data = receiver.getWorkerQueue().take();

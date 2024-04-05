@@ -1,30 +1,28 @@
-package Server.Downloader;// Java imports
+package Server.Downloader;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import Server.URLQueue.URLQueue;
-// URL imports
 import Server.URLQueue.URLQueueInterface;
 import ReliableMulticast.ReliableMulticast;
 import ReliableMulticast.Objects.CrawlData;
-
-// Jsoup imports
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
 import Logger.LogUtil;
 
+/**
+ * The DownloaderWorker class represents a worker that visits URLs and performs
+ * crawling tasks.
+ */
 public class DownloaderWorker implements Runnable {
     // Worker's ID, Server.URLQueue IP, and Server.URLQueue object
     private final int id;
@@ -37,7 +35,17 @@ public class DownloaderWorker implements Runnable {
 
     private final ReliableMulticast reliableMulticast;
 
-    // Default constructor
+    /**
+     * Constructs a DownloaderWorker object with the specified parameters.
+     *
+     * @param id                the ID of the worker
+     * @param queueIP           the IP address of the Server.URLQueue
+     * @param interfaceAddress  the interface address for reliable multicast
+     * @param mcastGroupAddress the multicast group address for reliable multicast
+     * @param multicastPort     the multicast port for reliable multicast
+     * @param minWaitTime       the minimum wait time for the downloader
+     * @param maxWaitTime       the maximum wait time for the downloader
+     */
     public DownloaderWorker(int id, String queueIP, String interfaceAddress, String mcastGroupAddress,
             int multicastPort, int minWaitTime, int maxWaitTime) {
         this.id = id;
@@ -70,6 +78,11 @@ public class DownloaderWorker implements Runnable {
         }
     }
 
+    /**
+     * Visits the specified URL and performs crawling tasks.
+     *
+     * @param url the URL to visit
+     */
     private void visitURL(URL url) {
         try {
             // TODO: Account for some malformed URLs (e.g., missing protocol, special
@@ -129,6 +142,13 @@ public class DownloaderWorker implements Runnable {
         }
     }
 
+    /**
+     * Encodes the href part of a URL.
+     *
+     * @param href the href to encode
+     * @return the encoded href
+     * @throws UnsupportedEncodingException if the encoding is not supported
+     */
     private String encodeHref(String href) throws UnsupportedEncodingException {
         String[] tokens = href.split("//", 2);
         String encoded = URLEncoder.encode(tokens[1], "UTF-8");
@@ -144,6 +164,9 @@ public class DownloaderWorker implements Runnable {
         return tokens[0] + "//" + encoded;
     }
 
+    /**
+     * Stops the downloader worker.
+     */
     private void stop() {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, DownloaderWorker.class, "Shutting down Downloader Worker " + id);
         reliableMulticast.stopSending();
