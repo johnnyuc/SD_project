@@ -107,8 +107,7 @@ public class ReceiverWorker implements Runnable {
         if (ignoreContainer(container))
             return;
 
-        LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class,
-                "Processing container with packet number: " + container.getPacketNumber());
+        //LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class, "Processing container with packet number: " + container.getPacketNumber());
         // Add the container to the map
         addContainerToMap(container);
 
@@ -197,7 +196,7 @@ public class ReceiverWorker implements Runnable {
      *                                be found.
      */
     private Object reconstructData(String dataID) throws IOException, ClassNotFoundException {
-        LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class, "Reconstructing data with ID: " + dataID);
+        //LogUtil.logInfo(LogUtil.ANSI_YELLOW, ReceiverWorker.class, "Reconstructing data with ID: " + dataID);
         // Buffer to assemble the data
         ByteArrayOutputStream dataBuffer = new ByteArrayOutputStream();
 
@@ -268,6 +267,15 @@ public class ReceiverWorker implements Runnable {
      */
     public HashMap<String, ContainersTimestamp> getContainersReceived() {
         return containersReceived;
+    }
+
+    /**
+     * Returns the size of the buffer.
+     *
+     * @return The size of the buffer.
+     */
+    public int getBufferSize() {
+        return containersReceived.size();
     }
 
     /**
