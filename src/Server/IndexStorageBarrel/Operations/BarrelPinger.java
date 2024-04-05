@@ -72,6 +72,10 @@ public class BarrelPinger implements Runnable {
         rmiGateway.receivePing(barrel.getBarrelID(), barrel.getBarrelAddress());
     }
 
+    public int getActiveBarrels() throws RemoteException {
+        return rmiGateway.getActiveBarrels();
+    }
+
     /**
      * Stops the BarrelPinger thread and removes the IndexStorageBarrel from the
      * RMIGateway.

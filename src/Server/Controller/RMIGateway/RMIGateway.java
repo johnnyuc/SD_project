@@ -252,6 +252,10 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         return currentBarrel;
     }
 
+    public int getActiveBarrels() throws RemoteException {
+        return timedBarrels.size();
+    }
+
     /**
      * Checks if a barrel is alive.
      * 

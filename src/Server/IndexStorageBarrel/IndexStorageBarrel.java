@@ -16,6 +16,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import Logger.LogUtil;
 
@@ -58,6 +59,8 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
     private boolean tfIdfSort = false;
 
+    private final CountDownLatch latch;
+
     public static final int STARTING_PORT = 6000;
     public static final String REMOTE_REFERENCE_NAME = "indexstoragebarrel";
 
@@ -83,22 +86,27 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         if (!processArgs(args))
             System.exit(1);
 
+        this.latch = new CountDownLatch(1);
+
         startRMI();
         try {
             this.conn = DriverManager.getConnection("jdbc:sqlite:data/" + dbPath + ".db");
             BarrelSetup.databaseIntegrity(conn, dbPath); // Check database integrity
             this.barrelPopulate = new BarrelPopulate(conn);
             this.barrelRetriever = new BarrelRetriever(conn);
+            this.barrelPinger = new BarrelPinger(this);
+
             // Barrel receiver
             Class<?>[] receiverIgnoredClasses = { BarrelSync.class };
-            barrelReceiver = new BarrelReceiver(this, new ReliableMulticast(mcastAddress, downloaderMcastGroupAddress,
-                    downloaderMcastPort, BarrelReceiver.class, receiverIgnoredClasses));
+            this.barrelReceiver = new BarrelReceiver(this,
+                    new ReliableMulticast(mcastAddress, downloaderMcastGroupAddress,
+                            downloaderMcastPort, BarrelReceiver.class, receiverIgnoredClasses));
             // Barrel sync
             Class<?>[] syncIgnoredClasses = { DownloaderWorker.class };
-            barrelSync = new BarrelSync(this, new ReliableMulticast(mcastAddress, syncMcastGroupAddress, syncMcastPort,
-                    BarrelSync.class, syncIgnoredClasses));
+            this.barrelSync = new BarrelSync(this,
+                    new ReliableMulticast(mcastAddress, syncMcastGroupAddress, syncMcastPort,
+                            BarrelSync.class, syncIgnoredClasses));
 
-            barrelPinger = new BarrelPinger(this);
             LogUtil.logInfo(LogUtil.ANSI_GREEN, IndexStorageBarrel.class, "Index Storage Barrel ready.");
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, IndexStorageBarrel.class, e);
@@ -282,6 +290,15 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     // Getters and Setters
 
     /**
+     * Returns the BarrelPinger object associated with this IndexStorageBarrel.
+     *
+     * @return the BarrelPinger object associated with this IndexStorageBarrel
+     */
+    public BarrelPinger getBarrelPinger() {
+        return barrelPinger;
+    }
+
+    /**
      * Returns the ID of the barrel.
      *
      * @return the ID of the barrel
@@ -337,4 +354,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         return gatewayAddress;
     }
 
+    public CountDownLatch getLatch() {
+        return latch;
+    }
 }

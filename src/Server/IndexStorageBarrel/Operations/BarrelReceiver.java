@@ -38,9 +38,15 @@ public class BarrelReceiver implements Runnable {
     @Override
     public void run() {
         reliableMulticast.startReceiving();
+        try {
+            // Wait for signal from barrel sync
+            barrel.getLatch().await();
+        } catch (InterruptedException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelReceiver.class, e);
+        }
+        LogUtil.logInfo(LogUtil.ANSI_WHITE, BarrelReceiver.class, "Starting to receive data...");
         while (running) {
             try {
-
                 CrawlData crawlData = (CrawlData) reliableMulticast.getData();
                 if (crawlData == null) {
                     running = false;
