@@ -51,10 +51,6 @@ public class BarrelSync implements Runnable {
 
     @Override
     public void run() {
-        // TODO: This only works considering 2 barrels are used. If more barrels are
-        // used, this will need to be changed.
-        // It wont break, but alot of useless data will be added to the barrels
-
         reliableMulticast.startReceiving();
         try {
             // The nr of active barrels will be zero since this one wont have pinged the
