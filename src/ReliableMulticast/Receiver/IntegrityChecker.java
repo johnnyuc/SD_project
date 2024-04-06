@@ -1,19 +1,31 @@
 package ReliableMulticast.Receiver;
 
-import java.util.HashMap;
-
-import Logger.LogUtil;
+// Package imports
 import ReliableMulticast.Objects.Container;
+
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
+import java.util.HashMap;
 
 /**
  * The IntegrityChecker class is responsible for checking the integrity of
- * received data
- * and requesting retransmission if necessary.
+ * received data and requesting retransmission if necessary.
  */
 public class IntegrityChecker implements Runnable {
+    /**
+     * The ReceiverWorker object used to access the received data.
+     */
     private final ReceiverWorker worker;
+    /**
+     * The period of time to check for timeouts in milliseconds.
+     */
     private static final int TIMEOUT_CHECK_PERIOD = 5000;
     // This will keep track of how many retransmit requests were sent
+    /**
+     * A hash table that keeps track of how many retransmit requests were sent for
+     */
     private final HashMap<String, Integer> retransmitSent = new HashMap<>();
 
     /**
@@ -58,6 +70,7 @@ public class IntegrityChecker implements Runnable {
         // If no retransmit request was sent, create the entry in the hash table
         if (retransmitNr == null) {
             retransmitSent.put(dataID, 0);
+            retransmitNr = 0;
         }
         // Discard the data if no answer is given in 3 retransmit requests
         else if (retransmitNr == 3) {

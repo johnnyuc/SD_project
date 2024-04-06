@@ -1,17 +1,20 @@
 package Server.IndexStorageBarrel.Operations;
 
+// Package imports
 import ReliableMulticast.Objects.CrawlData;
-import Server.IndexStorageBarrel.Tools.QueryResult;
 import Server.IndexStorageBarrel.Tools.SyncData;
+import Server.IndexStorageBarrel.Tools.QueryResult;
 
-import java.net.URL;
-import java.sql.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+// Logging imports
 import Logger.LogUtil;
+
+// General imports
+import java.sql.*;
+import java.net.URL;
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Collections;
 
 /**
  * This class represents the BarrelPopulate class, which is responsible for
@@ -23,7 +26,13 @@ import Logger.LogUtil;
  */
 
 public class BarrelPopulate {
+    /**
+     * The database connection.
+     */
     private final Connection conn;
+    /**
+     * The BarrelProcessing object used for processing the data.
+     */
     private BarrelProcessing barrelProcessing;
 
     /**
@@ -339,9 +348,12 @@ public class BarrelPopulate {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
             stopTransaction();
         }
+        // Create a placeholder for each item in the tokens list
+        String placeholders = String.join(",", Collections.nCopies(tokens.size(), "?"));
+
         // Select every inserted keyword from the database
-        String selectSql = "SELECT id, keyword FROM keywords WHERE keyword IN ("
-                + tokens.stream().map(token -> "?").collect(Collectors.joining(",")) + ")";
+        String selectSql = "SELECT id, keyword FROM keywords WHERE keyword IN (" + placeholders + ")";
+
         try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
             for (int i = 0; i < tokens.size(); i++) {
                 pstmt.setString(i + 1, tokens.get(i));

@@ -1,14 +1,18 @@
 package Server.IndexStorageBarrel.Operations;
 
+// General imports
 import java.sql.*;
-import java.util.Collections;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * The BarrelProcessing class provides methods for calculating TF, IDF, and
  * TF-IDF values of terms in documents.
  */
 public class BarrelProcessing {
+    /**
+     * The database connection.
+     */
     private final Connection conn;
 
     /**
@@ -67,7 +71,9 @@ public class BarrelProcessing {
      *
      * @param term        the term to calculate the TF-IDF value for
      * @param subsetTerms the list of terms in the document
+     * @param newUrl      whether the document is a new URL
      * @return the TF-IDF value of the term
+     * @throws SQLException if an error occurs while accessing the database
      */
     public double calcTFIDF(String term, List<String> subsetTerms, boolean newUrl) throws SQLException {
         double tf = calcTF(term, subsetTerms);

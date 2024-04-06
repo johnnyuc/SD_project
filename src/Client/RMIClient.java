@@ -1,17 +1,22 @@
 package Client;
 
-import Server.Controller.RMIGateway.RMIGateway;
-import Server.Controller.RMIGateway.RMIGatewayInterface;
+// Package imports
+import Server.Controller.RMIGateway;
+import Server.Controller.RMIGatewayInterface;
 
-import java.io.Serializable;
-import java.net.MalformedURLException;
+// Logging
+import Logger.LogUtil;
+
+// General imports
+import java.util.List;
 import java.rmi.Naming;
+import java.util.Scanner;
+import java.io.Serializable;
+
+// Exception imports
+import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.Scanner;
-
-import Logger.LogUtil;
 
 /**
  * The RMIClient class represents a client for the RMI (Remote Method
@@ -21,28 +26,40 @@ import Logger.LogUtil;
  * The client can search for queries, find linked URLs, and access the admin
  * console.
  * The client communicates with the RMI gateway using remote method calls.
- * 
+ * <p>
  * The RMIClient class implements the Serializable interface to support
  * serialization.
- * 
+ * <p>
  * To use the RMIClient, provide the gateway address as a command-line argument
  * using the "-ip" flag.
- * 
+ * <p>
  * Example usage:
  * java RMIClient -ip 192.168.0.1
- * 
+ * <p>
  * Note: This class requires the RMI gateway to be running and accessible at the
  * specified address.
  * 
  */
 public class RMIClient implements Serializable {
+    /**
+     * The main method of the RMIClient class.
+     * @param args The command line arguments.
+     */
     public static void main(String[] args) {
         new RMIClient(args);
     }
 
+    /**
+     * The RMI gateway interface used to communicate with the RMI gateway.
+     */
     private RMIGatewayInterface rmiGateway;
+    /**
+     * The scanner used to read user input.
+     */
     private transient Scanner scanner;
-
+    /**
+     * The gateway address.
+     */
     private String gatewayAddress;
 
     /**
@@ -80,13 +97,12 @@ public class RMIClient implements Serializable {
         }
         // Parse the arguments
         for (int i = 0; i < args.length; i++) {
-            switch (args[i]) {
-                case "-ip" -> gatewayAddress = args[++i];
-                default -> {
-                    LogUtil.logInfo(LogUtil.ANSI_RED, RMIClient.class,
-                            "Unexpected argument: " + args[i]);
-                    return false;
-                }
+            if (args[i].equals("-ip")) {
+                gatewayAddress = args[++i];
+            } else {
+                LogUtil.logInfo(LogUtil.ANSI_RED, RMIClient.class,
+                        "Unexpected argument: " + args[i]);
+                return false;
             }
         }
         return true;
@@ -113,10 +129,11 @@ public class RMIClient implements Serializable {
      * @throws MalformedURLException if a malformed URL exception occurs
      */
     private boolean treatChoice(int choice) throws RemoteException, MalformedURLException {
+        List<String> results;
         switch (choice) {
             case 1:
                 String query = readQuery();
-                List<String> results = rmiGateway.searchQuery(query, 1);
+                results = rmiGateway.searchQuery(query, 1);
                 printList(results);
                 while (pagedResults(results)) {
                     System.out.println("Enter page number (or 0 to exit):");
@@ -156,9 +173,15 @@ public class RMIClient implements Serializable {
         return true;
     }
 
+    /**
+     * Checks if the results are paged.
+     *
+     * @param results the list of results
+     * @return true if the results are paged, false otherwise
+     */
     private boolean pagedResults(List<String> results) {
         return !(results.size() == 1
-                && ("No barrels available.".equals(results.get(0)) || "URL Indexed.".equals(results.get(0))));
+                && ("No barrels available.".equals(results.getFirst()) || "URL Indexed.".equals(results.getFirst())));
     }
 
     /**
@@ -222,6 +245,12 @@ public class RMIClient implements Serializable {
         return Integer.parseInt(input);
     }
 
+    /**
+     * Check if the given string is numeric.
+     *
+     * @param str the string to check
+     * @return true if the string is numeric, false otherwise
+     */
     private boolean isNumeric(String str) {
         try {
             Integer.parseInt(str);

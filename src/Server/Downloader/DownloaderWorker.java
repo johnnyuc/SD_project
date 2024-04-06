@@ -1,24 +1,33 @@
 package Server.Downloader;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
-
+// Package imports
 import Server.URLQueue.URLQueue;
 import Server.URLQueue.URLQueueInterface;
 import ReliableMulticast.ReliableMulticast;
 import ReliableMulticast.Objects.CrawlData;
+
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
+import java.net.*;
+import java.rmi.Naming;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+import java.nio.charset.StandardCharsets;
+
+// Jsoup imports
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import Logger.LogUtil;
+
+// Exception imports
+import java.io.IOException;
+import java.rmi.NotBoundException;
+import java.io.UnsupportedEncodingException;
 
 /**
  * The DownloaderWorker class represents a worker that visits URLs and performs
@@ -26,14 +35,32 @@ import Logger.LogUtil;
  */
 public class DownloaderWorker implements Runnable {
     // Worker's ID, Server.URLQueue IP, and Server.URLQueue object
+    /**
+     * The ID of the worker.
+     */
     private final int id;
+    /**
+     * The IP address of the Server.URLQueue.
+     */
     private final String queueIP;
+    /**
+     * The Server.URLQueue object.
+     */
     private URLQueueInterface urlQueue;
 
     // Minimum and maximum wait time for the downloader
+    /**
+     * The minimum wait time for the downloader.
+     */
     private final int minWaitTime;
+    /**
+     * The maximum wait time for the downloader.
+     */
     private final int maxWaitTime;
 
+    /**
+     * The ReliableMulticast object for sending and receiving data.
+     */
     private final ReliableMulticast reliableMulticast;
 
     /**
@@ -169,6 +196,13 @@ public class DownloaderWorker implements Runnable {
         }
     }
 
+    /**
+     * Encodes the URL string to ensure that it is properly formatted.
+     *
+     * @param href the URL string to encode
+     * @return the encoded URL string
+     * @throws UnsupportedEncodingException if the encoding is not supported
+     */
     private String getString(String href) throws UnsupportedEncodingException {
         int hashIndex = href.indexOf('#');
         if (hashIndex > -1) {

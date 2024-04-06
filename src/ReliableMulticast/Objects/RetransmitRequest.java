@@ -1,11 +1,12 @@
 package ReliableMulticast.Objects;
 
+// General imports
 import java.io.Serializable;
 
 /**
  * Represents a retransmit request for a missing container in a reliable
  * multicast protocol.
- * 
+ * <p>
  * This class is used to request the retransmission of a specific container
  * identified by its dataID.
  * The missingContainer field indicates the index of the missing container in

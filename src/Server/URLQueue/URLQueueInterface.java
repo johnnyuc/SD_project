@@ -1,7 +1,10 @@
 package Server.URLQueue;
 
+// General imports
 import java.net.URL;
 import java.rmi.Remote;
+
+// Exception imports
 import java.rmi.RemoteException;
 
 /**
@@ -35,5 +38,5 @@ public interface URLQueueInterface extends Remote {
      * @param url The URL to enqueue with priority.
      * @throws RemoteException if a remote communication error occurs.
      */
-    public void priorityEnqueueURL(URL url) throws RemoteException;
+    void priorityEnqueueURL(URL url) throws RemoteException;
 }

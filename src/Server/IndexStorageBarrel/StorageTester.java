@@ -1,21 +1,34 @@
 package Server.IndexStorageBarrel;
 
-// Import self-defined packages
+// Package imports
 import Logger.LogUtil;
 import ReliableMulticast.Objects.CrawlData;
 import ReliableMulticast.ReliableMulticast;
 
-// Import general Java packages
+// General imports
 import java.net.URI;
 import java.util.List;
 import java.util.ArrayList;
 
-// Import Java packages for expeceptions
+// Exception imports
 import java.net.MalformedURLException;
 
+/**
+ * The StorageTester class is used to send dummy data to the barrel.
+ */
 public class StorageTester {
+    /**
+     * The ReliableMulticast object used to send data to the barrel.
+     */
     private static ReliableMulticast multicast;
 
+    /**
+     * The main method of the StorageTester class.
+     * It sends dummy data to the barrel.
+     *
+     * @param args The command line arguments.
+     * @throws MalformedURLException if the URL is malformed
+     */
     public static void main(String[] args) throws MalformedURLException {
         if (args.length != 6) {
             System.out.println("-i <interfaceAddress> -mcast <multicastGroup> -mport <port>");
@@ -95,6 +108,11 @@ public class StorageTester {
         sendCrawlData(data6);
     }
 
+    /**
+     * Sends the crawling data to the barrel.
+     *
+     * @param crawlData the crawling data to send
+     */
     public static void sendCrawlData(CrawlData crawlData) {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, StorageTester.class,
                 "Sending data to barrel: " + crawlData.getUrl());

@@ -1,15 +1,21 @@
 package Server.IndexStorageBarrel.Operations;
 
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
+// Package imports
+import Server.IndexStorageBarrel.IndexStorageBarrel;
+import Server.Controller.RMIGateway;
+import Server.Controller.RMIGatewayInterface;
+
+// Logging imports
 import Logger.LogUtil;
 
-import Server.Controller.RMIGateway.RMIGateway;
-import Server.Controller.RMIGateway.RMIGatewayInterface;
-import Server.IndexStorageBarrel.IndexStorageBarrel;
+// General imports
+import java.rmi.Naming;
+
+// Exception imports
+import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
+import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 
 /**
  * The BarrelPinger class is responsible for periodically pinging the RMIGateway
@@ -17,9 +23,21 @@ import Server.IndexStorageBarrel.IndexStorageBarrel;
  * IndexStorageBarrel is still active and available.
  */
 public class BarrelPinger implements Runnable {
+    /**
+     * The interval at which the RMIGateway is pinged.
+     */
     public static int PING_INTERVAL = 5000;
+    /**
+     * A boolean value indicating whether the BarrelPinger is running.
+     */
     private volatile boolean running = true;
+    /**
+     * The RMIGatewayInterface object used to ping the RMIGateway.
+     */
     private RMIGatewayInterface rmiGateway;
+    /**
+     * The IndexStorageBarrel object to ping the RMIGateway for.
+     */
     private final IndexStorageBarrel barrel;
 
     /**
@@ -73,6 +91,12 @@ public class BarrelPinger implements Runnable {
         rmiGateway.receivePing(barrel.getBarrelID(), barrel.getBarrelAddress());
     }
 
+    /**
+     * Gets the number of active barrels from the RMIGateway.
+     *
+     * @return the number of active barrels
+     * @throws RemoteException if a remote exception occurs
+     */
     public int getActiveBarrels() throws RemoteException {
         return rmiGateway.getActiveBarrels();
     }

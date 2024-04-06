@@ -1,10 +1,10 @@
 package Logger;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+// General imports
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * The LogUtil class provides utility methods for logging error and
@@ -14,17 +14,44 @@ import java.io.StringWriter;
 public class LogUtil {
 
     // ANSI escape codes
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_RESET = "\u001B[0m";
-    public static final String ANSI_BLACK = "\u001B[30m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_RED = "\u001B[31m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_GREEN = "\u001B[32m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_YELLOW = "\u001B[33m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_BLUE = "\u001B[34m";
-    public static final String ANSI_PURPLE = "\u001B[35m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_CYAN = "\u001B[36m";
+    /**
+     * ANSI escape codes for applying colors to log messages.
+     */
     public static final String ANSI_WHITE = "\u001B[37m";
 
+    /**
+     * The logging class provides a method to get a logger for a specified class.
+     */
     public static class logging {
+        /**
+         * Gets a logger for the specified class.
+         * @param clazz The class for which to get a logger.
+         * @return The logger for the specified class.
+         */
         public static Logger getLogger(Class<?> clazz) {
             return LogManager.getLogger(clazz);
         }
@@ -53,12 +80,10 @@ public class LogUtil {
         throwable.printStackTrace(pw);
         String stackTrace = sw.toString();
 
-        logger.error(
-                color + "Error in method: " + element.getMethodName()
-                        + " at line: " + element.getLineNumber()
-                        + " in file: " + element.getFileName()
-                        + ". Error message: " + throwable.getMessage()
-                        + ". Stack trace: " + stackTrace + ANSI_RESET);
+        if (logger != null) {
+            logger.error("{}Error in method: {} at line: {} in file: {}. Error message: {}. Stack trace: {}"
+                    + ANSI_RESET, color, element.getMethodName(), element.getLineNumber(), element.getFileName(), throwable.getMessage(), stackTrace);
+        }
     }
 
     /**
@@ -71,7 +96,7 @@ public class LogUtil {
     public static void logInfo(String color, Class<?> clazz, String message) {
         Logger logger = LogUtil.logging.getLogger(clazz);
         if (logger != null) {
-            logger.info(color + message + ANSI_RESET);
+            logger.info("{}{}" + ANSI_RESET, color, message);
         } else {
             // Handle the case where logger is null
             System.out.println("Error getting logger. Message: " + message);

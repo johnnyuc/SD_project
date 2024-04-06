@@ -1,17 +1,15 @@
-// TODO: REMOVE ALL THE TODO COMMENTS
-// TODO: FIX LOGS NOT APPEARING SOMETIMES WHEN SHUTTING DOWN
-
 package ReliableMulticast;
 
-// Multicast imports
+// Package imports
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Receiver.Receiver;
 import ReliableMulticast.Receiver.ReceiverWorker;
 
+// Logging imports
+import Logger.LogUtil;
+
 // General imports
 import java.util.UUID;
-
-import Logger.LogUtil;
 
 // Error imports
 import java.io.IOException;
@@ -25,10 +23,14 @@ import java.io.IOException;
 public class ReliableMulticast {
 
     // Variables
+    /**
+     * The sender used to send data over the multicast group.
+     */
     private Sender sender;
+    /**
+     * The receiver used to receive data from the multicast group.
+     */
     private Receiver receiver;
-
-    private final UUID multicastID;
 
     /**
      * Constructs a ReliableMulticast object with the specified parameters.
@@ -41,7 +43,7 @@ public class ReliableMulticast {
      */
     public ReliableMulticast(String interfaceAddress, String multicastGroup, int port,
             Class<?> senderClass, Class<?>[] ignoredClasses) {
-        this.multicastID = UUID.randomUUID();
+        UUID multicastID = UUID.randomUUID();
         try {
             // Creates sender and receiver
             this.sender = new Sender(multicastGroup, port, senderClass, multicastID);

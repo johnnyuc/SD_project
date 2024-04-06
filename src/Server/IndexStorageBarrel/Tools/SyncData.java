@@ -1,14 +1,14 @@
-
 package Server.IndexStorageBarrel.Tools;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
+// General imports
 import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.io.Serializable;
 
 /**
- * Represents the synchronization data for a table.
- * This class is used to store the results of a table synchronization operation.
+ * The SyncData class represents the data to synchronize between IndexStorageBarrel and ReliableMulticast.
+ * @param tableResults the results of the synchronization
  */
 public record SyncData(HashMap<String, List<Map<String, Object>>> tableResults) implements Serializable {
 }

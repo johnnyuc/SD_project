@@ -1,23 +1,24 @@
 package ReliableMulticast.Receiver;
 
-// Multicast imports
+// Package imports
 import ReliableMulticast.Sender.Sender;
 import ReliableMulticast.Objects.Container;
 import ReliableMulticast.Objects.ContainersTimestamp;
 import ReliableMulticast.Objects.RetransmitRequest;
 
+// Logging imports
+import Logger.LogUtil;
+
 // General imports
-import java.util.HashMap;
 import java.util.UUID;
+import java.util.HashMap;
 import java.util.concurrent.*;
 import java.io.ObjectInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 
-import Logger.LogUtil;
-
-// Error imports
+// Exception imports
 import java.io.IOException;
 
 /**
@@ -29,24 +30,48 @@ import java.io.IOException;
 public class ReceiverWorker implements Runnable {
     // Multicast main objects
     // Sender
+    /**
+     * The Sender object used for sending retransmit requests.
+     */
     private final Sender sender;
     // ReceiverListener
+    /**
+     * The ReceiverListener object used for receiving data.
+     */
     private final ReceiverListener receiverListener;
 
     // Map to store the received containers
+    /**
+     * The map used to store the received containers.
+     */
     private final HashMap<String, ContainersTimestamp> containersReceived = new HashMap<>();
 
     // Queue for clean final data
+    /**
+     * The BlockingQueue used for storing clean final data.
+     */
     private final BlockingQueue<Object> workerQueue;
 
     // Running flag
+    /**
+     * The flag used to stop the ReceiverWorker thread.
+     */
     private volatile boolean running = true;
 
+    /**
+     * An array of classes to be ignored when processing containers.
+     */
     private final Class<?>[] ignoredClasses;
 
+    /**
+     * The UUID of the multicast group.
+     */
     private final UUID multicastID;
 
     // Stopping the thread
+    /**
+     * The stopping pill used to stop the ReceiverWorker thread.
+     */
     public static final Object STOP_PILL = new Object();
 
     /**
@@ -111,12 +136,12 @@ public class ReceiverWorker implements Runnable {
         // Add the container to the map
         addContainerToMap(container);
 
-        if (container.getDataType() == RetransmitRequest.class && reconstructReady(container.getDataID()))
-            sender.sendRetransmit((RetransmitRequest) reconstructData(container.getDataID()));
+        if (container.dataType() == RetransmitRequest.class && reconstructReady(container.dataID()))
+            sender.sendRetransmit((RetransmitRequest) reconstructData(container.dataID()));
         else if (previousContainerMissing(container))
-            sender.requestRetransmit(container.getPacketNumber() - 1, container.getDataID());
-        else if (reconstructReady(container.getDataID()))
-            workerQueue.add(reconstructData(container.getDataID()));
+            sender.requestRetransmit(container.packetNumber() - 1, container.dataID());
+        else if (reconstructReady(container.dataID()))
+            workerQueue.add(reconstructData(container.dataID()));
     }
 
     /**
@@ -127,11 +152,11 @@ public class ReceiverWorker implements Runnable {
      * @return true if the container should be ignored, false otherwise.
      */
     private boolean ignoreContainer(Container container) {
-        if (multicastID.equals(container.getMulticastID()))
+        if (multicastID.equals(container.multicastID()))
             return true;
 
         for (Class<?> ignoredClass : ignoredClasses)
-            if (ignoredClass == container.getSenderClass())
+            if (ignoredClass == container.senderClass())
                 return true;
 
         return false;
@@ -160,14 +185,14 @@ public class ReceiverWorker implements Runnable {
      */
     private void addContainerToMap(Container container) {
         // If the dataID of the container is new
-        if (!containersReceived.containsKey(container.getDataID()))
+        if (!containersReceived.containsKey(container.dataID()))
             // Initialize the container array with the size determined by dataID
-            containersReceived.put(container.getDataID(),
-                    new ContainersTimestamp(new Container[container.getTotalPackets()], System.currentTimeMillis()));
+            containersReceived.put(container.dataID(),
+                    new ContainersTimestamp(new Container[container.totalPackets()], System.currentTimeMillis()));
 
-        ContainersTimestamp containersTimestamp = containersReceived.get(container.getDataID());
+        ContainersTimestamp containersTimestamp = containersReceived.get(container.dataID());
         // Add the container to the container array in the map at the specified index
-        containersTimestamp.getContainers()[container.getPacketNumber()] = container;
+        containersTimestamp.getContainers()[container.packetNumber()] = container;
         // Update the timestamp
         containersTimestamp.setTimestamp(System.currentTimeMillis());
     }
@@ -179,10 +204,9 @@ public class ReceiverWorker implements Runnable {
      * @return true if the previous container is missing, false otherwise.
      */
     private boolean previousContainerMissing(Container container) {
-        Container[] containers = containersReceived.get(container.getDataID()).getContainers();
-        // If the container is not the first one and the previous container is not
-        // missing
-        return container.getPacketNumber() != 0 && containers[container.getPacketNumber() - 1] == null;
+        Container[] containers = containersReceived.get(container.dataID()).getContainers();
+        // If the container is not the first one and the previous container is not missing
+        return container.packetNumber() != 0 && containers[container.packetNumber() - 1] == null;
     }
 
     /**
@@ -206,7 +230,7 @@ public class ReceiverWorker implements Runnable {
         // Iterate the containers array
         for (Container container : containers)
             // Write the data of the container to the buffer
-            dataBuffer.write(container.getData());
+            dataBuffer.write(container.data());
 
         containersReceived.remove(dataID);
         // Get the object
@@ -267,15 +291,6 @@ public class ReceiverWorker implements Runnable {
      */
     public HashMap<String, ContainersTimestamp> getContainersReceived() {
         return containersReceived;
-    }
-
-    /**
-     * Returns the size of the buffer.
-     *
-     * @return The size of the buffer.
-     */
-    public int getBufferSize() {
-        return containersReceived.size();
     }
 
     /**

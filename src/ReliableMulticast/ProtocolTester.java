@@ -1,6 +1,6 @@
 package ReliableMulticast;
 
-// Multicast imports
+// Package imports
 import ReliableMulticast.Objects.*;
 
 // General imports
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
 
-// Error imports
+// Exception imports
 import java.net.MalformedURLException;
 
 /**

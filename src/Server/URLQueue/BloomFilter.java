@@ -1,5 +1,6 @@
 package Server.URLQueue;
 
+// General imports
 import java.util.BitSet;
 
 /**
@@ -9,12 +10,21 @@ import java.util.BitSet;
  */
 public class BloomFilter {
     // Seeds for the hash functions
+    /**
+     * The seeds used for the hash functions.
+     */
     private static final int[] seeds = new int[] { 5, 7, 11, 13, 31, 37, 61 };
 
     // BitSet to store the Bloom filter's data
+    /**
+     * The BitSet used to store the Bloom filter's data.
+     */
     private final BitSet bits;
 
     // Array of hash functions
+    /**
+     * The array of hash functions used by the Bloom filter.
+     */
     private final SimpleHash[] func = new SimpleHash[seeds.length];
 
     /**
@@ -61,7 +71,13 @@ public class BloomFilter {
      */
     public static class SimpleHash {
         // Capacity and seed for the hash function
+        /**
+         * The capacity of the hash function.
+         */
         private final int cap;
+        /**
+         * The seed of the hash function.
+         */
         private final int seed;
 
         /**

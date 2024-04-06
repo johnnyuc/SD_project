@@ -1,17 +1,31 @@
-package Server.Controller.RMIGateway;
+package Server.Controller;
 
-import Logger.LogUtil;
+// Package imports
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
+
+// Logging imports
+import Logger.LogUtil;
 
 /**
  * Represents a BarrelTimestamp object that holds information about a remote
  * barrel and its timestamp.
  */
 public class BarrelTimestamp {
+    /**
+     * The remote barrel object associated with this BarrelTimestamp.
+     */
     private final IndexStorageBarrelInterface remoteBarrel;
+    /**
+     * The timestamp value of this BarrelTimestamp.
+     */
     private long timestamp;
+    /**
+     * The average response time of this BarrelTimestamp.
+     */
     private long avgResponseTime = 0;
-
+    /**
+     * The barrel ID of this BarrelTimestamp.
+     */
     private final int barrelID;
 
     /**

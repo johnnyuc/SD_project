@@ -1,10 +1,13 @@
-package Server.Controller.RMIGateway;
+package Server.Controller;
 
-import java.net.MalformedURLException;
-import java.rmi.NotBoundException;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+// General imports
 import java.util.List;
+import java.rmi.Remote;
+
+// Exception imports
+import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
+import java.net.MalformedURLException;
 
 /**
  * The RMIGatewayInterface interface defines the methods that can be invoked
@@ -22,7 +25,7 @@ public interface RMIGatewayInterface extends Remote {
      * @throws RemoteException       if a remote communication error occurs
      * @throws MalformedURLException if the URL is malformed
      */
-    public List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException;
+    List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException;
 
     /**
      * Retrieves a list of websites that are linking to the target URL.
@@ -32,7 +35,7 @@ public interface RMIGatewayInterface extends Remote {
      * @return a list of websites linking to the target URL
      * @throws RemoteException if a remote communication error occurs
      */
-    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
+    List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
 
     /**
      * Receives a ping from a barrel with the specified ID and IP address.
@@ -43,7 +46,7 @@ public interface RMIGatewayInterface extends Remote {
      * @throws NotBoundException     if the barrel is not bound
      * @throws MalformedURLException if the URL is malformed
      */
-    public void receivePing(int barrelID, String barrelIP)
+    void receivePing(int barrelID, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException;
 
     /**
@@ -52,7 +55,7 @@ public interface RMIGatewayInterface extends Remote {
      * @param barrelID the ID of the barrel to be removed
      * @throws RemoteException if a remote communication error occurs
      */
-    public void removeBarrel(int barrelID) throws RemoteException;
+    void removeBarrel(int barrelID) throws RemoteException;
 
     /**
      * Retrieves a list of the most searched queries.
@@ -60,7 +63,7 @@ public interface RMIGatewayInterface extends Remote {
      * @return a list of the most searched queries
      * @throws RemoteException if a remote communication error occurs
      */
-    public List<String> mostSearched() throws RemoteException;
+    List<String> mostSearched() throws RemoteException;
 
     /**
      * Retrieves the status of the barrels.
@@ -68,7 +71,13 @@ public interface RMIGatewayInterface extends Remote {
      * @return the status of the barrels
      * @throws RemoteException if a remote communication error occurs
      */
-    public String barrelsStatus() throws RemoteException;
+    String barrelsStatus() throws RemoteException;
 
-    public int getActiveBarrels() throws RemoteException;
+    /**
+     * Retrieves the number of active barrels.
+     *
+     * @return the number of active barrels
+     * @throws RemoteException if a remote communication error occurs
+     */
+    int getActiveBarrels() throws RemoteException;
 }

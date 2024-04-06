@@ -1,9 +1,11 @@
 package Server.IndexStorageBarrel.Operations;
 
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
 import java.sql.*;
 import java.util.*;
-
-import Logger.LogUtil;
 
 /**
  * The BarrelSetup class provides methods for setting up and maintaining the
@@ -12,7 +14,6 @@ import Logger.LogUtil;
  * them if necessary, as well as
  * methods for creating the necessary tables in the database.
  */
-
 public class BarrelSetup {
 
     /**

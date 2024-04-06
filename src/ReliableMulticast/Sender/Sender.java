@@ -33,27 +33,60 @@ import Logger.LogUtil;
  */
 public class Sender implements Runnable {
     // ! Macros for the protocol
+    /**
+     * The maximum size of a packet in bytes.
+     */
     private static final int MAX_PACKET_SIZE = 1024;
+    /**
+     * The maximum number of containers that can be stored in the retransmission
+     */
     private static final int MAX_CONTAINERS = 2048; // MAX 2MBytes of data/ram
 
     // Running flag
+    /**
+     * A flag indicating whether the sender is running.
+     */
     private volatile boolean running = true;
 
     // Stopping the thread
+    /**
+     * A stopping pill object to stop the sender thread.
+     */
     public static final Object STOP_PILL = new Object();
 
     // Socket and multicast group
+    /**
+     * The multicast socket.
+     */
     private final MulticastSocket socket;
+    /**
+     * The multicast group address.
+     */
     private final InetAddress multicastGroup;
 
     // Sender info
+    /**
+     * The port number.
+     */
     private final int port;
+    /**
+     * The class of the sender.
+     */
     private final Class<?> senderClass;
 
     // Buffers
+    /**
+     * A buffer of objects to be sent.
+     */
     private final BlockingDeque<Object> sendBuffer = new LinkedBlockingDeque<>();
+    /**
+     * A map of data IDs to arrays of containers for retransmission.
+     */
     private final HashMap<String, Container[]> retransmissionBuffer = new CircularHashMap<>(MAX_CONTAINERS);
 
+    /**
+     * The multicast ID of the sender.
+     */
     private final UUID multicastID;
 
     /**
@@ -61,7 +94,6 @@ public class Sender implements Runnable {
      *
      * @param multicastGroup the multicast group address
      * @param port           the port number
-     * @param senderIP       the IP address of the sender
      * @param senderClass    the class of the sender
      * @param multicastID    the multicast ID
      * @throws IOException if an I/O error occurs
@@ -105,7 +137,7 @@ public class Sender implements Runnable {
                 running = false;
             // Check if the object is a container
             else if (object instanceof Container)
-                sendContainer((Container) object, -1);
+                sendContainer((Container) object);
             else {
                 // Serialize and compress the object
                 byte[] objectData = serializeObject(object);
@@ -177,7 +209,7 @@ public class Sender implements Runnable {
             // continue;
             // }
             // ----------------------------------------------------------------------------------------------------
-            sendContainer(container, i);
+            sendContainer(container);
         }
     }
 
@@ -185,9 +217,8 @@ public class Sender implements Runnable {
      * Sends a container over a multicast network.
      *
      * @param container The container to be sent.
-     * @param i         The index of the container.
      */
-    private void sendContainer(Container container, int i) {
+    private void sendContainer(Container container) {
         try {
             byte[] serializedContainer = serializeObject(container);
             DatagramPacket datagram = new DatagramPacket(serializedContainer, serializedContainer.length,
@@ -283,8 +314,16 @@ public class Sender implements Runnable {
      * @param <V> the type of mapped values
      */
     public static class CircularHashMap<K, V> extends LinkedHashMap<K, V> {
+        /**
+         * The maximum size of the map.
+         */
         private final int maxSize;
 
+        /**
+         * Constructs a new CircularHashMap object with the specified maximum size.
+         *
+         * @param maxSize the maximum size of the map
+         */
         public CircularHashMap(int maxSize) {
             this.maxSize = maxSize;
         }
@@ -295,10 +334,18 @@ public class Sender implements Runnable {
         }
     }
 
+    /**
+     * Gets the send buffer.
+     *
+     * @return the send buffer
+     */
     public BlockingDeque<Object> getSendBuffer() {
         return sendBuffer;
     }
 
+    /**
+     * Stops the sender thread.
+     */
     public void stop() {
         sendBuffer.add(STOP_PILL);
     }

@@ -1,24 +1,28 @@
 package Server.IndexStorageBarrel;
 
+// Package imports
 import ReliableMulticast.ReliableMulticast;
-import ReliableMulticast.Objects.CrawlData;
-import Server.Controller.RMIGateway.RMIGateway;
 import Server.Downloader.DownloaderWorker;
-import Server.IndexStorageBarrel.Objects.SearchData;
 import Server.IndexStorageBarrel.Operations.*;
+import Server.Controller.RMIGateway;
+import Server.IndexStorageBarrel.Objects.SearchData;
 
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
+import java.util.List;
+import java.util.ArrayList;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.rmi.registry.Registry;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.CountDownLatch;
 
-import Logger.LogUtil;
+// Exception imports
+import java.sql.SQLException;
+import java.rmi.RemoteException;
 
 /**
  * The IndexStorageBarrel class represents a storage barrel for indexing and
@@ -26,44 +30,100 @@ import Logger.LogUtil;
  * It implements the IndexStorageBarrelInterface interface and extends the
  * UnicastRemoteObject class
  * to enable remote method invocation (RMI) functionality.
- * 
+ * <p>
  * The IndexStorageBarrel class provides methods for inserting crawl data,
  * retrieving crawl data,
  * searching for data based on a query, and performing other operations related
  * to indexing and storage.
- * 
+ * <p>
  * This class also includes a main method for starting the IndexStorageBarrel as
  * a standalone application.
  */
 public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStorageBarrelInterface {
+
+    /**
+     * The connection to the SQLite database.
+     */
     private Connection conn;
+    /**
+     * The BarrelPinger object associated with this IndexStorageBarrel.
+     */
     private BarrelPinger barrelPinger;
+    /**
+     * The BarrelPopulate object associated with this IndexStorageBarrel.
+     */
     private BarrelPopulate barrelPopulate;
+    /**
+     * The BarrelReceiver object associated with this IndexStorageBarrel.
+     */
     private BarrelReceiver barrelReceiver;
+    /**
+     * The BarrelRetriever object associated with this IndexStorageBarrel.
+     */
     private BarrelRetriever barrelRetriever;
+    /**
+     * The BarrelSync object associated with this IndexStorageBarrel.
+     */
     private BarrelSync barrelSync;
+    /**
+     * The path to the SQLite database.
+     */
     private String dbPath;
-
+    /**
+     * The ID of the barrel.
+     */
     private int barrelID;
-
+    /**
+     * The multicast group address for the downloader.
+     */
     private String downloaderMcastGroupAddress;
+    /**
+     * The port number for the downloader.
+     */
     private int downloaderMcastPort;
-
+    /**
+     * The multicast group address for the sync.
+     */
     private String syncMcastGroupAddress;
+    /**
+     * The port number for the sync.
+     */
     private int syncMcastPort;
-
+    /**
+     * The multicast address.
+     */
     private String mcastAddress;
+    /**
+     * The address of the barrel.
+     */
     private String barrelAddress;
-
+    /**
+     * The gateway address.
+     */
     private String gatewayAddress;
-
+    /**
+     * Whether to sort the search results by TF-IDF score.
+     */
     private boolean tfIdfSort = false;
-
+    /**
+     * The latch associated with this IndexStorageBarrel.
+     */
     private final CountDownLatch latch;
-
+    /**
+     * The starting port for the RMI server.
+     */
     public static final int STARTING_PORT = 6000;
+    /**
+     * The remote reference name for the IndexStorageBarrel.
+     */
     public static final String REMOTE_REFERENCE_NAME = "indexstoragebarrel";
 
+    /**
+     * The main method for starting the IndexStorageBarrel as a standalone
+     * application.
+     *
+     * @param args the command-line arguments passed to the program
+     */
     public static void main(String[] args) {
         try {
             new IndexStorageBarrel(args);
@@ -179,29 +239,11 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     }
 
     /**
-     * Inserts the given crawl data into the index storage barrel.
-     *
-     * @param crawlData the crawl data to be inserted
-     * @throws SQLException if an error occurs while inserting the data
-     */
-    public void insertData(CrawlData crawlData) throws SQLException {
-        barrelPopulate.insertCrawlData(crawlData);
-    }
-
-    /**
-     * Retrieves the list of CrawlData objects from the barrel.
-     *
-     * @return The list of CrawlData objects retrieved from the barrel.
-     */
-    public List<CrawlData> retrieveObject() {
-        return barrelRetriever.retrieveObject();
-    }
-
-    /**
      * Retrieves and ranks search data based on the given query and page number.
      *
      * @param query      the search query
      * @param pageNumber the page number of the search results
+     * @param tfIdfSort  whether to sort the search results by TF-IDF score
      * @return a list of SearchData objects representing the ranked search results
      */
     private List<SearchData> retrieveAndRankData(String query, int pageNumber, boolean tfIdfSort) {
@@ -326,17 +368,6 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
     }
 
     /**
-     * Represents a synchronization object for the barrel storage.
-     * This class is responsible for managing the synchronization of the barrel
-     * storage operations.
-     * 
-     * @return the BarrelSync object
-     */
-    public BarrelSync getBarrelSync() {
-        return barrelSync;
-    }
-
-    /**
      * Returns the address of the barrel.
      *
      * @return the address of the barrel
@@ -354,6 +385,11 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
         return gatewayAddress;
     }
 
+    /**
+     * Returns the latch associated with this IndexStorageBarrel.
+     *
+     * @return the latch associated with this IndexStorageBarrel
+     */
     public CountDownLatch getLatch() {
         return latch;
     }

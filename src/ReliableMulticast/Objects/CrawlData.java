@@ -1,6 +1,6 @@
 package ReliableMulticast.Objects;
 
-// Imports
+// General imports
 import java.net.URL;
 import java.util.List;
 import java.io.Serializable;
@@ -10,10 +10,25 @@ import java.io.Serializable;
  */
 public class CrawlData implements Serializable {
     // Fields
+    /**
+     * The URL of the web page.
+     */
     public URL url;
+    /**
+     * The title of the web page.
+     */
     public String title;
+    /**
+     * The description of the web page.
+     */
     public String description;
+    /**
+     * The list of tokens extracted from the web page.
+     */
     public List<String> tokens;
+    /**
+     * The list of URLs found in the web page.
+     */
     public List<URL> urlStrings;
 
     /**
@@ -63,30 +78,12 @@ public class CrawlData implements Serializable {
     }
 
     /**
-     * Sets the title of the web page.
-     * 
-     * @param title the title of the web page
-     */
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    /**
      * Returns the description of the web page.
      * 
      * @return the description of the web page
      */
     public String getDescription() {
         return description;
-    }
-
-    /**
-     * Sets the description of the web page.
-     * 
-     * @param description the description of the web page
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**
@@ -99,15 +96,6 @@ public class CrawlData implements Serializable {
     }
 
     /**
-     * Sets the list of tokens extracted from the web page.
-     * 
-     * @param tokens the list of tokens
-     */
-    public void setTokens(List<String> tokens) {
-        this.tokens = tokens;
-    }
-
-    /**
      * Returns the list of URLs found in the web page.
      * 
      * @return the list of URLs
@@ -116,12 +104,4 @@ public class CrawlData implements Serializable {
         return urlStrings;
     }
 
-    /**
-     * Sets the list of URLs found in the web page.
-     * 
-     * @param urlStrings the list of URLs
-     */
-    public void setUrlStrings(List<URL> urlStrings) {
-        this.urlStrings = urlStrings;
-    }
 }

@@ -1,14 +1,12 @@
 package Server.IndexStorageBarrel.Tools;
 
-import java.io.Serializable;
+// General imports
 import java.util.HashMap;
+import java.io.Serializable;
 
 /**
- * Represents a synchronization request.
- * 
- * This class is used to send a request for synchronization between the server
- * and the client.
- * It contains the last known IDs of the synchronized data.
+ * The SyncRequest class represents a request to synchronize data between
+ * @param lastIDs the last IDs of the data to synchronize
  */
 public record SyncRequest(HashMap<String, Integer> lastIDs) implements Serializable {
 }

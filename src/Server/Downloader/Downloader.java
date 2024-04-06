@@ -1,5 +1,6 @@
 package Server.Downloader;
 
+// Logging imports
 import Logger.LogUtil;
 
 /**
@@ -9,16 +10,26 @@ import Logger.LogUtil;
  */
 public class Downloader {
     // Number of downloader workers
+    /**
+     * The number of downloader workers to create.
+     */
     private int downloaderNum;
     // Server.URLQueue IP
+    /**
+     * The IP address of the queue server.
+     */
     private String queueIP;
-
-    // Default wait times
-    private int minWaitTime = 2200;
-    private int maxWaitTime = 5000;
-
+    /**
+     * The multicast interface address.
+     */
     private String mcastInterfaceAddress;
+    /**
+     * The multicast group address.
+     */
     private String mcastGroupAddress;
+    /**
+     * The multicast port number.
+     */
     private int mcastPort;
 
     /**
@@ -40,6 +51,9 @@ public class Downloader {
             return;
 
         // Create the downloader workers (multi-threading)
+        // Default wait times
+        int minWaitTime = 2200;
+        int maxWaitTime = 5000;
         for (int i = 0; i < downloaderNum; i++)
             new DownloaderWorker(i, queueIP, mcastInterfaceAddress, mcastGroupAddress,
                     mcastPort, minWaitTime, maxWaitTime);

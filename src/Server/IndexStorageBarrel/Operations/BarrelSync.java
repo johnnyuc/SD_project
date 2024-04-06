@@ -1,15 +1,19 @@
 package Server.IndexStorageBarrel.Operations;
 
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import Logger.LogUtil;
+// Package imports
 import ReliableMulticast.ReliableMulticast;
-import Server.IndexStorageBarrel.IndexStorageBarrel;
 import Server.IndexStorageBarrel.Tools.SyncData;
 import Server.IndexStorageBarrel.Tools.SyncRequest;
+import Server.IndexStorageBarrel.IndexStorageBarrel;
+
+// Logger imports
+import Logger.LogUtil;
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+
+// Exception imports
+import java.rmi.RemoteException;
 
 /**
  * The BarrelSync class implements the Runnable interface and is responsible for
@@ -17,8 +21,17 @@ import Server.IndexStorageBarrel.Tools.SyncRequest;
  * It starts a new thread to perform the synchronization process.
  */
 public class BarrelSync implements Runnable {
+    /**
+     * The IndexStorageBarrel object used to perform database operations.
+     */
     private final IndexStorageBarrel barrel;
+    /**
+     * The ReliableMulticast object used to send and receive data.
+     */
     private final ReliableMulticast reliableMulticast;
+    /**
+     * A boolean value indicating whether the synchronization process is running.
+     */
     private boolean running = true;
 
     /**
@@ -87,7 +100,7 @@ public class BarrelSync implements Runnable {
      */
     private SyncData getSyncData(SyncRequest syncRequest) {
         LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelSync.class, "Sending Sync data...");
-        List<Map<String, Object>> rows = null;
+        List<Map<String, Object>> rows;
         SyncData syncData = new SyncData(new HashMap<>());
         for (String table : syncRequest.lastIDs().keySet()) {
             int lastID = syncRequest.lastIDs().get(table);
@@ -117,6 +130,10 @@ public class BarrelSync implements Runnable {
 
     // Getters and Setters
 
+    /**
+     * Set the running state of the BarrelSync
+     * @param running the running state to set
+     */
     public void setRunning(boolean running) {
         this.running = running;
     }

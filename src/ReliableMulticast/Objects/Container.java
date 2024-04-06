@@ -1,44 +1,23 @@
 package ReliableMulticast.Objects;
 
-// Imports
-import java.io.Serializable;
+// General imports
 import java.util.UUID;
+import java.io.Serializable;
 
 /**
- * Represents a container object that holds data for reliable multicast
- * communication.
+ * The Container class represents a container for data to be sent over a network.
+ *
+ * @param data         the byte array representing the data
+ * @param dataType     the class type of the data
+ * @param senderClass  the class type of the sender
+ * @param dataID       the ID of the data
+ * @param multicastID  the ID of the multicast communication
+ * @param packetNumber the number of the packet
+ * @param totalPackets the total number of packets
  */
-public class Container implements Serializable {
-    // Fields
-    private final byte[] data;
-    private final Class<?> dataType;
-    private final Class<?> senderClass;
-    private final String dataID;
-    private final UUID multicastID;
-    private final int packetNumber;
-    private final int totalPackets;
 
-    /**
-     * Constructs a new Container object with the specified data and metadata.
-     *
-     * @param data         the byte array representing the data
-     * @param dataType     the class type of the data
-     * @param senderClass  the class type of the sender
-     * @param dataID       the ID of the data
-     * @param multicastID  the ID of the multicast communication
-     * @param packetNumber the number of the packet
-     * @param totalPackets the total number of packets
-     */
-    public Container(byte[] data, Class<?> dataType, Class<?> senderClass,
-            String dataID, UUID multicastID, int packetNumber, int totalPackets) {
-        this.data = data;
-        this.dataType = dataType;
-        this.senderClass = senderClass;
-        this.dataID = dataID;
-        this.multicastID = multicastID;
-        this.packetNumber = packetNumber;
-        this.totalPackets = totalPackets;
-    }
+public record Container(byte[] data, Class<?> dataType, Class<?> senderClass, String dataID, UUID multicastID,
+                        int packetNumber, int totalPackets) implements Serializable {
 
     // Getters and setters
 
@@ -47,7 +26,8 @@ public class Container implements Serializable {
      *
      * @return the data as a byte array
      */
-    public byte[] getData() {
+    @Override
+    public byte[] data() {
         return data;
     }
 
@@ -56,7 +36,8 @@ public class Container implements Serializable {
      *
      * @return the class type of the data
      */
-    public Class<?> getDataType() {
+    @Override
+    public Class<?> dataType() {
         return dataType;
     }
 
@@ -65,7 +46,8 @@ public class Container implements Serializable {
      *
      * @return the class type of the sender
      */
-    public Class<?> getSenderClass() {
+    @Override
+    public Class<?> senderClass() {
         return senderClass;
     }
 
@@ -74,7 +56,8 @@ public class Container implements Serializable {
      *
      * @return the ID of the data
      */
-    public String getDataID() {
+    @Override
+    public String dataID() {
         return dataID;
     }
 
@@ -83,7 +66,8 @@ public class Container implements Serializable {
      *
      * @return the ID of the multicast communication
      */
-    public UUID getMulticastID() {
+    @Override
+    public UUID multicastID() {
         return multicastID;
     }
 
@@ -92,7 +76,8 @@ public class Container implements Serializable {
      *
      * @return the number of the packet
      */
-    public int getPacketNumber() {
+    @Override
+    public int packetNumber() {
         return packetNumber;
     }
 
@@ -101,16 +86,9 @@ public class Container implements Serializable {
      *
      * @return the total number of packets
      */
-    public int getTotalPackets() {
+    @Override
+    public int totalPackets() {
         return totalPackets;
     }
 
-    /**
-     * Checks if the packet is the last packet.
-     *
-     * @return true if the packet is the last packet, false otherwise
-     */
-    public boolean isLastPacket() {
-        return packetNumber == totalPackets - 1;
-    }
 }

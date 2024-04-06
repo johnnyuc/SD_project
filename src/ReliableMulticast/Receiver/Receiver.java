@@ -1,15 +1,16 @@
 package ReliableMulticast.Receiver;
 
+// Package imports
 import ReliableMulticast.Sender.*;
 
 // General imports
 import java.net.*;
-import java.nio.channels.*;
 import java.util.UUID;
+import java.nio.channels.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-// Error imports
+// Exception imports
 import java.io.IOException;
 
 /**
@@ -19,21 +20,37 @@ import java.io.IOException;
  */
 public class Receiver {
     // Multicast main objects
-    // Sender
+    /**
+     * The Sender object used to send retransmission requests.
+     */
     private final Sender sender;
-    // ReceiverListener
+    /**
+     * The ReceiverListener used to listen for incoming data.
+     */
     private ReceiverListener receiverListener;
-    // ReceiverWorker
+    /**
+     * The ReceiverWorker used to process received data.
+     */
     private ReceiverWorker receiverWorker;
 
-    // Channel [DatagramChannel/Socket]
+    /**
+     * The DatagramChannel used to receive data.
+     */
     private final DatagramChannel channel;
 
+    /**
+     * The unique identifier for the multicast session.
+     */
     private final UUID multicastID;
 
-    // Queue for clean final data
+    /**
+     * The workerQueue used to store final received objects.
+     */
     private final BlockingQueue<Object> workerQueue;
 
+    /**
+     * An array of classes to ignore when processing received data.
+     */
     private final Class<?>[] ignoredClasses;
 
     /**

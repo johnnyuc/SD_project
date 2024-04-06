@@ -5,7 +5,13 @@ package ReliableMulticast.Objects;
  * timestamp value.
  */
 public class ContainersTimestamp {
-    private Container[] containers;
+    /**
+     * The array of containers.
+     */
+    private final Container[] containers;
+    /**
+     * The timestamp value.
+     */
     private long timestamp;
 
     /**
@@ -29,15 +35,6 @@ public class ContainersTimestamp {
      */
     public Container[] getContainers() {
         return containers;
-    }
-
-    /**
-     * Sets the array of containers.
-     *
-     * @param containers the array of containers
-     */
-    public void setContainers(Container[] containers) {
-        this.containers = containers;
     }
 
     /**

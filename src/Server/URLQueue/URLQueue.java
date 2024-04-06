@@ -1,32 +1,59 @@
 package Server.URLQueue;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.MalformedURLException;
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
 import java.net.URI;
 import java.net.URL;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
 import java.rmi.registry.Registry;
+import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import Logger.LogUtil;
+// Exception imports
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.net.MalformedURLException;
 
 /**
  * Represents a URL queue that stores URLs and provides methods to enqueue and
  * dequeue URLs.
  */
 public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
+    /**
+     * Remote reference name for the URL queue.
+     */
     public static final String REMOTE_REFERENCE_NAME = "urlqueue";
+    /**
+     * The RMI port number.
+     */
     public static final int RMI_PORT = 5998;
+    /**
+     * The UDP port number.
+     */
     public static final int UDP_PORT = 5997;
+    /**
+     * The size of the UDP buffer.
+     */
     public static final int UDP_BUFFER_SIZE = 1024;
 
+    /**
+     * A flag indicating whether the URL Queue server is running.
+     */
     private volatile boolean running = true;
+    /**
+     * The URL queue.
+     */
     private final BlockingDeque<URL> urlQueue;
+    /**
+     * The Bloom filter used to check if a URL is already in the queue.
+     */
     private final BloomFilter bloomFilter;
 
     /**
@@ -55,12 +82,10 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
     private URLQueue() throws RemoteException {
         super();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            running = false;
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> running = false));
 
         // Create new thread to run listenIndexURLRequest
-        new Thread(() -> listenIndexURLRequest(), "UDPListener").start();
+        new Thread(this::listenIndexURLRequest, "UDPListener").start();
 
         urlQueue = new LinkedBlockingDeque<>();
 
@@ -115,7 +140,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
                 // Transform the received data into a URL
                 String url = new String(request.getData(), 0, request.getLength());
                 LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Received priority URL: " + url);
-                priorityEnqueueURL(new URL(url));
+                priorityEnqueueURL(URI.create(url).toURL());
             } catch (IOException e) {
                 LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
             }

@@ -1,11 +1,13 @@
 package Server.IndexStorageBarrel.Operations;
 
-import java.sql.SQLException;
-
-import Logger.LogUtil;
-import ReliableMulticast.ReliableMulticast;
+// Package imports
 import ReliableMulticast.Objects.CrawlData;
+import ReliableMulticast.ReliableMulticast;
 import Server.IndexStorageBarrel.IndexStorageBarrel;
+
+// Logging imports
+import Logger.LogUtil;
+import java.sql.SQLException;
 
 /**
  * The BarrelReceiver class is responsible for receiving data from a
@@ -13,8 +15,17 @@ import Server.IndexStorageBarrel.IndexStorageBarrel;
  * and inserting it into an IndexStorageBarrel object.
  */
 public class BarrelReceiver implements Runnable {
+    /**
+     * The IndexStorageBarrel object to insert data into.
+     */
     private final IndexStorageBarrel barrel;
+    /**
+     * The ReliableMulticast object to receive data.
+     */
     private final ReliableMulticast reliableMulticast;
+    /**
+     * A boolean value indicating whether the BarrelReceiver is running.
+     */
     private boolean running = true;
 
     /**

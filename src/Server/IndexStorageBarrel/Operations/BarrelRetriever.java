@@ -1,21 +1,24 @@
 package Server.IndexStorageBarrel.Operations;
 
-import ReliableMulticast.Objects.CrawlData;
+// Package imports
 import Server.IndexStorageBarrel.Objects.SearchData;
 
-import java.net.URI;
-import java.net.URL;
+// Logging imports
+import Logger.LogUtil;
+
+// General imports
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import Logger.LogUtil;
 
 /**
  * The BarrelRetriever class is responsible for retrieving data from the
  * database related to website crawling and indexing.
  */
 public class BarrelRetriever {
+    /**
+     * The database connection used to retrieve data.
+     */
     private final Connection conn;
 
     /**
@@ -25,44 +28,6 @@ public class BarrelRetriever {
      */
     public BarrelRetriever(Connection conn) {
         this.conn = conn;
-    }
-
-    /**
-     * Retrieves a list of crawl data objects from the database.
-     *
-     * @return a list of crawl data objects
-     */
-    public List<CrawlData> retrieveObject() {
-        List<CrawlData> crawlDataList = new ArrayList<>();
-        String sql = "SELECT w.url, w.title, w.description, k.keyword, u.url " +
-                "FROM websites w " +
-                "JOIN website_keywords wk ON w.id = wk.website_id " +
-                "JOIN keywords k ON wk.keyword_id = k.id " +
-                "JOIN website_urls wu ON w.id = wu.website_id " +
-                "JOIN urls u ON wu.url_id = u.id";
-
-        try (Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                String url = rs.getString("url");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                String keyword = rs.getString("keyword");
-                String urlString = rs.getString("url");
-
-                List<String> tokens = Arrays.asList(keyword.split("\\s+"));
-                List<URL> urls = new ArrayList<>();
-                urls.add(URI.create(urlString).toURL());
-
-                CrawlData crawlData = new CrawlData(URI.create(url).toURL(), title, description, tokens, urls);
-                crawlDataList.add(crawlData);
-            }
-        } catch (Exception e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
-        }
-
-        return crawlDataList;
     }
 
     /**
@@ -129,6 +94,7 @@ public class BarrelRetriever {
      *
      * @param query      the search query
      * @param pageNumber the page number
+     * @param tfIdfSort  whether to sort by tf-idf or ref count
      * @return a list of search data objects
      */
     public List<SearchData> retrieveAndRankData(String query, int pageNumber, boolean tfIdfSort) {
@@ -216,26 +182,6 @@ public class BarrelRetriever {
     }
 
     /**
-     * Retrieves the data from the specified table in the database.
-     *
-     * @param table the table name
-     * @return the ResultSet containing the data from the table
-     */
-    public ResultSet getTable(String table) {
-        String sql = "SELECT * FROM ?";
-        ResultSet rs = null;
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, table);
-            rs = pstmt.executeQuery();
-
-        } catch (SQLException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
-        }
-        return rs;
-    }
-
-    /**
      * Retrieves the rows from the weak table with a start ID greater than the
      * specified value.
      *
@@ -246,16 +192,7 @@ public class BarrelRetriever {
     public List<Map<String, Object>> getWeakTableWithStartID(String weakTable, int startID) {
         String sql = "SELECT * FROM " + weakTable +
                 " WHERE website_id > ?";
-        List<Map<String, Object>> rows = null;
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, startID);
-            ResultSet rs = pstmt.executeQuery();
-            rows = resultSetToRowList(weakTable, rs);
-            rs.close();
-        } catch (SQLException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
-        }
-        return rows;
+        return getMaps(startID, sql);
     }
 
     /**
@@ -269,11 +206,23 @@ public class BarrelRetriever {
     public List<Map<String, Object>> getTableWithStartID(String table, int startID) {
         String sql = "SELECT * FROM " + table +
                 " WHERE id > ?";
+        return getMaps(startID, sql);
+    }
+
+    /**
+     * Retrieves the rows from the strong table with a start ID greater than the
+     * specified value.
+     *
+     * @param startID     the start ID
+     * @param sql         the SQL query
+     * @return a list of rows from the strong table
+     */
+    private List<Map<String, Object>> getMaps(int startID, String sql) {
         List<Map<String, Object>> rows = null;
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, startID);
             ResultSet rs = pstmt.executeQuery();
-            rows = resultSetToRowList(table, rs);
+            rows = resultSetToRowList(rs);
             rs.close();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
@@ -284,11 +233,10 @@ public class BarrelRetriever {
     /**
      * Converts the ResultSet to a list of rows.
      *
-     * @param table the table name
      * @param rs    the ResultSet
      * @return a list of rows
      */
-    private List<Map<String, Object>> resultSetToRowList(String table, ResultSet rs) {
+    private List<Map<String, Object>> resultSetToRowList(ResultSet rs) {
         // Create a list to hold the rows
         List<Map<String, Object>> rows = new ArrayList<>();
 
