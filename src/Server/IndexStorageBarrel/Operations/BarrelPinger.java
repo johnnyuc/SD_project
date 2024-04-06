@@ -56,6 +56,7 @@ public class BarrelPinger implements Runnable {
                 LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
             }
         }
+        stop();
     }
 
     /**
@@ -68,7 +69,7 @@ public class BarrelPinger implements Runnable {
      * @throws UnknownHostException  if the host is unknown
      */
     private void pingGateway() throws RemoteException, NotBoundException, MalformedURLException, UnknownHostException {
-        LogUtil.logInfo(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, "Pinging gateway.");
+        LogUtil.logInfo(Logger.LogUtil.ANSI_BLUE, BarrelPinger.class, "Pinging gateway.");
         rmiGateway.receivePing(barrel.getBarrelID(), barrel.getBarrelAddress());
     }
 

@@ -44,7 +44,7 @@ public class BarrelReceiver implements Runnable {
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelReceiver.class, e);
         }
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, BarrelReceiver.class, "Starting to receive data...");
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, BarrelReceiver.class, "Starting to receive data...");
         while (running) {
             try {
                 CrawlData crawlData = (CrawlData) reliableMulticast.getData();

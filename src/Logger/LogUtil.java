@@ -39,6 +39,12 @@ public class LogUtil {
      */
     public static void logError(String color, Class<?> clazz, Throwable throwable) {
         Logger logger = LogUtil.logging.getLogger(clazz);
+        if (logger != null) {
+            logger.info(throwable.getMessage());
+        } else {
+            // Handle the case where logger is null
+            System.out.println("Error getting logger. Error: " + throwable.getMessage());
+        }
         StackTraceElement element = throwable.getStackTrace()[0];
 
         // Capture the stack trace as a string
@@ -64,6 +70,11 @@ public class LogUtil {
      */
     public static void logInfo(String color, Class<?> clazz, String message) {
         Logger logger = LogUtil.logging.getLogger(clazz);
-        logger.info(color + message + ANSI_RESET);
+        if (logger != null) {
+            logger.info(color + message + ANSI_RESET);
+        } else {
+            // Handle the case where logger is null
+            System.out.println("Error getting logger. Message: " + message);
+        }
     }
 }

@@ -42,13 +42,13 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     public static void main(String[] args) {
 
         try {
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Starting RMI Gateway...");
+            LogUtil.logInfo(LogUtil.ANSI_YELLOW, RMIGateway.class, "Starting RMI Gateway...");
             RMIGateway rmiGateway = new RMIGateway(args);
             Registry registry = LocateRegistry.createRegistry(PORT);
             registry.rebind(REMOTE_REFERENCE_NAME, rmiGateway);
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "RMI Gateway ready.");
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIGateway.class, "RMI Gateway ready.");
         } catch (RemoteException re) {
-            LogUtil.logError(LogUtil.ANSI_WHITE, RMIGateway.class, re);
+            LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, re);
         }
     }
 
@@ -74,7 +74,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @throws MalformedURLException if the URL is malformed.
      */
     public List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException {
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got query: " + query);
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got query: " + query);
 
         if (isValidURL(query)) {
             // The query is a URL so send it to the Barrel
@@ -86,7 +86,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         if (barrel == -1)
             return Collections.singletonList("No barrels available.");
 
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Got barrel: " + barrel);
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got barrel: " + barrel);
 
         long startTime = System.currentTimeMillis();
         // The query is a URL so send it to the URL Queue
@@ -195,7 +195,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     public void receivePing(int barrelID, String barrelIP)
             throws RemoteException, NotBoundException, MalformedURLException {
 
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class,
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class,
                 "Received ping from barrel " + barrelID + " with IP " + barrelIP);
 
         for (int i = 0; i < timedBarrels.size(); i++) {
@@ -221,6 +221,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @throws RemoteException if a remote error occurs.
      */
     public void removeBarrel(int barrelID) throws RemoteException {
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Removing barrel " + barrelID);
         timedBarrels.removeIf(timedBarrel -> timedBarrel.getBarrelID() == barrelID);
     }
 
@@ -236,7 +237,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
 
         if (timedBarrels.isEmpty()) {
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "No barrels available");
+            LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "No barrels available");
             return -1;
         }
 
@@ -285,7 +286,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         long startTime = System.currentTimeMillis();
         List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel().getTopSearches();
         timedBarrels.get(currentBarrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Most searched queries: " + results);
         return results;
     }
 
@@ -311,7 +311,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             DatagramPacket request = new DatagramPacket(url_bytes, url_bytes.length, aHost, URLQueue.UDP_PORT);
 
             aSocket.send(request);
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, RMIGateway.class, "Sent priority URL: " + url);
         } catch (IOException e) {
             LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, e);
         }

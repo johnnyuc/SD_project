@@ -243,11 +243,27 @@ public class BarrelPopulate {
 
         barrelProcessing = new BarrelProcessing(conn);
 
+        // Start a transaction
+        try {
+            conn.setAutoCommit(false);
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            return;
+        }
+
         // Assuming barrelProcessing is properly initialized
         QueryResult websiteId = handleWebsiteInsertOrUpdate(url, title, description);
         Map<String, Integer> keywordIdMap = handleKeywordBatchInsertion(tokens);
         handleWebsiteKeywordBatchInsertion(websiteId, keywordIdMap, tokens);
         handleUrlBatchInsertion(websiteId, urls);
+
+        // Commit the transaction
+        try {
+            conn.commit();
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+        }
     }
 
     /**
@@ -296,6 +312,7 @@ public class BarrelPopulate {
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
         return new QueryResult(websiteId, newUrl);
     }
@@ -320,6 +337,7 @@ public class BarrelPopulate {
             pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
         // Select every inserted keyword from the database
         String selectSql = "SELECT id, keyword FROM keywords WHERE keyword IN ("
@@ -337,6 +355,7 @@ public class BarrelPopulate {
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
 
         return keywordIdMap;
@@ -370,6 +389,7 @@ public class BarrelPopulate {
             pstmt.executeBatch();
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
     }
 
@@ -418,6 +438,7 @@ public class BarrelPopulate {
 
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
     }
 
@@ -451,6 +472,7 @@ public class BarrelPopulate {
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelPopulate.class, e);
+            stopTransaction();
         }
     }
 }
