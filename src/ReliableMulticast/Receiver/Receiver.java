@@ -120,8 +120,10 @@ public class Receiver {
     public void stop() {
         try {
             // Kill sub-threads
-            receiverListener.stop();
-            receiverWorker.stop();
+            if (receiverListener != null)
+                receiverListener.stop();
+            if (receiverWorker != null)
+                receiverWorker.stop();
 
             // Close the channel/socket
             channel.close();

@@ -43,6 +43,7 @@ import java.rmi.RemoteException;
 public class RMIClient implements Serializable {
     /**
      * The main method of the RMIClient class.
+     * 
      * @param args The command line arguments.
      */
     public static void main(String[] args) {
@@ -181,7 +182,7 @@ public class RMIClient implements Serializable {
      */
     private boolean pagedResults(List<String> results) {
         return !(results.size() == 1
-                && ("No barrels available.".equals(results.getFirst()) || "URL Indexed.".equals(results.getFirst())));
+                && ("No barrels available.".equals(results.get(0)) || "URL Indexed.".equals(results.get(0))));
     }
 
     /**
@@ -255,7 +256,7 @@ public class RMIClient implements Serializable {
         try {
             Integer.parseInt(str);
             return true;
-        } catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             return false;
         }
     }

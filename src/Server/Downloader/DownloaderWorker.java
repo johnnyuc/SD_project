@@ -86,7 +86,7 @@ public class DownloaderWorker implements Runnable {
 
         // Add ctrl+c shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-        new Thread(this).start();
+        new Thread(this, "Downloader " + id).start();
     }
 
     @Override
@@ -102,7 +102,8 @@ public class DownloaderWorker implements Runnable {
                 visitURL(urlQueue.dequeueURL(id));
 
         } catch (NotBoundException | IOException e) {
-            LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
+            LogUtil.logInfo(LogUtil.ANSI_RED, DownloaderWorker.class, "Unable to connect to URLQueue: " + queueIP);
+            stop();
         }
     }
 
@@ -183,7 +184,7 @@ public class DownloaderWorker implements Runnable {
             CrawlData crawlData = new CrawlData(url, doc.title(), doc.text(), tokenList, urlList);
 
             // Send the crawling data via reliable multicast
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, DownloaderWorker.class,
+            LogUtil.logInfo(LogUtil.ANSI_BLUE, DownloaderWorker.class,
                     "Sending data to barrel: " + crawlData.getUrl());
             reliableMulticast.send(crawlData);
 
@@ -191,7 +192,10 @@ public class DownloaderWorker implements Runnable {
             // Auto throttle the downloader
             int waitTime = (int) Math.min(maxWaitTime, Math.max(minWaitTime, responseTime * 1.5));
             Thread.sleep(waitTime);
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            LogUtil.logInfo(LogUtil.ANSI_RED, DownloaderWorker.class, "Unable to reach URLQueue: " + queueIP);
+            System.exit(1);
+        } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
         }
     }
@@ -220,7 +224,6 @@ public class DownloaderWorker implements Runnable {
      * Stops the downloader worker.
      */
     private void stop() {
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, DownloaderWorker.class, "Shutting down Downloader Worker " + id);
         reliableMulticast.stopSending();
         reliableMulticast.stopReceiving();
     }

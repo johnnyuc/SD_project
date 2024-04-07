@@ -85,7 +85,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      */
     public RMIGateway(String[] args) throws RemoteException {
         super();
-        processArgs(args);
+        if (!processArgs(args))
+            System.exit(1);
     }
 
     /**
@@ -94,7 +95,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @param query      The search query.
      * @param pageNumber The page number of the search results.
      * @return The search results.
-     * @throws RemoteException       if a remote error occurs.
+     * @throws RemoteException if a remote error occurs.
      */
     public List<String> searchQuery(String query, int pageNumber) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got query: " + query);
@@ -180,27 +181,23 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      *
      * @param args The command line arguments.
      */
-    private void processArgs(String[] args) {
+    private boolean processArgs(String[] args) {
         if (args.length != 2) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                     "Wrong number of arguments: expected -qadd <queue address>");
-            return;
+            return false;
         }
         // Parse the arguments
-        try {
-            for (int i = 0; i < args.length; i++) {
-                if (args[i].equals("-qadd")) {
-                    queueAddress = args[++i];
-                } else {
-                    LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
-                            "Unexpected argument: " + args[i]);
-                    return;
-                }
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-qadd")) {
+                queueAddress = args[++i];
+            } else {
+                LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+                        "Unexpected argument: " + args[i]);
+                return false;
             }
-        } catch (NumberFormatException e) {
-            LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
-                    "Wrong type of argument: expected int for barrel id and port number");
         }
+        return true;
     }
 
     /**
@@ -251,7 +248,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @return The index of the available barrel, or -1 if no barrels are available.
      */
     private synchronized int getAvailableBarrel() {
-        timedBarrels.removeIf(timedBarrel -> timedBarrel.getTimestamp() < System.currentTimeMillis() - BarrelPinger.PING_INTERVAL * 2L);
+        timedBarrels.removeIf(timedBarrel -> timedBarrel.getTimestamp() < System.currentTimeMillis()
+                - BarrelPinger.PING_INTERVAL * 2L);
 
         if (timedBarrels.isEmpty()) {
             LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "No barrels available");
@@ -315,7 +313,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     public String barrelsStatus() throws RemoteException {
         StringBuilder str = new StringBuilder();
         for (BarrelTimestamp barrel : timedBarrels) {
-            str.append("Barrel ").append(barrel.getBarrelID()).append(" : ").append(barrel.getAvgResponseTime()).append("ms\n");
+            str.append("Barrel ").append(barrel.getBarrelID()).append(" : ").append(barrel.getAvgResponseTime())
+                    .append("ms\n");
         }
         return str.toString();
     }

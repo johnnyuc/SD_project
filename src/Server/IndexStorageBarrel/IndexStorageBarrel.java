@@ -323,10 +323,16 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
 
         if (barrelPinger != null)
             barrelPinger.setRunning(false);
-        if (barrelReceiver != null)
+        if (barrelReceiver != null) {
             barrelReceiver.setRunning(false);
-        if (barrelSync != null)
+            barrelReceiver.getMulticast().stopReceiving();
+            barrelReceiver.getMulticast().stopSending();
+        }
+        if (barrelSync != null) {
             barrelSync.setRunning(false);
+            barrelSync.getMulticast().stopReceiving();
+            barrelSync.getMulticast().stopSending();
+        }
     }
 
     // Getters and Setters

@@ -23,6 +23,7 @@ public class BarrelReceiver implements Runnable {
      * The ReliableMulticast object to receive data.
      */
     private final ReliableMulticast reliableMulticast;
+
     /**
      * A boolean value indicating whether the BarrelReceiver is running.
      */
@@ -90,4 +91,9 @@ public class BarrelReceiver implements Runnable {
     public void setRunning(boolean running) {
         this.running = running;
     }
+
+    public ReliableMulticast getMulticast() {
+        return reliableMulticast;
+    }
+
 }

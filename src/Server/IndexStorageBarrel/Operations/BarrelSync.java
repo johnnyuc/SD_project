@@ -55,7 +55,7 @@ public class BarrelSync implements Runnable {
         try {
             // The nr of active barrels will be zero since this one wont have pinged the
             // gateway yet
-            if (barrel.getBarrelPinger().getActiveBarrels() == 0)
+            if (barrel.getBarrelPinger().getRMIGateway() != null && barrel.getBarrelPinger().getActiveBarrels() == 0)
                 barrel.getLatch().countDown();
             else
                 reliableMulticast.send(getSyncRequest());
@@ -128,9 +128,15 @@ public class BarrelSync implements Runnable {
 
     /**
      * Set the running state of the BarrelSync
+     * 
      * @param running the running state to set
      */
     public void setRunning(boolean running) {
         this.running = running;
     }
+
+    public ReliableMulticast getMulticast() {
+        return reliableMulticast;
+    }
+
 }

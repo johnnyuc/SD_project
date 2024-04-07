@@ -55,7 +55,7 @@ public class IntegrityChecker implements Runnable {
                 LogUtil.logError(LogUtil.ANSI_WHITE, IntegrityChecker.class, e);
             }
         }
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, IntegrityChecker.class, "IntegrityChecker thread stopped");
+        LogUtil.logInfo(LogUtil.ANSI_CYAN, IntegrityChecker.class, "IntegrityChecker thread stopped");
     }
 
     /**

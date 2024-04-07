@@ -174,7 +174,7 @@ public class BarrelRetriever {
                 if (rs.next())
                     lastIDs.put(table, rs.getInt(1));
             } catch (SQLException e) {
-                LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
+                LogUtil.logInfo(LogUtil.ANSI_RED, BarrelRetriever.class, "Database connection is closed.");
             }
         }
 
@@ -213,8 +213,8 @@ public class BarrelRetriever {
      * Retrieves the rows from the strong table with a start ID greater than the
      * specified value.
      *
-     * @param startID     the start ID
-     * @param sql         the SQL query
+     * @param startID the start ID
+     * @param sql     the SQL query
      * @return a list of rows from the strong table
      */
     private List<Map<String, Object>> getMaps(int startID, String sql) {
@@ -233,7 +233,7 @@ public class BarrelRetriever {
     /**
      * Converts the ResultSet to a list of rows.
      *
-     * @param rs    the ResultSet
+     * @param rs the ResultSet
      * @return a list of rows
      */
     private List<Map<String, Object>> resultSetToRowList(ResultSet rs) {

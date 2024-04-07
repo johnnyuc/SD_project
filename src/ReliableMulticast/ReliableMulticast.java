@@ -66,7 +66,8 @@ public class ReliableMulticast {
      * Stops sending data.
      */
     public void stopSending() {
-        sender.stop();
+        if (sender != null)
+            sender.stop();
     }
 
     /**
@@ -86,7 +87,8 @@ public class ReliableMulticast {
      * Stops receiving data.
      */
     public void stopReceiving() {
-        receiver.stop();
+        if (receiver != null)
+            receiver.stop();
     }
 
     /**

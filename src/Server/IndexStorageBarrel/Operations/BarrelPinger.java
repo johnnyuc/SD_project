@@ -52,7 +52,8 @@ public class BarrelPinger implements Runnable {
                     .lookup("rmi://" + barrel.getGatewayAddress() + ":" + RMIGateway.PORT + "/"
                             + RMIGateway.REMOTE_REFERENCE_NAME);
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
-            LogUtil.logError(Logger.LogUtil.ANSI_WHITE, BarrelPinger.class, e);
+            LogUtil.logInfo(Logger.LogUtil.ANSI_RED, BarrelPinger.class, "Error connecting to RMIGateway.");
+            barrel.stop();
         }
         // Add ctrl+c shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
@@ -71,7 +72,10 @@ public class BarrelPinger implements Runnable {
                 pingGateway();
             } catch (InterruptedException | RemoteException | NotBoundException
                     | MalformedURLException | UnknownHostException e) {
-                LogUtil.logError(LogUtil.ANSI_RED, BarrelPinger.class, e);
+                LogUtil.logInfo(LogUtil.ANSI_RED, BarrelPinger.class, "Error reaching RMIGateway.");
+                rmiGateway = null;
+                running = false;
+                barrel.stop();
             }
         }
         stop();
@@ -101,12 +105,19 @@ public class BarrelPinger implements Runnable {
         return rmiGateway.getActiveBarrels();
     }
 
+    public RMIGatewayInterface getRMIGateway() {
+        return rmiGateway;
+    }
+
     /**
      * Stops the BarrelPinger thread and removes the IndexStorageBarrel from the
      * RMIGateway.
      */
     private void stop() {
         running = false;
+        if (rmiGateway == null)
+            return;
+
         try {
             rmiGateway.removeBarrel(barrel.getBarrelID());
         } catch (RemoteException e) {
