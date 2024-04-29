@@ -11,7 +11,7 @@
 	</parent>
 
 	<groupId>Googol</groupId>
-	<artifactId>SpringBoot</artifactId>
+	<artifactId>Springboot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Springboot</name>
 	<description>Googol&apos;s project web interface</description>
