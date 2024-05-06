@@ -323,8 +323,9 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * Enqueues a URL with priority.
      *
      * @param url The URL to enqueue.
+     * @throws RemoteException if a remote error occurs.
      */
-    private void priorityEnqueueURL(String url) {
+    public void priorityEnqueueURL(String url) throws RemoteException {
         try (DatagramSocket aSocket = new DatagramSocket()) {
             byte[] url_bytes = url.getBytes();
 

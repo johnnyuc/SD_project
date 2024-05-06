@@ -15,5 +15,4 @@ public class SearchController {
     public String search() {
         return "search";
     }
-
 }

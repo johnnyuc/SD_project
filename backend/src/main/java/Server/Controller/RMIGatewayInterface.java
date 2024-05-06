@@ -80,4 +80,12 @@ public interface RMIGatewayInterface extends Remote {
      * @throws RemoteException if a remote communication error occurs
      */
     int getActiveBarrels() throws RemoteException;
+
+    /**
+     * Enqueues a URL with priority.
+     *
+     * @param url The URL to enqueue.
+     * @throws RemoteException if a remote communication error occurs
+     */
+    public void priorityEnqueueURL(String url) throws RemoteException;
 }

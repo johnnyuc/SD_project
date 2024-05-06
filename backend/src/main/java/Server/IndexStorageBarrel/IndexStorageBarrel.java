@@ -188,7 +188,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
                             + "-dmcast <downloader multicast group address> -dport <downloader port number> "
                             + "-smcast <sync multicast group address> -sport <sync port number> "
                             + "-mcastadd <multicast interface address> -badd <barrel interface address> "
-                            + "-gadd <gateway interface address>"
+                            + "-gadd <gateway interface address> "
                             + "-s <optional for TF-IDF sort>");
             stop();
             return false;

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Googol</title>
+    <link rel="stylesheet" th:href="@{/css/results.css}">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Search Results</h1>
+        <div class="additional-info">
+            <p>Additional Information</p>
+            <button class="btn-index">Index HackerNews top stories</button>
+        </div>
+    </div>
+
+    <div id="results">
+        <!-- Results will be dynamically populated here -->
+        <div th:each="result : ${searchResults}">
+            <p th:text="${result}"></p>
+        </div>
+    </div>
+</body>
+
+</html>
