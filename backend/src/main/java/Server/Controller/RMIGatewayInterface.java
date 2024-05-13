@@ -2,6 +2,9 @@ package Server.Controller;
 
 // General imports
 import java.util.List;
+
+import Server.IndexStorageBarrel.Objects.SearchData;
+
 import java.rmi.Remote;
 
 // Exception imports
@@ -25,7 +28,7 @@ public interface RMIGatewayInterface extends Remote {
      * @throws RemoteException       if a remote communication error occurs
      * @throws MalformedURLException if the URL is malformed
      */
-    List<String> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException;
+    List<SearchData> searchQuery(String query, int pageNumber) throws RemoteException, MalformedURLException;
 
     /**
      * Retrieves a list of websites that are linking to the target URL.
@@ -71,7 +74,7 @@ public interface RMIGatewayInterface extends Remote {
      * @return the status of the barrels
      * @throws RemoteException if a remote communication error occurs
      */
-    String barrelsStatus() throws RemoteException;
+    List<String> barrelsStatus() throws RemoteException;
 
     /**
      * Retrieves the number of active barrels.

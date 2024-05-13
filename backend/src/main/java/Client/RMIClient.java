@@ -3,7 +3,7 @@ package Client;
 // Package imports
 import Server.Controller.RMIGateway;
 import Server.Controller.RMIGatewayInterface;
-
+import Server.IndexStorageBarrel.Objects.SearchData;
 // Logging
 import Logger.LogUtil;
 
@@ -80,6 +80,7 @@ public class RMIClient implements Serializable {
             scanner.close();
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             System.out.println("Service unavailable. Try again later.");
+            e.printStackTrace();
             System.exit(-1);
         }
     }
@@ -130,32 +131,36 @@ public class RMIClient implements Serializable {
      * @throws MalformedURLException if a malformed URL exception occurs
      */
     private boolean treatChoice(int choice) throws RemoteException, MalformedURLException {
-        List<String> results;
         switch (choice) {
             case 1:
                 String query = readQuery();
-                results = rmiGateway.searchQuery(query, 1);
-                printList(results);
-                while (pagedResults(results)) {
+                List<SearchData> searchResults = rmiGateway.searchQuery(query, 1);
+
+                if (searchResults.get(0).refCount() == SearchData.EXCEPTION) {
+                    System.out.println(searchResults.get(0).url());
+                    break;
+                }
+
+                do {
+                    printSearchResults(searchResults);
                     System.out.println("Enter page number (or 0 to exit):");
                     int pageNumber = readChoice();
                     if (pageNumber == 0)
                         break;
-                    results = rmiGateway.searchQuery(query, pageNumber);
-                    printList(results);
-                }
+                    searchResults = rmiGateway.searchQuery(query, pageNumber);
+                } while (true);
                 break;
             case 2:
                 String url = readQuery().trim();
-                results = rmiGateway.getWebsitesLinkingTo(url, 1);
-                printList(results);
+                List<String> linkedResults = rmiGateway.getWebsitesLinkingTo(url, 1);
+                printList(linkedResults);
                 while (true) {
                     System.out.println("Enter page number (or 0 to exit):");
                     int pageNumber = readChoice();
                     if (pageNumber == 0)
                         break;
-                    results = rmiGateway.getWebsitesLinkingTo(url, pageNumber);
-                    printList(results);
+                    linkedResults = rmiGateway.getWebsitesLinkingTo(url, pageNumber);
+                    printList(linkedResults);
                 }
                 break;
             case 3:
@@ -175,14 +180,18 @@ public class RMIClient implements Serializable {
     }
 
     /**
-     * Checks if the results are paged.
-     *
-     * @param results the list of results
-     * @return true if the results are paged, false otherwise
+     * Prints search results
+     * 
+     * @param searchResults list of search data
      */
-    private boolean pagedResults(List<String> results) {
-        return !(results.size() == 1
-                && ("No barrels available.".equals(results.get(0)) || "URL Indexed.".equals(results.get(0))));
+    private void printSearchResults(List<SearchData> searchResults) {
+        for (SearchData searchData : searchResults) {
+            System.out.println(searchData.title());
+            System.out.println(searchData.url());
+            System.out.println("RefCount: " + searchData.refCount());
+            System.out.println("tfIdf: " + searchData.tfIdf());
+            System.out.println("--------------------------------------");
+        }
     }
 
     /**
@@ -209,8 +218,7 @@ public class RMIClient implements Serializable {
                 printList(rmiGateway.mostSearched());
                 break;
             case 2:
-                String barrelsStatus = rmiGateway.barrelsStatus();
-                System.out.println(barrelsStatus);
+                printList(rmiGateway.barrelsStatus());
                 break;
             case 3:
                 System.out.println("Exiting Admin console...");

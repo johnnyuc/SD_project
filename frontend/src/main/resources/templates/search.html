@@ -5,14 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Googol</title>
+    <!-- Style sheets -->
+    <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
     <link rel="stylesheet" th:href="@{/css/search.css}">
 </head>
 
 <body>
-    <form th:action="@{/results}" method="get">
-        <input type="text" name="query" placeholder="Enter your search query">
-        <button type="submit">Search</button>
-    </form>
+    <div class="container mt-5">
+        <form th:action="@{/results}" method="get" class="input-group mb-3">
+            <input type="text" name="query" class="form-control" placeholder="Enter your search query"
+                aria-label="Search query" aria-describedby="button-addon2">
+            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Search</button>
+        </form>
+        <button class="btn btn-primary float-right" onclick="window.location.href='/stats'">Stats</button>
+    </div>
 </body>
 
 </html>

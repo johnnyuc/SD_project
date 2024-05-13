@@ -259,7 +259,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      * @return A list of search results as strings.
      * @throws RemoteException If a remote exception occurs during the search.
      */
-    public List<String> searchQuery(String query, int pageNumber) throws RemoteException {
+    public List<SearchData> searchQuery(String query, int pageNumber) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_WHITE, IndexStorageBarrel.class, "Received query:" + query);
         List<SearchData> searchData = retrieveAndRankData(query, pageNumber, tfIdfSort);
 
@@ -271,12 +271,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
             barrelPopulate.incrementSearches(keyword);
         }
 
-        List<String> results = new ArrayList<>();
-        for (SearchData sD : searchData) {
-            results.add(sD.title() + "\n" + sD.url() + "\nRef_count: " + sD.refCount() + " TF_IDF: " + sD.tfIdf());
-        }
-
-        return results;
+        return searchData;
     }
 
     /**

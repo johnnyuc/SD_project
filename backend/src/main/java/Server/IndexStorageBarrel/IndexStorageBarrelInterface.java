@@ -2,6 +2,9 @@ package Server.IndexStorageBarrel;
 
 // General imports
 import java.util.List;
+
+import Server.IndexStorageBarrel.Objects.SearchData;
+
 import java.rmi.Remote;
 
 // Exception imports
@@ -22,7 +25,7 @@ public interface IndexStorageBarrelInterface extends Remote {
      * @return a list of matching documents
      * @throws RemoteException if a remote communication error occurs
      */
-    List<String> searchQuery(String query, int pageNumber) throws RemoteException;
+    List<SearchData> searchQuery(String query, int pageNumber) throws RemoteException;
 
     /**
      * Retrieves a list of websites that link to the specified target URL.

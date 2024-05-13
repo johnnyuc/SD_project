@@ -1,9 +1,14 @@
 package Springboot.hackernews;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.web.client.RestTemplate;
+
+import Springboot.hackernews.HackerNewsSearchRecord.Hit;
 
 public class HackerNews {
 
@@ -11,18 +16,19 @@ public class HackerNews {
         List<String> topStoriesURLs = new ArrayList<>();
 
         String topStoriesEndpoint = "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty";
+        String searchStoriesEndpoint = "https://hn.algolia.com/api/v1/search?hitsPerPage=100&query="
+                + URLEncoder.encode(query, StandardCharsets.UTF_8);
 
         RestTemplate restTemplate = new RestTemplate();
-        List hackerNewsNewTopStories = restTemplate.getForObject(topStoriesEndpoint, List.class);
+        List<Integer> hackerNewsTopStories = Arrays
+                .asList(restTemplate.getForObject(topStoriesEndpoint, Integer[].class));
 
-        for (Object storyId : hackerNewsNewTopStories) {
-            String storyURL = "https://hacker-news.firebaseio.com/v0/item/" + storyId + ".json?print=pretty";
-            System.out.println(storyURL);
-            HackerNewsItemRecord oneStory = restTemplate.getForObject(storyURL, HackerNewsItemRecord.class);
+        HackerNewsSearchRecord hackerNewsSearchResults = restTemplate.getForObject(searchStoriesEndpoint,
+                HackerNewsSearchRecord.class);
 
-            if (query != "")
-                topStoriesURLs.add(oneStory.url());
-        }
+        for (Hit searchResult : hackerNewsSearchResults.hits())
+            if (hackerNewsTopStories.contains(searchResult.storyId()))
+                topStoriesURLs.add(searchResult.url());
 
         return topStoriesURLs;
     }

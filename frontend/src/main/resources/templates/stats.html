@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Googol</title>
+    <!-- Style sheets -->
+    <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet" th:href="@{/css/stats.css}">
+    <!-- Javascript -->
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+    <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+    <script th:src="@{/javascript/stats.js}"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Barrel stats -->
+        <div class="table-responsive">
+            <table id="barrel-stats-table" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Barrel Stats</th>
+                    </tr>
+                </thead>
+                <tbody id="barrel-stats">
+                    <!-- Info will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top searches -->
+        <div class="table-responsive">
+            <table id="top-searches-table" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Top Searches</th>
+                    </tr>
+                </thead>
+                <tbody id="top-searches">
+                    <!-- Info will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Debug button -->
+        <button id="send" class="btn btn-default" type="submit">Send</button>
+    </div>
+</body>
+
+</html>

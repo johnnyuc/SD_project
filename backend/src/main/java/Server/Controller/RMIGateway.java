@@ -2,17 +2,32 @@ package Server.Controller;
 
 // Package imports
 import Server.URLQueue.URLQueue;
+import Server.Controller.Objects.Stats;
 import Server.IndexStorageBarrel.IndexStorageBarrel;
 import Server.IndexStorageBarrel.Operations.BarrelPinger;
 import Server.IndexStorageBarrel.IndexStorageBarrelInterface;
-
+import Server.IndexStorageBarrel.Objects.SearchData;
 // Logging imports
 import Logger.LogUtil;
 
 // General imports
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.message.Message;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.converter.StringMessageConverter;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
+import org.springframework.web.util.HtmlUtils;
 
 import java.rmi.Naming;
 import java.net.InetAddress;
@@ -87,6 +102,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         super();
         if (!processArgs(args))
             System.exit(1);
+
+        sendStats();
     }
 
     /**
@@ -97,24 +114,26 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @return The search results.
      * @throws RemoteException if a remote error occurs.
      */
-    public List<String> searchQuery(String query, int pageNumber) throws RemoteException {
+    public List<SearchData> searchQuery(String query, int pageNumber) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got query: " + query);
 
         if (isValidURL(query)) {
             // The query is a URL so send it to the Barrel
             priorityEnqueueURL(query);
-            return Collections.singletonList("URL Indexed.");
+            return Collections.singletonList(new SearchData(
+                    "URL Indexed.", "", "", 0, SearchData.EXCEPTION));
         }
 
         int barrel = getAvailableBarrel();
         if (barrel == -1)
-            return Collections.singletonList("No barrels available.");
+            return Collections.singletonList(new SearchData(
+                    "No barrels available.", "", "", 0, SearchData.EXCEPTION));
 
         LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got barrel: " + barrel);
 
         long startTime = System.currentTimeMillis();
         // The query is a URL so send it to the URL Queue
-        List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel().searchQuery(query, pageNumber);
+        List<SearchData> results = timedBarrels.get(currentBarrel).getRemoteBarrel().searchQuery(query, pageNumber);
 
         timedBarrels.get(barrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
 
@@ -229,6 +248,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         if (remoteBarrel != null)
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
+
     }
 
     /**
@@ -273,21 +293,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     }
 
     /**
-     * Checks if a barrel is alive.
-     * 
-     * @param barrelTimestamp The barrel to check.
-     * @return true if the barrel is alive, false otherwise.
-     */
-    private boolean isAlive(BarrelTimestamp barrelTimestamp) {
-        try {
-            barrelTimestamp.getRemoteBarrel().receivePing();
-            return true;
-        } catch (RemoteException re) {
-            return false;
-        }
-    }
-
-    /**
      * Retrieves the most searched queries.
      * 
      * @return The most searched queries.
@@ -305,18 +310,32 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     }
 
     /**
+     * Checks if a barrel is alive.
+     * 
+     * @param barrelTimestamp The barrel to check.
+     * @return true if the barrel is alive, false otherwise.
+     */
+    private boolean isAlive(BarrelTimestamp barrelTimestamp) {
+        try {
+            barrelTimestamp.getRemoteBarrel().receivePing();
+            return true;
+        } catch (RemoteException re) {
+            return false;
+        }
+    }
+
+    /**
      * Retrieves the status of the barrels.
      * 
      * @return The status of the barrels.
      * @throws RemoteException if a remote error occurs.
      */
-    public String barrelsStatus() throws RemoteException {
-        StringBuilder str = new StringBuilder();
+    public List<String> barrelsStatus() throws RemoteException {
+        List<String> status = new ArrayList<>();
         for (BarrelTimestamp barrel : timedBarrels) {
-            str.append("Barrel ").append(barrel.getBarrelID()).append(" : ").append(barrel.getAvgResponseTime())
-                    .append("ms\n");
+            status.add("Barrel %d : %dms".formatted(barrel.getBarrelID(), barrel.getAvgResponseTime()));
         }
-        return str.toString();
+        return status;
     }
 
     /**
@@ -337,4 +356,20 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             LogUtil.logError(LogUtil.ANSI_RED, RMIGateway.class, e);
         }
     }
+
+    private void sendStats() throws RemoteException {
+        String url = "http://localhost:8080/app/trigger-stats";
+
+        RestTemplate restTemplate = new RestTemplate();
+        Stats stats = new Stats(barrelsStatus(), mostSearched());
+
+        HttpEntity<Stats> entity = new HttpEntity<>(stats);
+
+        // Send the request and get the response
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        // Print the response
+        LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIGateway.class, response.getBody());
+    }
+
 }

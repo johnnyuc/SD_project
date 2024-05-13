@@ -5,22 +5,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Googol</title>
+    <!-- Style sheets -->
+    <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
     <link rel="stylesheet" th:href="@{/css/results.css}">
+    <!-- Javascript -->
+    <script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+    <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+    <script th:src="@{/javascript/results.js}"></script>
 </head>
 
 <body>
-    <div class="header">
-        <h1>Search Results</h1>
-        <div class="additional-info">
-            <p>Additional Information</p>
-            <button class="btn-index">Index HackerNews top stories</button>
+    <div class="container">
+        <div class="header">
+            <h1>Search Results</h1>
+            <div class="additional-info">
+                <p>Additional Information</p>
+                <button id="index-top-stories" class="btn btn-primary">Index HackerNews Top Stories</button>
+            </div>
         </div>
-    </div>
 
-    <div id="results">
-        <!-- Results will be dynamically populated here -->
-        <div th:each="result : ${searchResults}">
-            <p th:text="${result}"></p>
+        <div id="results">
+            <!-- Results will be dynamically populated here -->
+            <div th:each="result : ${searchResults}" class="card">
+                <div class="card-body">
+                    <p th:text="${result}"></p>
+                </div>
+            </div>
         </div>
     </div>
 </body>

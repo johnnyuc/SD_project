@@ -1,0 +1,10 @@
+package Server.Controller.Objects;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record Stats(@JsonProperty("barrel_stats") List<String> barrelStats,
+        @JsonProperty("most_searched") List<String> mostSearched) {
+
+}

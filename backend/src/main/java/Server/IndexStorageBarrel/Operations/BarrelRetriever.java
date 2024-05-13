@@ -11,6 +11,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.springframework.web.util.HtmlUtils;
+
 /**
  * The BarrelRetriever class is responsible for retrieving data from the
  * database related to website crawling and indexing.
@@ -79,7 +81,7 @@ public class BarrelRetriever {
                 ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                topSearches.add(rs.getString("keyword"));
+                topSearches.add(HtmlUtils.htmlEscape(rs.getString("keyword")));
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);
@@ -154,7 +156,7 @@ public class BarrelRetriever {
             return new ArrayList<>();
 
         // Return the page of search results
-        return searchDataList.subList(start, end);
+        return new ArrayList<>(searchDataList.subList(start, end));
     }
 
     /**
