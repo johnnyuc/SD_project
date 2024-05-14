@@ -10,11 +10,11 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>Googol</groupId>
-	<artifactId>Springboot</artifactId>
+	<groupId>org.googol</groupId>
+	<artifactId>frontend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Springboot</name>
-	<description>Googol&apos;s project web interface</description>
+	<name>Googol Frontend</name>
+	<description>Googol&apos;s frontend</description>
 
 	<properties>
 		<java.version>21</java.version>

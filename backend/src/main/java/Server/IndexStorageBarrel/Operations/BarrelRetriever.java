@@ -39,10 +39,10 @@ public class BarrelRetriever {
      * @param pageNumber the page number
      * @return a list of websites linking to the target URL
      */
-    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) {
-        List<String> websites = new ArrayList<>();
+    public List<SearchData> getWebsitesLinkingTo(String targetUrl, int pageNumber) {
+        List<SearchData> websites = new ArrayList<>();
 
-        String sql = "SELECT w.url " +
+        String sql = "SELECT w.url, w.title, w.description " +
                 "FROM websites w " +
                 "JOIN website_urls wu ON w.id = wu.website_id " +
                 "JOIN urls u ON wu.url_id = u.id " +
@@ -56,7 +56,11 @@ public class BarrelRetriever {
 
             while (rs.next()) {
                 LogUtil.logInfo(LogUtil.ANSI_YELLOW, BarrelRetriever.class, "Found website linking to target url");
-                websites.add(rs.getString("url"));
+                String url = rs.getString("url");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+
+                websites.add(new SearchData(url, title, description, 0, 0));
             }
         } catch (SQLException e) {
             LogUtil.logError(LogUtil.ANSI_RED, BarrelRetriever.class, e);

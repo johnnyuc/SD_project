@@ -12,22 +12,13 @@ import Logger.LogUtil;
 
 // General imports
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.logging.log4j.message.Message;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.converter.StringMessageConverter;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.stomp.StompSession;
-import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.messaging.WebSocketStompClient;
-import org.springframework.web.util.HtmlUtils;
 
 import java.rmi.Naming;
 import java.net.InetAddress;
@@ -102,8 +93,6 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         super();
         if (!processArgs(args))
             System.exit(1);
-
-        sendStats();
     }
 
     /**
@@ -121,13 +110,13 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
             // The query is a URL so send it to the Barrel
             priorityEnqueueURL(query);
             return Collections.singletonList(new SearchData(
-                    "URL Indexed.", "", "", 0, SearchData.EXCEPTION));
+                    "", "URL Indexed.", "", 0, SearchData.EXCEPTION));
         }
 
         int barrel = getAvailableBarrel();
         if (barrel == -1)
             return Collections.singletonList(new SearchData(
-                    "No barrels available.", "", "", 0, SearchData.EXCEPTION));
+                    "", "No barrels available.", "", 0, SearchData.EXCEPTION));
 
         LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Got barrel: " + barrel);
 
@@ -139,6 +128,9 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         // Update the count of the search query
         searchQueries.put(query, searchQueries.getOrDefault(query, 0) + 1);
+
+        // Send the statistics to the web application
+        sendStats();
 
         // Convert the SearchData objects to String and return the search results
         return results;
@@ -152,16 +144,20 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @return The websites linking to the target URL.
      * @throws RemoteException if a remote error occurs.
      */
-    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
+    public List<SearchData> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
         int currentBarrel = getAvailableBarrel();
         if (currentBarrel == -1)
-            return Collections.singletonList("No barrels available.");
+            return Collections.singletonList(new SearchData(
+                    "", "No barrels available.", "", 0, SearchData.EXCEPTION));
 
         long startTime = System.currentTimeMillis();
-        List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel()
+        List<SearchData> results = timedBarrels.get(currentBarrel).getRemoteBarrel()
                 .getWebsitesLinkingTo(targetUrl, pageNumber);
 
         timedBarrels.get(currentBarrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
+
+        // Send the statistics to the web application
+        sendStats();
 
         return results;
     }
@@ -246,9 +242,10 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
                         + (IndexStorageBarrel.STARTING_PORT + barrelID) + "/"
                         + (IndexStorageBarrel.REMOTE_REFERENCE_NAME + barrelID));
 
-        if (remoteBarrel != null)
+        if (remoteBarrel != null) {
             timedBarrels.add(new BarrelTimestamp(remoteBarrel, System.currentTimeMillis(), barrelID));
-
+            sendStats();
+        }
     }
 
     /**
@@ -260,6 +257,8 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
     public void removeBarrel(int barrelID) throws RemoteException {
         LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Removing barrel " + barrelID);
         timedBarrels.removeIf(timedBarrel -> timedBarrel.getBarrelID() == barrelID);
+        // Send the statistics to the web application
+        sendStats();
     }
 
     /**
@@ -306,6 +305,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         long startTime = System.currentTimeMillis();
         List<String> results = timedBarrels.get(currentBarrel).getRemoteBarrel().getTopSearches();
         timedBarrels.get(currentBarrel).setAvgResponseTime(System.currentTimeMillis() - startTime);
+
         return results;
     }
 
@@ -345,6 +345,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @throws RemoteException if a remote error occurs.
      */
     public void priorityEnqueueURL(String url) throws RemoteException {
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, RMIGateway.class, "Priority enqueueing URL: " + url);
         try (DatagramSocket aSocket = new DatagramSocket()) {
             byte[] url_bytes = url.getBytes();
 
@@ -357,8 +358,23 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         }
     }
 
+    /**
+     * Retrieves the stats of the system.
+     * 
+     * @return the stats of the system
+     * @throws RemoteException
+     */
+    public Stats getStats() throws RemoteException {
+        return new Stats(barrelsStatus(), mostSearched());
+    }
+
+    /**
+     * Sends the statistics to the web application.
+     * 
+     * @throws RemoteException if a remote error occurs.
+     */
     private void sendStats() throws RemoteException {
-        String url = "http://localhost:8080/app/trigger-stats";
+        String url = "http://localhost:8080/trigger-stats";
 
         RestTemplate restTemplate = new RestTemplate();
         Stats stats = new Stats(barrelsStatus(), mostSearched());
@@ -366,10 +382,12 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         HttpEntity<Stats> entity = new HttpEntity<>(stats);
 
         // Send the request and get the response
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-
-        // Print the response
-        LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIGateway.class, response.getBody());
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            // Print the response
+            LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIGateway.class, response.getBody());
+        } catch (Exception e) {
+            LogUtil.logInfo(LogUtil.ANSI_RED, RMIGateway.class, "Error sending stats to the web application.");
+        }
     }
-
 }

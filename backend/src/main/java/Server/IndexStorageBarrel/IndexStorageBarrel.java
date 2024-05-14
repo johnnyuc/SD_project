@@ -12,7 +12,6 @@ import Logger.LogUtil;
 
 // General imports
 import java.util.List;
-import java.util.ArrayList;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.rmi.registry.Registry;
@@ -292,7 +291,7 @@ public class IndexStorageBarrel extends UnicastRemoteObject implements IndexStor
      * @return the websites linking to the target URL
      * @throws RemoteException if a remote exception occurs
      */
-    public List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
+    public List<SearchData> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException {
         return barrelRetriever.getWebsitesLinkingTo(targetUrl, pageNumber);
     }
 

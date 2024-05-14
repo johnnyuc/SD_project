@@ -28,6 +28,9 @@
                 </thead>
                 <tbody id="barrel-stats">
                     <!-- Info will be inserted here -->
+                    <tr th:each="barrel : ${barrelStats}">
+                        <td th:text="${barrel}"></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -42,12 +45,16 @@
                 </thead>
                 <tbody id="top-searches">
                     <!-- Info will be inserted here -->
+                    <tr th:each="search : ${topSearches}">
+                        <td th:text="${search}"></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-
-        <!-- Debug button -->
-        <button id="send" class="btn btn-default" type="submit">Send</button>
+        <!-- Back to Search button -->
+        <div class="text-center mt-3">
+            <a href="/search" class="btn btn-primary">Back to Search</a>
+        </div>
     </div>
 </body>
 

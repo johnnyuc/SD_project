@@ -35,7 +35,7 @@ public interface IndexStorageBarrelInterface extends Remote {
      * @return a list of websites linking to the target URL
      * @throws RemoteException if a remote communication error occurs
      */
-    List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
+    List<SearchData> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
 
     /**
      * Retrieves the top searches performed by users.

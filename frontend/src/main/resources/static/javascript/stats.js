@@ -6,7 +6,7 @@ function connect() {
     stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame);
         stompClient.subscribe('/topic/update-stats', function (message) {
-            updateStats(JSON.parse(message.body).content)
+            updateStats(JSON.parse(message.body))
         });
     });
 }
@@ -19,16 +19,16 @@ function disconnect() {
 }
 
 function updateStats(stats) {
-    $("#barrel-stats").append("<tr><td>" + stats + "</td></tr>");
-}
+    $("#barrel-stats").empty(); // Clear barrel-stats
+    $("#top-searches").empty(); // Clear top-searches
 
-function sendMessage() {
-    stompClient.send('/app/stats-update', {}, JSON.stringify({ 'content': 'wow :)) !!' }));
+    stats.barrel_stats.forEach(function (barrelStat) {
+        $("#barrel-stats").append("<tr><td>" + barrelStat + "</td></tr>");
+    });
+    stats.most_searched.forEach(function (search) {
+        $("#top-searches").append("<tr><td>" + search + "</td></tr>");
+    });
 }
-
-$(function () {
-    $('#send').click(function () { sendMessage(); });
-});
 
 window.onload = function () {
     connect();

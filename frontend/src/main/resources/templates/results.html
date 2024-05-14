@@ -17,22 +17,56 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Search Results</h1>
-            <div class="additional-info">
+    <div class="container mt-5">
+        <div class="header text-center mb-4">
+            <h1 class="display-4">Search Results</h1>
+            <div class="additional-info mt-3">
                 <p>Additional Information</p>
                 <button id="index-top-stories" class="btn btn-primary">Index HackerNews Top Stories</button>
             </div>
+            <!-- Back to Search button -->
+            <div class="mt-3">
+                <a href="/search" class="btn btn-secondary">Back to Search</a>
+            </div>
         </div>
 
-        <div id="results">
-            <!-- Results will be dynamically populated here -->
-            <div th:each="result : ${searchResults}" class="card">
-                <div class="card-body">
-                    <p th:text="${result}"></p>
+        <!-- Results will be dynamically populated here -->
+        <div class="row">
+            <div th:each="result : ${searchResults}" class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">
+                            <a th:if="${result.url != ''}" th:href="${result.url}" th:text="${result.title}"></a>
+                            <a th:unless="${result.url != ''}" th:text="${result.title}"></a>
+                        </h3>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Pagination buttons -->
+        <div class="pagination text-center mt-4">
+            <form th:action="@{/results}" method="get" class="d-inline-flex align-items-center">
+                <!-- Hidden input to preserve the query parameter -->
+                <input type="hidden" name="query" th:value="${query}" />
+                <input type="hidden" name="urlsLinked" th:value="${urlsLinked}" />
+
+                <!-- Pagination group -->
+                <div class="btn-group" role="group" aria-label="Pagination controls">
+                    <!-- Button to go to previous page that disables when page <= 1 -->
+                    <button type="submit" name="page" th:value="${currentPage - 1}" id="previous-page"
+                        class="btn btn-primary" th:disabled="${previousButtonDisabled}">&lt;</button>
+
+                    <!-- Current page number -->
+                    <span class="btn btn-light disabled" style="pointer-events: none;">
+                        <p th:text="${currentPage}" class="mb-0"></p>
+                    </span>
+
+                    <!-- Button to go to next page that disables when resultList size is != 10 -->
+                    <button type="submit" name="page" th:value="${currentPage + 1}" id="next-page"
+                        class="btn btn-primary" th:disabled="${nextButtonDisabled}">&gt;</button>
+                </div>
+            </form>
         </div>
     </div>
 </body>

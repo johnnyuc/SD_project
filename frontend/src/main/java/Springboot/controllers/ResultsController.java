@@ -6,6 +6,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
 
+import javax.naming.directory.SearchResult;
+
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import Server.Controller.RMIGateway;
 import Server.Controller.RMIGatewayInterface;
+import Server.IndexStorageBarrel.Objects.SearchData;
 import Springboot.hackernews.HackerNews;
 import Springboot.util.Message;
 import Springboot.openai.OpenAI;
@@ -24,13 +27,27 @@ public class ResultsController {
     @GetMapping("/results")
     public String results(@RequestParam(name = "query", required = true) String query,
             @RequestParam(name = "page", required = false, defaultValue = "1") int page,
+            @RequestParam(name = "urlsLinked", required = false, defaultValue = "false") boolean urlsLinked,
             Model model) {
         // TODO: How to set the value of the gatewayAddress??????
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
                     .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
 
-            model.addAttribute("searchResults", rmiGateway.searchQuery(query, page));
+            List<SearchData> searchResults;
+            if (!urlsLinked)
+                searchResults = rmiGateway.searchQuery(query, page);
+            else
+                searchResults = rmiGateway.getWebsitesLinkingTo(query, page);
+
+            // Results
+            model.addAttribute("searchResults", searchResults);
+            model.addAttribute("query", query);
+            model.addAttribute("urlsLinked", urlsLinked);
+            // Pagination
+            model.addAttribute("previousButtonDisabled", page <= 1);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("nextButtonDisabled", searchResults.size() != 10);
 
             System.out.println("Contextualized analysis: " + OpenAI.getContextualizedAnalysis(query));
         } catch (MalformedURLException | RemoteException | NotBoundException e) {
@@ -45,14 +62,14 @@ public class ResultsController {
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
                     .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
-            List<String> topStories = HackerNews.getTopStories(request.content());
+            List<String> topStories = HackerNews.getTopStories(request.query());
 
             System.out.println("Top stories: " + topStories);
 
             for (String story : topStories)
                 rmiGateway.priorityEnqueueURL(story);
         } catch (MalformedURLException | RemoteException | NotBoundException e) {
-            e.printStackTrace();
+            System.out.println("Error indexing top stories: " + e);
         }
     }
 }

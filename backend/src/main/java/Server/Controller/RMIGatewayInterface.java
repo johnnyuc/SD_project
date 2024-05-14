@@ -3,6 +3,7 @@ package Server.Controller;
 // General imports
 import java.util.List;
 
+import Server.Controller.Objects.Stats;
 import Server.IndexStorageBarrel.Objects.SearchData;
 
 import java.rmi.Remote;
@@ -38,7 +39,7 @@ public interface RMIGatewayInterface extends Remote {
      * @return a list of websites linking to the target URL
      * @throws RemoteException if a remote communication error occurs
      */
-    List<String> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
+    List<SearchData> getWebsitesLinkingTo(String targetUrl, int pageNumber) throws RemoteException;
 
     /**
      * Receives a ping from a barrel with the specified ID and IP address.
@@ -91,4 +92,12 @@ public interface RMIGatewayInterface extends Remote {
      * @throws RemoteException if a remote communication error occurs
      */
     public void priorityEnqueueURL(String url) throws RemoteException;
+
+    /**
+     * Retrieves the stats of the server.
+     *
+     * @return the stats of the server
+     * @throws RemoteException if a remote communication error occurs
+     */
+    public Stats getStats() throws RemoteException;
 }

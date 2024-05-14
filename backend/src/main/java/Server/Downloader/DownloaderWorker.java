@@ -15,8 +15,6 @@ import java.rmi.Naming;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
-import java.nio.charset.StandardCharsets;
 
 // Jsoup imports
 import org.jsoup.Jsoup;
@@ -27,7 +25,6 @@ import org.jsoup.select.Elements;
 // Exception imports
 import java.io.IOException;
 import java.rmi.NotBoundException;
-import java.io.UnsupportedEncodingException;
 
 /**
  * The DownloaderWorker class represents a worker that visits URLs and performs
@@ -113,21 +110,8 @@ public class DownloaderWorker implements Runnable {
      * @param url the URL to visit
      */
     private void visitURL(URL url) {
-        try {
-            String urlString = url.toString();
-            urlString = getString(urlString);
-
-            HttpURLConnection connection = (HttpURLConnection) URI.create(urlString).toURL().openConnection();
-            connection.setRequestMethod("HEAD");
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                System.out.println("URL not reachable or does not exist: " + url);
-                return;
-            }
-        } catch (IOException e) {
-            System.out.println("Error checking URL: " + url);
+        if (!Crawling.isValidURL(url.toString()))
             return;
-        }
 
         try {
             // Start the timer
@@ -139,45 +123,28 @@ public class DownloaderWorker implements Runnable {
             // Stop the timer and calculate the response time
             long responseTime = System.currentTimeMillis() - startTime;
 
-            // Tokenize the resulting document
-            StringTokenizer tokens = new StringTokenizer(doc.text());
-            List<String> tokenList = new ArrayList<>();
-
-            // Store all tokens in the list
-            while (tokens.hasMoreElements()) {
-                String token = tokens.nextToken().toLowerCase();
-                token = token.trim();
-                token = token.replaceAll("[\\[\\](){}?!,.:]", "");
-                // Remove single characters
-                if (token.length() > 1) {
-                    // If it's a number, it should contain a comma or a dot
-                    if (token.matches("\\d+")) {
-                        if (token.contains(".") || token.contains(",")) {
-                            tokenList.add(token);
-                        }
-                    } else {
-                        tokenList.add(token);
-                    }
-                }
-            }
+            List<String> tokenList = Crawling.getTokens(doc);
 
             // Find every link in the URL and print them
             Elements links = doc.select("a[href]");
             List<URL> urlList = new ArrayList<>();
             for (Element link : links) {
                 String href = link.attr("abs:href");
-                if (href.startsWith("http://") || href.startsWith("https://")) {
-                    try {
-                        href = getString(href);
-                        URL urlObject = URI.create(href).toURL();
-                        URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(),
-                                urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
-                        urlQueue.enqueueURL(uri.toURL(), id);
-                        urlList.add(uri.toURL());
-                    } catch (URISyntaxException | MalformedURLException e) {
-                        LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
-                    }
+
+                if (!(href.startsWith("http://") || href.startsWith("https://")))
+                    continue;
+
+                try {
+                    href = Crawling.getString(href);
+                    URL urlObject = URI.create(href).toURL();
+                    URI uri = new URI(urlObject.getProtocol(), urlObject.getUserInfo(), urlObject.getHost(),
+                            urlObject.getPort(), urlObject.getPath(), urlObject.getQuery(), urlObject.getRef());
+                    urlQueue.enqueueURL(uri.toURL(), id);
+                    urlList.add(uri.toURL());
+                } catch (URISyntaxException | MalformedURLException e) {
+                    LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
                 }
+
             }
 
             // Create a CrawlData object
@@ -198,26 +165,6 @@ public class DownloaderWorker implements Runnable {
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.ANSI_RED, DownloaderWorker.class, e);
         }
-    }
-
-    /**
-     * Encodes the URL string to ensure that it is properly formatted.
-     *
-     * @param href the URL string to encode
-     * @return the encoded URL string
-     * @throws UnsupportedEncodingException if the encoding is not supported
-     */
-    private String getString(String href) throws UnsupportedEncodingException {
-        int hashIndex = href.indexOf('#');
-        if (hashIndex > -1) {
-            // The URL contains a fragment, so encode it
-            String fragment = href.substring(hashIndex + 1);
-            String encodedFragment = URLEncoder.encode(fragment, StandardCharsets.UTF_8);
-            // Replace < and > characters
-            encodedFragment = encodedFragment.replace("<", "%3C").replace(">", "%3E");
-            href = href.substring(0, hashIndex) + '#' + encodedFragment;
-        }
-        return href;
     }
 
     /**

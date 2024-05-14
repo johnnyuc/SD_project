@@ -1,5 +1,5 @@
 package Springboot.util;
 
-public record Message(String content) {
+public record Message(String query) {
 
 }

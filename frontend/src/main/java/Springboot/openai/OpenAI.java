@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 public class OpenAI {
@@ -42,7 +41,7 @@ public class OpenAI {
                     HttpMethod.POST,
                     requestEntity,
                     OpenAIItemRecord.class);
-        } catch (HttpClientErrorException e) {
+        } catch (Exception e) {
             return "Error generating contextualized analysis.";
         }
 

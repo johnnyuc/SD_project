@@ -80,7 +80,6 @@ public class RMIClient implements Serializable {
             scanner.close();
         } catch (RemoteException | NotBoundException | MalformedURLException e) {
             System.out.println("Service unavailable. Try again later.");
-            e.printStackTrace();
             System.exit(-1);
         }
     }
@@ -136,6 +135,11 @@ public class RMIClient implements Serializable {
                 String query = readQuery();
                 List<SearchData> searchResults = rmiGateway.searchQuery(query, 1);
 
+                if (searchResults.size() == 0) {
+                    System.out.println("No results.");
+                    break;
+                }
+
                 if (searchResults.get(0).refCount() == SearchData.EXCEPTION) {
                     System.out.println(searchResults.get(0).url());
                     break;
@@ -152,16 +156,25 @@ public class RMIClient implements Serializable {
                 break;
             case 2:
                 String url = readQuery().trim();
-                List<String> linkedResults = rmiGateway.getWebsitesLinkingTo(url, 1);
-                printList(linkedResults);
-                while (true) {
+                List<SearchData> linkedResults = rmiGateway.getWebsitesLinkingTo(url, 1);
+
+                if (linkedResults.size() == 0) {
+                    System.out.println("No results.");
+                    break;
+                }
+
+                if (linkedResults.get(0).refCount() == SearchData.EXCEPTION) {
+                    System.out.println(linkedResults.get(0).url());
+                    break;
+                }
+                do {
+                    printSearchResults(linkedResults);
                     System.out.println("Enter page number (or 0 to exit):");
                     int pageNumber = readChoice();
                     if (pageNumber == 0)
                         break;
                     linkedResults = rmiGateway.getWebsitesLinkingTo(url, pageNumber);
-                    printList(linkedResults);
-                }
+                } while (true);
                 break;
             case 3:
                 // code to handle Admin console

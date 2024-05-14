@@ -20,13 +20,17 @@ function sendIndexTopStoriesRequest() {
     var query = urlParams.get('query');
     console.log('Sending index top stories request with query: ' + query);
     stompClient.send('/app/index-top-stories', {}, JSON.stringify({ 'query': query }));
+
+    // Send notification to client
+    var notification = 'Request sent successfully';
+    alert(notification);
 }
 
 $(function () {
-    $('form').on('submit', function (e) {
-        e.preventDefault();
+    $('#index-top-stories').click(function () {
+        $(this).prop('disabled', true);
+        sendIndexTopStoriesRequest();
     });
-    $('#index-top-stories').click(function () { sendIndexTopStoriesRequest(); });
 });
 
 window.onload = function () {
