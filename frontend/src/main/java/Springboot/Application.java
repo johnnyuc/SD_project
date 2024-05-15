@@ -19,7 +19,7 @@ public class Application {
 
     /**
      * The main method that starts the Spring Boot application.
-     * Expects two arguments: <code>-gadd &lt;gateway address&gt;</code>.
+     * Expects one argument: <code>-gadd &lt;gateway address&gt;</code>.
      *
      * @param args the command-line arguments
      */

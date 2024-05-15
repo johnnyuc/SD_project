@@ -5,6 +5,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Stats(@JsonProperty("barrel_stats") List<String> barrelStats,
+/**
+ * Represents statistics data including barrel stats and most searched terms.
+ */
+public record Stats(
+        @JsonProperty("barrel_stats") List<String> barrelStats,
         @JsonProperty("most_searched") List<String> mostSearched) implements Serializable {
 }
