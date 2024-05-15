@@ -17,12 +17,25 @@ import Server.Controller.RMIGatewayInterface;
 import Server.IndexStorageBarrel.Objects.SearchData;
 import Springboot.Application;
 import Springboot.hackernews.HackerNews;
-import Springboot.util.Message;
 import Springboot.openai.Perplexity;
+import Springboot.util.Message;
 
+/**
+ * Controller class to handle search results and index top stories from Hacker
+ * News.
+ */
 @Controller
 public class ResultsController {
 
+    /**
+     * Retrieves search results based on the provided query and page number.
+     *
+     * @param query      the search query
+     * @param page       the page number for pagination
+     * @param urlsLinked a boolean indicating whether URLs are linked
+     * @param model      the Spring MVC model
+     * @return the view name for the results page
+     */
     @GetMapping("/results")
     public String results(@RequestParam(name = "query", required = true) String query,
             @RequestParam(name = "page", required = false, defaultValue = "1") int page,
@@ -58,6 +71,11 @@ public class ResultsController {
         return "results";
     }
 
+    /**
+     * Handles the WebSocket message for indexing top stories from Hacker News.
+     *
+     * @param request the message containing the query
+     */
     @MessageMapping("/index-top-stories")
     private void onIndexHackerNewsTopStoriesPress(Message request) {
         try {

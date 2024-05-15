@@ -10,8 +10,19 @@ import org.springframework.web.client.RestTemplate;
 
 import Server.Downloader.Crawling;
 
+/**
+ * Provides functionality to interact with Hacker News API and fetch top
+ * stories.
+ */
 public class HackerNews {
 
+    /**
+     * Fetches the top stories from Hacker News and filters them based on the
+     * provided query.
+     *
+     * @param query the query to search for in the top stories' content
+     * @return a list of URLs of the top stories that contain the query
+     */
     public static List<String> getTopStories(String query) {
         List<String> topStoriesURLs = new ArrayList<>();
         List<Integer> hackerNewsTopStories = new ArrayList<>();
@@ -49,7 +60,7 @@ public class HackerNews {
                 Document doc = Jsoup.connect(oneStory.url().toString()).get();
                 List<String> tokens = Crawling.getTokens(doc);
 
-                if (query != "" && tokens.contains(query)) {
+                if (!query.isEmpty() && tokens.contains(query)) {
                     topStoriesURLs.add(oneStory.url());
                     System.out.println("Found query in story: " + oneStory.url());
                 } else

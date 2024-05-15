@@ -21,15 +21,30 @@ import Server.Controller.RMIGatewayInterface;
 import Server.Controller.Objects.Stats;
 import Springboot.Application;
 
+/**
+ * Controller class to handle statistics-related requests.
+ */
 @Controller
 public class StatsController {
     private final SimpMessagingTemplate messagingTemplate;
 
+    /**
+     * Constructor for StatsController.
+     *
+     * @param messagingTemplate the messaging template
+     */
     @Autowired
     public StatsController(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
 
+    /**
+     * Endpoint to trigger statistics update and broadcast to WebSocket clients.
+     *
+     * @param authorizationToken the authorization token
+     * @param stats              the statistics object to update
+     * @return a response entity indicating the update status
+     */
     @PostMapping("/trigger-stats")
     public ResponseEntity<String> triggerStats(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
@@ -42,6 +57,12 @@ public class StatsController {
         return ResponseEntity.ok("Stats updated!");
     }
 
+    /**
+     * Retrieves statistics data and populates the model for the stats page.
+     *
+     * @param model the Spring MVC model
+     * @return the view name for the stats page
+     */
     @GetMapping("/stats")
     public String stats(Model model) {
         try {
