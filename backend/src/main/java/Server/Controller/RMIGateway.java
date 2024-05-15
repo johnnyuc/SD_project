@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -375,11 +376,15 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      */
     private void sendStats() throws RemoteException {
         String url = "http://localhost:8080/trigger-stats";
+        String authToken = "someauthtokenidk";
 
         RestTemplate restTemplate = new RestTemplate();
         Stats stats = new Stats(barrelsStatus(), mostSearched());
 
-        HttpEntity<Stats> entity = new HttpEntity<>(stats);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, authToken);
+
+        HttpEntity<Stats> entity = new HttpEntity<>(stats, headers);
 
         // Send the request and get the response
         try {
