@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import Server.Controller.RMIGateway;
 import Server.Controller.RMIGatewayInterface;
 import Server.Controller.Objects.Stats;
+import Springboot.Application;
 
 @Controller
 public class StatsController {
@@ -45,7 +46,8 @@ public class StatsController {
     public String stats(Model model) {
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + Application.gatewayAddress + ":" + RMIGateway.PORT + "/"
+                            + RMIGateway.REMOTE_REFERENCE_NAME);
 
             Stats stats = rmiGateway.getStats();
 

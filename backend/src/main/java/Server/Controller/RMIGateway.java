@@ -15,10 +15,17 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.rmi.Naming;
@@ -29,7 +36,9 @@ import java.net.DatagramSocket;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 // Exception imports
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -65,6 +74,10 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * The address of the URL queue.
      */
     private String queueAddress;
+    /**
+     * The address of the app address.
+     */
+    private String appAddress;
 
     /**
      * The main method that starts the RMI gateway.
@@ -94,6 +107,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
         super();
         if (!processArgs(args))
             System.exit(1);
+        trustEveryone();
     }
 
     /**
@@ -198,15 +212,17 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @param args The command line arguments.
      */
     private boolean processArgs(String[] args) {
-        if (args.length != 2) {
+        if (args.length != 4) {
             LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
-                    "Wrong number of arguments: expected -qadd <queue address>");
+                    "Wrong number of arguments: expected -qadd <queue address> -app <app address>");
             return false;
         }
         // Parse the arguments
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-qadd")) {
                 queueAddress = args[++i];
+            } else if (args[i].equals("-app")) {
+                appAddress = args[++i];
             } else {
                 LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
                         "Unexpected argument: " + args[i]);
@@ -375,7 +391,7 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
      * @throws RemoteException if a remote error occurs.
      */
     private void sendStats() throws RemoteException {
-        String url = "http://localhost:8080/trigger-stats";
+        String url = "https://" + appAddress + ":8080/trigger-stats";
         String authToken = "someauthtokenidk";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -388,11 +404,42 @@ public class RMIGateway extends UnicastRemoteObject implements RMIGatewayInterfa
 
         // Send the request and get the response
         try {
+            // Bypass SSL certificate validation
+            restTemplate.setRequestFactory(new SimpleClientHttpRequestFactory());
+
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
             // Print the response
             LogUtil.logInfo(LogUtil.ANSI_GREEN, RMIGateway.class, response.getBody());
         } catch (Exception e) {
             LogUtil.logInfo(LogUtil.ANSI_RED, RMIGateway.class, "Error sending stats to the web application.");
+        }
+    }
+
+    private void trustEveryone() {
+        try {
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, new X509TrustManager[] { new X509TrustManager() {
+                public void checkClientTrusted(X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                }
+
+                public void checkServerTrusted(X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            } }, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(
+                    context.getSocketFactory());
+        } catch (Exception e) { // should never happen
+            e.printStackTrace();
         }
     }
 }

@@ -7,7 +7,6 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import Server.Controller.RMIGateway;
 import Server.Controller.RMIGatewayInterface;
 import Server.IndexStorageBarrel.Objects.SearchData;
+import Springboot.Application;
 import Springboot.hackernews.HackerNews;
 import Springboot.util.Message;
 import Springboot.openai.Perplexity;
@@ -28,10 +28,10 @@ public class ResultsController {
             @RequestParam(name = "page", required = false, defaultValue = "1") int page,
             @RequestParam(name = "urlsLinked", required = false, defaultValue = "false") boolean urlsLinked,
             Model model) {
-        // TODO: How to set the value of the gatewayAddress??????
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + Application.gatewayAddress + ":" + RMIGateway.PORT + "/"
+                            + RMIGateway.REMOTE_REFERENCE_NAME);
 
             List<SearchData> searchResults;
             if (!urlsLinked) {
@@ -62,7 +62,8 @@ public class ResultsController {
     private void onIndexHackerNewsTopStoriesPress(Message request) {
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
-                    .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
+                    .lookup("rmi://" + Application.gatewayAddress + ":" + RMIGateway.PORT + "/"
+                            + RMIGateway.REMOTE_REFERENCE_NAME);
             List<String> topStories = HackerNews.getTopStories(request.content());
 
             for (String story : topStories)
