@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"Springboot"},{"l":"Springboot.controllers"},{"l":"Springboot.hackernews"},{"l":"Springboot.openai"},{"l":"Springboot.util"}];updateSearchResults();
