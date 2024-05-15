@@ -63,7 +63,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
      */
     public static void main(String[] args) {
         try {
-            LogUtil.logInfo(LogUtil.ANSI_GREEN, URLQueue.class, "Starting URL Queue...");
+            LogUtil.logInfo(LogUtil.ANSI_YELLOW, URLQueue.class, "Starting URL Queue...");
             URLQueue urlQueue = new URLQueue();
             Registry registry = LocateRegistry.createRegistry(RMI_PORT);
             registry.rebind(REMOTE_REFERENCE_NAME, urlQueue);
@@ -96,7 +96,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         // Calculate the optimal size based on the number of elements and false positive
         // probability
         int optimalSize = (int) Math.ceil(-n * Math.log(p) / (Math.log(2) * Math.log(2)));
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Optimal size for Bloom Filter set at: " + optimalSize);
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, URLQueue.class, "Optimal size for Bloom Filter set at: " + optimalSize);
 
         bloomFilter = new BloomFilter(optimalSize);
 
@@ -119,7 +119,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
 
         // Check if the URL is already in the queue by checking the Bloom filter
         if (!bloomFilter.contains(urlString)) {
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class,
+            LogUtil.logInfo(LogUtil.ANSI_BLUE, URLQueue.class,
                     "Queueing URL " + url + " from downloader " + downloaderID + ".");
             bloomFilter.add(urlString);
             urlQueue.addLast(url);
@@ -139,7 +139,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
 
                 // Transform the received data into a URL
                 String url = new String(request.getData(), 0, request.getLength());
-                LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Received priority URL: " + url);
                 priorityEnqueueURL(URI.create(url).toURL());
             } catch (IOException e) {
                 LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
@@ -155,7 +154,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
      */
     public void priorityEnqueueURL(URL url) throws RemoteException {
         // Don't use the bloom filter for priority URLs
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Priority Queueing URL " + url + ".");
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, URLQueue.class, "Priority Queueing URL " + url + ".");
         urlQueue.addFirst(url);
     }
 
@@ -170,7 +169,7 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
         URL url = null;
         try {
             url = urlQueue.takeFirst();
-            LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class,
+            LogUtil.logInfo(LogUtil.ANSI_BLUE, URLQueue.class,
                     "URL " + url + " dequeued by downloader " + downloaderID + ".");
         } catch (InterruptedException e) {
             LogUtil.logError(LogUtil.ANSI_RED, URLQueue.class, e);
@@ -188,6 +187,6 @@ public class URLQueue extends UnicastRemoteObject implements URLQueueInterface {
             if (url != null)
                 count++;
         }
-        LogUtil.logInfo(LogUtil.ANSI_WHITE, URLQueue.class, "Queue has " + count + " URLs.");
+        LogUtil.logInfo(LogUtil.ANSI_BLUE, URLQueue.class, "Queue has " + count + " URLs.");
     }
 }

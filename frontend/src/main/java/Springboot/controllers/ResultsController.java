@@ -6,9 +6,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
 
-import javax.naming.directory.SearchResult;
-
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +18,7 @@ import Server.Controller.RMIGatewayInterface;
 import Server.IndexStorageBarrel.Objects.SearchData;
 import Springboot.hackernews.HackerNews;
 import Springboot.util.Message;
-import Springboot.openai.OpenAI;
+import Springboot.openai.Perplexity;
 
 @Controller
 public class ResultsController {
@@ -48,8 +47,6 @@ public class ResultsController {
             model.addAttribute("previousButtonDisabled", page <= 1);
             model.addAttribute("currentPage", page);
             model.addAttribute("nextButtonDisabled", searchResults.size() != 10);
-
-            System.out.println("Contextualized analysis: " + OpenAI.getContextualizedAnalysis(query));
         } catch (MalformedURLException | RemoteException | NotBoundException e) {
             return "redirect:/error";
         }
@@ -57,14 +54,18 @@ public class ResultsController {
         return "results";
     }
 
+    @MessageMapping("/generate-contextualized-analysis")
+    @SendTo("/topic/contextualized-analysis")
+    private Message onGenerateContextualizedAnalysisPress(Message request) {
+        return new Message(Perplexity.getContextualizedAnalysis(request.content()));
+    }
+
     @MessageMapping("/index-top-stories")
     private void onIndexHackerNewsTopStoriesPress(Message request) {
         try {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
                     .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
-            List<String> topStories = HackerNews.getTopStories(request.query());
-
-            System.out.println("Top stories: " + topStories);
+            List<String> topStories = HackerNews.getTopStories(request.content());
 
             for (String story : topStories)
                 rmiGateway.priorityEnqueueURL(story);

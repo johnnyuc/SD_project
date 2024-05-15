@@ -9,8 +9,6 @@
     <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/main.css}">
     <link rel="stylesheet" th:href="@{/css/search.css}">
-    <!-- Javascript -->
-    <script th:src="@{/javascript/search.js}"></script>
 </head>
 
 <body>
@@ -23,9 +21,9 @@
                         aria-label="Search query">
                     <!-- Search buttons -->
                     <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">Search</button>
                         <button class="btn btn-outline-secondary" type="submit" name="urlsLinked" value="true">Search
                             linked URLs</button>
-                        <button class="btn btn-primary" type="submit">Search</button>
                     </div>
                 </form>
             </div>

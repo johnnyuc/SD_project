@@ -39,11 +39,7 @@ public class StatsController {
             RMIGatewayInterface rmiGateway = (RMIGatewayInterface) Naming
                     .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
 
-            System.out.println("Gonna get them stats");
-
             Stats stats = rmiGateway.getStats();
-
-            System.out.println("Stats: " + stats.toString());
 
             model.addAttribute("barrelStats", stats.barrelStats());
             model.addAttribute("topSearches", stats.mostSearched());
