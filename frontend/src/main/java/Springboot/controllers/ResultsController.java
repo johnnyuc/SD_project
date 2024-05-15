@@ -34,10 +34,14 @@ public class ResultsController {
                     .lookup("rmi://localhost:" + RMIGateway.PORT + "/" + RMIGateway.REMOTE_REFERENCE_NAME);
 
             List<SearchData> searchResults;
-            if (!urlsLinked)
+            if (!urlsLinked) {
                 searchResults = rmiGateway.searchQuery(query, page);
-            else
+                // Contextualized Analysis
+                model.addAttribute("contextualizedAnalysis", Perplexity.getContextualizedAnalysis(query));
+            } else {
                 searchResults = rmiGateway.getWebsitesLinkingTo(query, page);
+                model.addAttribute("contextualizedAnalysis", "Contextualized analysis unavailable for linked URLs.");
+            }
 
             // Results
             model.addAttribute("searchResults", searchResults);
@@ -52,12 +56,6 @@ public class ResultsController {
         }
 
         return "results";
-    }
-
-    @MessageMapping("/generate-contextualized-analysis")
-    @SendTo("/topic/contextualized-analysis")
-    private Message onGenerateContextualizedAnalysisPress(Message request) {
-        return new Message(Perplexity.getContextualizedAnalysis(request.content()));
     }
 
     @MessageMapping("/index-top-stories")
