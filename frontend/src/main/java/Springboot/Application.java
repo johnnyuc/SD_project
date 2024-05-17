@@ -25,7 +25,7 @@ public class Application {
      */
     public static void main(String[] args) {
         if (args.length != 2) {
-            LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+            LogUtil.logInfo(LogUtil.ANSI_RED, Application.class,
                     "Wrong number of arguments: expected -gadd <gateway address>");
             return;
         }
@@ -34,7 +34,7 @@ public class Application {
         if (args[0].equals("-gadd")) {
             gatewayAddress = args[1];
         } else {
-            LogUtil.logInfo(LogUtil.ANSI_RED, IndexStorageBarrel.class,
+            LogUtil.logInfo(LogUtil.ANSI_RED, Application.class,
                     "Unexpected argument: " + args[0]);
             return;
         }
