@@ -21,7 +21,7 @@ public class Perplexity {
      */
     public static String getContextualizedAnalysis(String query) {
         String completionsEndpoint = "https://api.perplexity.ai/chat/completions";
-        String apiKey = "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";
+        String apiKey = "-";
 
         String requestBody = """
                 {
